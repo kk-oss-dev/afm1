@@ -45,13 +45,12 @@ import android.widget.TextView;
 import com.github.axet.androidlibrary.app.Storage;
 import com.github.axet.androidlibrary.widgets.OpenChoicer;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
-import com.github.axet.androidlibrary.widgets.TextMax;
+import com.github.axet.androidlibrary.widgets.PathMax;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
     public static final int RESULT_ADDBOOKMARK = 1;
 
-    public static final String BOOKMARK = "BOOKMARK";
     public static final String ADD_BOOKMARK = "ADDBOOKMARK";
 
     public SectionsPagerAdapter mSectionsPagerAdapter;
@@ -62,12 +61,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     OpenChoicer choicer;
     FilesApplication app;
     Menu bookmarksMenu;
+    ViewPager.OnPageChangeListener onPageChangeListener;
 
     public static String getDefault() {
         return Uri.fromFile(Environment.getExternalStorageDirectory()).toString();
     }
 
-    public static class FilesTabView extends TextMax {
+    public static class FilesTabView extends PathMax {
         TextView text;
         LinearLayout.LayoutParams lp;
 
@@ -88,9 +88,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             if (p instanceof LinearLayout) { // TabView extends LinearLayout
                 LinearLayout l = (LinearLayout) p;
                 lp = (LinearLayout.LayoutParams) l.getLayoutParams();
-                if (lp != null) {
-                    //lp.weight = 0;
-                }
             }
         }
     }
@@ -179,7 +176,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
-        ViewPager.OnPageChangeListener onPageChangeListener = new ViewPager.OnPageChangeListener() {
+        onPageChangeListener = new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
             }
@@ -244,6 +241,31 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         onPageChangeListener.onPageScrollStateChanged(ViewPager.SCROLL_STATE_IDLE);
 
         reloadMenu();
+
+        openIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        openIntent(intent);
+    }
+
+    public void openIntent(Intent intent) {
+        if (intent == null)
+            return;
+        String a = intent.getAction();
+        if (a.equals(Intent.ACTION_VIEW)) {
+            Uri u = intent.getData();
+            if (u != null)
+                open(u);
+        }
+    }
+
+    public void open(Uri u) {
+        FilesFragment f = (FilesFragment) mSectionsPagerAdapter.getItem(mViewPager.getCurrentItem());
+        f.load(u);
     }
 
     @Override
@@ -265,7 +287,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 public void onResult(Uri uri) {
                     super.onResult(uri);
                     app.bookmarks.add(uri);
-                    app.save();
+                    app.bookmarks.save();
                     reloadMenu();
                 }
             };
@@ -280,7 +302,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 public void onResult(Uri uri) {
                     super.onResult(uri);
                     app.bookmarks.add(uri);
-                    app.save();
+                    app.bookmarks.save();
                     reloadMenu();
                 }
             };
@@ -290,9 +312,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
 
         Intent intent = item.getIntent();
-        if (intent != null && intent.getAction().equals(BOOKMARK)) {
-            FilesFragment f = (FilesFragment) mSectionsPagerAdapter.getItem(mViewPager.getCurrentItem());
-            f.load((Uri) intent.getParcelableExtra("uri"));
+        if (intent != null && intent.getAction().equals(Intent.ACTION_VIEW)) {
+            Uri u = intent.getData();
+            if (u != null)
+                open(u);
         }
 
         return super.onOptionsItemSelected(item);
@@ -339,7 +362,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     return true;
                 }
             }
-            if (a.equals(BOOKMARK)) {
+            if (a.equals(Intent.ACTION_VIEW)) {
                 onOptionsItemSelected(item);
             }
         }
@@ -384,8 +407,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             else
                 n = storage.getDisplayName(u);
             MenuItem m = bookmarksMenu.add(n);
-            Intent intent = new Intent(BOOKMARK);
-            intent.putExtra("uri", u);
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(u);
             m.setIntent(intent);
             m.setIcon(R.drawable.ic_storage_black_24dp);
             ImageButton b = new ImageButton(this);
@@ -415,5 +438,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             });
             MenuItemCompat.setActionView(m, b);
         }
+    }
+
+    public void update() {
+        mSectionsPagerAdapter.notifyDataSetChanged();
+        mSectionsPagerAdapter.update();
+        onPageChangeListener.onPageScrollStateChanged(ViewPager.SCROLL_STATE_IDLE);
     }
 }

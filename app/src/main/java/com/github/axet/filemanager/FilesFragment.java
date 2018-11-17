@@ -23,7 +23,6 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 
@@ -49,8 +48,10 @@ public class FilesFragment extends Fragment {
         public boolean sym;
         public String name;
         public long size;
+        public Uri uri;
 
-        public File(String n, boolean dir, boolean s, long size) {
+        public File(Uri uri, String n, boolean dir, boolean s, long size) {
+            this.uri = uri;
             this.name = n;
             this.dir = dir;
             this.sym = s;
@@ -78,13 +79,20 @@ public class FilesFragment extends Fragment {
         }
 
         @Override
-        public void onBindViewHolder(Holder holder, int position) {
-            File f = files.get(position);
+        public void onBindViewHolder(final Holder holder, final int position) {
+            final File f = files.get(position);
             if (f.dir)
                 holder.icon.setImageResource(R.drawable.ic_folder_open_black_24dp);
             else
                 holder.icon.setImageResource(R.drawable.ic_file);
             holder.name.setText(f.name);
+            holder.itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    load(f.uri);
+                    if (holder.getAdapterPosition() == 0) ;
+                }
+            });
         }
 
         @Override
@@ -122,12 +130,6 @@ public class FilesFragment extends Fragment {
         return rootView;
     }
 
-    public void refresh() {
-        final MainActivity main = (MainActivity) getActivity();
-        if (Storage.permitted(this, Storage.PERMISSIONS_RW, RESULT_PERMS))
-            main.mSectionsPagerAdapter.notifyDataSetChanged();
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -146,6 +148,8 @@ public class FilesFragment extends Fragment {
     public void load(Uri u) {
         uri = u;
         load();
+        final MainActivity main = (MainActivity) getActivity();
+        main.update();
     }
 
     public void load() {
@@ -154,24 +158,33 @@ public class FilesFragment extends Fragment {
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             java.io.File file = Storage.getFile(uri);
             java.io.File[] ff = file.listFiles();
-            for (java.io.File f : ff) {
-                boolean sym = false;
-                try {
-                    sym = FileUtils.isSymlink(f);
-                } catch (IOException e) {
+            if (ff != null) {
+                for (java.io.File f : ff) {
+                    boolean sym = false;
+                    try {
+                        sym = FileUtils.isSymlink(f);
+                    } catch (IOException e) {
+                    }
+                    adapter.files.add(new File(Uri.fromFile(f), f.getName(), f.isDirectory(), sym, f.length()));
                 }
-                adapter.files.add(new File(f.getName(), f.isDirectory(), sym, f.length()));
             }
         } else if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-            Uri doc = DocumentsContract.buildChildDocumentsUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri));
+            String id;
+            if (DocumentsContract.isDocumentUri(getContext(), uri))
+                id = DocumentsContract.getDocumentId(uri);
+            else
+                id = DocumentsContract.getTreeDocumentId(uri);
+            Uri doc = DocumentsContract.buildChildDocumentsUriUsingTree(uri, id);
             ContentResolver resolver = getContext().getContentResolver();
             Cursor cursor = resolver.query(doc, null, null, null, null);
             if (cursor != null) {
                 while (cursor.moveToNext()) {
+                    id = cursor.getString(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DOCUMENT_ID));
                     String type = cursor.getString(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_MIME_TYPE));
                     String name = cursor.getString(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
                     long size = cursor.getLong(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE));
-                    adapter.files.add(new File(name, type.equals(DocumentsContract.Document.MIME_TYPE_DIR), false, size));
+                    Uri u = DocumentsContract.buildDocumentUriUsingTree(uri, id);
+                    adapter.files.add(new File(u, name, type.equals(DocumentsContract.Document.MIME_TYPE_DIR), false, size));
                 }
                 cursor.close();
             }

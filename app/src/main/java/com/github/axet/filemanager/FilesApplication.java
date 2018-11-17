@@ -16,35 +16,41 @@ public class FilesApplication extends MainApplication {
     public static final String PREF_BOOKMARK_COUNT = "bookmark_count";
     public static final String PREF_BOOKMARK_PREFIX = "bookmark_";
 
-    public ArrayList<Uri> bookmarks = new ArrayList<>();
+    public Bookmarks bookmarks;
 
     public static FilesApplication from(Context context) {
         return (FilesApplication) MainApplication.from(context);
     }
 
+    public class Bookmarks extends ArrayList<Uri> {
+        public Bookmarks() {
+            load();
+        }
+
+        public void save() {
+            SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(FilesApplication.this);
+            SharedPreferences.Editor editor = shared.edit();
+            for (int i = 0; i < size(); i++) {
+                editor.putString(PREF_BOOKMARK_PREFIX + i, get(i).toString());
+            }
+            editor.putInt(PREF_BOOKMARK_COUNT, size());
+            editor.commit();
+        }
+
+        public void load() {
+            clear();
+            SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(FilesApplication.this);
+            int count = shared.getInt(PREF_BOOKMARK_COUNT, 0);
+            for (int i = 0; i < count; i++) {
+                Uri uri = Uri.parse(shared.getString(PREF_BOOKMARK_PREFIX + i, ""));
+                add(uri);
+            }
+        }
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
-        load();
-    }
-
-    public void save() {
-        SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
-        SharedPreferences.Editor editor = shared.edit();
-        for (int i = 0; i < bookmarks.size(); i++) {
-            editor.putString(PREF_BOOKMARK_PREFIX + i, bookmarks.get(i).toString());
-        }
-        editor.putInt(PREF_BOOKMARK_COUNT, bookmarks.size());
-        editor.commit();
-    }
-
-    public void load() {
-        bookmarks.clear();
-        SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
-        int count = shared.getInt(PREF_BOOKMARK_COUNT, 0);
-        for (int i = 0; i < count; i++) {
-            Uri uri = Uri.parse(shared.getString(PREF_BOOKMARK_PREFIX + i, ""));
-            bookmarks.add(uri);
-        }
+        bookmarks = new Bookmarks();
     }
 }
