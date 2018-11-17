@@ -1,0 +1,14 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.github.axet.filemanager.MainActivity">
+    <item
+        android:orderInCategory="000"
+        android:id="@+id/action_addstorage"
+        android:title="... from storage" />
+    <item
+        android:id="@+id/action_addsaf"
+        android:orderInCategory="100"
+        android:title="... from SAF"
+        app:showAsAction="never" />
+</menu>

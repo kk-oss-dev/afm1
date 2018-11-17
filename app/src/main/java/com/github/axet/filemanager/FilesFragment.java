@@ -1,7 +1,9 @@
 package com.github.axet.filemanager;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,19 +12,25 @@ import android.view.ViewGroup;
 import com.github.axet.androidlibrary.app.Storage;
 
 public class FilesFragment extends Fragment {
-    private static final String ARG_SECTION_NUMBER = "section_number";
-
     public static final int RESULT_PERMS = 1;
+
+    Uri uri;
 
     public FilesFragment() {
     }
 
-    public static FilesFragment newInstance(int sectionNumber) {
+    public static FilesFragment newInstance(Uri uri) {
         FilesFragment fragment = new FilesFragment();
         Bundle args = new Bundle();
-        args.putInt(ARG_SECTION_NUMBER, sectionNumber);
+        args.putParcelable("uri", uri);
         fragment.setArguments(args);
         return fragment;
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        uri = getUri();
     }
 
     @Override
@@ -39,8 +47,9 @@ public class FilesFragment extends Fragment {
     }
 
     public void refresh() {
+        final MainActivity main = (MainActivity) getActivity();
         if (Storage.permitted(this, Storage.PERMISSIONS_RW, RESULT_PERMS))
-            ;
+            main.mSectionsPagerAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -50,5 +59,11 @@ public class FilesFragment extends Fragment {
             case RESULT_PERMS:
                 break;
         }
+    }
+
+    public Uri getUri() {
+        if (uri == null)
+            return  getArguments().getParcelable("uri");
+        return uri;
     }
 }
