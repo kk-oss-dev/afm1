@@ -49,7 +49,7 @@ import com.github.axet.androidlibrary.widgets.TextMax;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
-    public static final int RESULT_SAF = 1;
+    public static final int RESULT_ADDBOOKMARK = 1;
 
     public static final String BOOKMARK = "BOOKMARK";
     public static final String ADD_BOOKMARK = "ADDBOOKMARK";
@@ -179,7 +179,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
-        mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+        ViewPager.OnPageChangeListener onPageChangeListener = new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
             }
@@ -225,7 +225,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     expand.startAnimation(b);
                 }
             }
-        });
+        };
+        mViewPager.addOnPageChangeListener(onPageChangeListener);
 
         tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
@@ -239,6 +240,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         MenuItem add = settingsMenu.add("Add Bookmark");
         add.setIntent(new Intent(ADD_BOOKMARK));
         add.setIcon(R.drawable.ic_add_black_24dp);
+
+        onPageChangeListener.onPageScrollStateChanged(ViewPager.SCROLL_STATE_IDLE);
 
         reloadMenu();
     }
@@ -262,10 +265,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 public void onResult(Uri uri) {
                     super.onResult(uri);
                     app.bookmarks.add(uri);
+                    app.save();
                     reloadMenu();
                 }
             };
-            choicer.setPermissionsDialog(this, Storage.PERMISSIONS_RW, RESULT_SAF);
+            choicer.setPermissionsDialog(this, Storage.PERMISSIONS_RW, RESULT_ADDBOOKMARK);
             choicer.show(null);
             return true;
         }
@@ -276,12 +280,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 public void onResult(Uri uri) {
                     super.onResult(uri);
                     app.bookmarks.add(uri);
+                    app.save();
                     reloadMenu();
                 }
             };
-            choicer.setStorageAccessFramework(this, RESULT_SAF);
+            choicer.setStorageAccessFramework(this, RESULT_ADDBOOKMARK);
             choicer.show(null);
             return true;
+        }
+
+        Intent intent = item.getIntent();
+        if (intent != null && intent.getAction().equals(BOOKMARK)) {
+            FilesFragment f = (FilesFragment) mSectionsPagerAdapter.getItem(mViewPager.getCurrentItem());
+            f.load((Uri) intent.getParcelableExtra("uri"));
         }
 
         return super.onOptionsItemSelected(item);
@@ -309,22 +320,27 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-        int id = item.getItemId();
         Intent intent = item.getIntent();
-        if (intent != null && intent.getAction().equals(ADD_BOOKMARK)) {
-            PopupMenu menu = new PopupMenu(this, findView(navigationView, item));
-            getMenuInflater().inflate(R.menu.menu_add, menu.getMenu());
-            if (Build.VERSION.SDK_INT < 21) {
-                onOptionsItemSelected(menu.getMenu().findItem(R.id.action_addstorage));
-            } else {
-                menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                    @Override
-                    public boolean onMenuItemClick(MenuItem item) {
-                        return onOptionsItemSelected(item);
-                    }
-                });
-                menu.show();
-                return true;
+        if (intent != null) {
+            String a = intent.getAction();
+            if (a.equals(ADD_BOOKMARK)) {
+                PopupMenu menu = new PopupMenu(this, findView(navigationView, item));
+                getMenuInflater().inflate(R.menu.menu_add, menu.getMenu());
+                if (Build.VERSION.SDK_INT < 21) {
+                    onOptionsItemSelected(menu.getMenu().findItem(R.id.action_addstorage));
+                } else {
+                    menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                        @Override
+                        public boolean onMenuItemClick(MenuItem item) {
+                            return onOptionsItemSelected(item);
+                        }
+                    });
+                    menu.show();
+                    return true;
+                }
+            }
+            if (a.equals(BOOKMARK)) {
+                onOptionsItemSelected(item);
             }
         }
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -341,7 +357,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
-            case RESULT_SAF:
+            case RESULT_ADDBOOKMARK:
                 choicer.onActivityResult(resultCode, data);
                 break;
         }
@@ -351,7 +367,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
-            case RESULT_SAF:
+            case RESULT_ADDBOOKMARK:
                 choicer.onRequestPermissionsFailed(permissions);
                 break;
         }
@@ -369,7 +385,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 n = storage.getDisplayName(u);
             MenuItem m = bookmarksMenu.add(n);
             Intent intent = new Intent(BOOKMARK);
-            intent.putExtra("url", u);
+            intent.putExtra("uri", u);
             m.setIntent(intent);
             m.setIcon(R.drawable.ic_storage_black_24dp);
             ImageButton b = new ImageButton(this);
