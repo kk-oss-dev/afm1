@@ -1,4 +1,4 @@
-package com.github.axet.filemanager;
+package com.github.axet.filemanager.fragments;
 
 import android.content.ContentResolver;
 import android.database.Cursor;
@@ -18,6 +18,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.github.axet.androidlibrary.app.Storage;
+import com.github.axet.filemanager.activitites.MainActivity;
+import com.github.axet.filemanager.R;
+import com.github.axet.filemanager.widgets.PathView;
 
 import org.apache.commons.io.FileUtils;
 
@@ -32,6 +35,8 @@ public class FilesFragment extends Fragment {
     Uri uri;
     Adapter adapter;
     Storage storage;
+    PathView path;
+    View button;
 
     public static class SortByName implements Comparator<File> {
         @Override
@@ -89,8 +94,8 @@ public class FilesFragment extends Fragment {
             holder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    load(f.uri);
-                    if (holder.getAdapterPosition() == 0) ;
+                    if (f.dir)
+                        load(f.uri);
                 }
             });
         }
@@ -124,9 +129,30 @@ public class FilesFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
+
+        path = (PathView) rootView.findViewById(R.id.path);
+        path.l = new PathView.Listener() {
+            @Override
+            public void setUri(Uri u) {
+                load(u);
+            }
+        };
+        path.setUri(uri);
+
         RecyclerView list = (RecyclerView) rootView.findViewById(R.id.list);
         list.setLayoutManager(new LinearLayoutManager(getContext()));
         list.setAdapter(adapter);
+
+        button = rootView.findViewById(R.id.permissions);
+        if (Storage.permitted(getContext(), Storage.PERMISSIONS_RW))
+            button.setVisibility(View.GONE);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Storage.permitted(FilesFragment.this, Storage.PERMISSIONS_RW, RESULT_PERMS);
+            }
+        });
+
         return rootView;
     }
 
@@ -135,6 +161,8 @@ public class FilesFragment extends Fragment {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
             case RESULT_PERMS:
+                load();
+                button.setVisibility(View.GONE);
                 break;
         }
     }
@@ -147,6 +175,7 @@ public class FilesFragment extends Fragment {
 
     public void load(Uri u) {
         uri = u;
+        path.setUri(uri);
         load();
         final MainActivity main = (MainActivity) getActivity();
         main.update();
@@ -193,5 +222,10 @@ public class FilesFragment extends Fragment {
         }
         Collections.sort(adapter.files, new SortByName());
         adapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
     }
 }

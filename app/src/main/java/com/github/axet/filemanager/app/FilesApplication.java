@@ -1,8 +1,9 @@
-package com.github.axet.filemanager;
+package com.github.axet.filemanager.app;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 
 import com.github.axet.androidlibrary.app.MainApplication;
@@ -40,7 +41,12 @@ public class FilesApplication extends MainApplication {
         public void load() {
             clear();
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(FilesApplication.this);
-            int count = shared.getInt(PREF_BOOKMARK_COUNT, 0);
+            int count = shared.getInt(PREF_BOOKMARK_COUNT, -1);
+            if (count == -1) {
+                add(Uri.fromFile(Environment.getExternalStorageDirectory()));
+                add(Uri.fromFile(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)));
+                add(Uri.fromFile(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)));
+            }
             for (int i = 0; i < count; i++) {
                 Uri uri = Uri.parse(shared.getString(PREF_BOOKMARK_PREFIX + i, ""));
                 add(uri);

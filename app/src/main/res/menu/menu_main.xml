@@ -1,10 +1,16 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.github.axet.filemanager.MainActivity">
+    tools:context="com.github.axet.filemanager.activitites.MainActivity">
     <item
-        android:orderInCategory="000"
+        android:id="@+id/action_search"
+        android:icon="@drawable/ic_search_black_24dp"
+        android:title="Search"
+        app:actionViewClass="com.github.axet.androidlibrary.widgets.SearchView"
+        app:showAsAction="collapseActionView|never" />
+    <item
         android:id="@+id/action_refresh"
+        android:orderInCategory="000"
         android:title="Refresh" />
     <item
         android:id="@+id/action_settings"

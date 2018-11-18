@@ -1,4 +1,4 @@
-package com.github.axet.filemanager;
+package com.github.axet.filemanager.activitites;
 
 import android.annotation.SuppressLint;
 import android.content.ContentResolver;
@@ -8,6 +8,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -47,6 +49,11 @@ import com.github.axet.androidlibrary.widgets.OpenChoicer;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.PathMax;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
+import com.github.axet.filemanager.R;
+import com.github.axet.filemanager.app.FilesApplication;
+import com.github.axet.filemanager.fragments.FilesFragment;
+
+import java.io.File;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
     public static final int RESULT_ADDBOOKMARK = 1;
@@ -103,6 +110,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
             left = FilesFragment.newInstance(Uri.parse(shared.getString(FilesApplication.PREF_LEFT, getDefault())));
             right = FilesFragment.newInstance(Uri.parse(shared.getString(FilesApplication.PREF_RIGHT, getDefault())));
+        }
+
+        public void save() {
+            SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+            SharedPreferences.Editor editor = shared.edit();
+            editor.putString(FilesApplication.PREF_LEFT, left.getUri().toString());
+            editor.putString(FilesApplication.PREF_RIGHT, right.getUri().toString());
+            editor.commit();
         }
 
         @Override
@@ -213,7 +228,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
                         @Override
                         protected void applyTransformation(float f, Transformation t) {
-                            expand.lp.weight = w + (3 - w) * f;
+                            expand.lp.weight = w + (2 - w) * f;
                             expand.requestLayout();
                         }
                     };
@@ -396,16 +411,32 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mSectionsPagerAdapter.save();
+    }
+
     public void reloadMenu() {
         int accent = ThemeUtils.getThemeColor(this, R.attr.colorAccent);
         bookmarksMenu.clear();
+        if (app.bookmarks.isEmpty()) {
+            MenuItem m = bookmarksMenu.add("Empty");
+            m.setEnabled(false);
+            m.setIcon(new ColorDrawable(Color.TRANSPARENT));
+        }
         for (Uri u : app.bookmarks) {
             String s = u.getScheme();
             String n;
-            if (s.startsWith(ContentResolver.SCHEME_FILE))
-                n = ".../" + Storage.getFile(u).getName();
-            else
+            if (s.startsWith(ContentResolver.SCHEME_FILE)) {
+                File f = Storage.getFile(u);
+                if (f.equals(Environment.getExternalStorageDirectory()))
+                    n = "/sdcard";
+                else
+                    n = ".../" + f.getName();
+            } else {
                 n = storage.getDisplayName(u);
+            }
             MenuItem m = bookmarksMenu.add(n);
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setData(u);
