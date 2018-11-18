@@ -21,6 +21,8 @@ public class FilesApplication extends MainApplication {
     public static final String PREF_ROOT = "root";
 
     public Bookmarks bookmarks;
+    public ArrayList<Uri> copy; // selected files
+    public ArrayList<Uri> cut; // selected files
 
     public static FilesApplication from(Context context) {
         return (FilesApplication) MainApplication.from(context);

@@ -44,7 +44,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         File f = Storage.getFile(uri);
         Commands cmd = new Commands(MessageFormat.format(LS, "-Al", f.getPath()));
         cmd.stdout(true);
-        Result r = su(cmd);
+        Result r = su(cmd).must();
         Scanner scanner = new Scanner(r.stdout);
         Pattern p = Pattern.compile("^([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+.*\\d\\s+(.*?)$");
         while (scanner.hasNextLine()) {

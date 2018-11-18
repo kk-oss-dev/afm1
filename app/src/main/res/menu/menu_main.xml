@@ -3,15 +3,34 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.github.axet.filemanager.activitites.MainActivity">
     <item
-        android:id="@+id/action_search"
-        android:icon="@drawable/ic_search_black_24dp"
-        android:title="Search"
-        app:actionViewClass="com.github.axet.androidlibrary.widgets.SearchView"
+        android:id="@+id/action_paste"
+        android:icon="@drawable/ic_content_paste_24dp"
+        android:title="Paste"
+        android:visible="false"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_paste_cancel"
+        android:icon="@drawable/ic_content_paste_24dp"
+        android:title="Cancel Paste"
+        android:visible="false"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_selected"
+        android:icon="@drawable/ic_settings_black_24dp"
+        android:title="Select"
+        android:visible="false"
+        app:actionViewClass="com.github.axet.filemanager.widgets.SelectView"
         app:showAsAction="collapseActionView|never" />
     <item
         android:id="@+id/action_refresh"
         android:orderInCategory="000"
         android:title="Refresh" />
+    <item
+        android:id="@+id/action_search"
+        android:icon="@drawable/ic_search_black_24dp"
+        android:title="Search"
+        app:actionViewClass="com.github.axet.androidlibrary.widgets.SearchView"
+        app:showAsAction="collapseActionView|never" />
     <item
         android:id="@+id/action_settings"
         android:orderInCategory="100"

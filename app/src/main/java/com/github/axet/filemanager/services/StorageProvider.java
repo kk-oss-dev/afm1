@@ -59,7 +59,7 @@ public class StorageProvider extends com.github.axet.androidlibrary.services.Sto
                 };
                 thread.start();
                 return r;
-            } else { // rw - need to be File. check ContentProvider#openFile
+            } else { // rw - has to be File. check ContentProvider#openFile
                 File tmp = getContext().getExternalCacheDir();
                 if (tmp == null)
                     tmp = getContext().getCacheDir();

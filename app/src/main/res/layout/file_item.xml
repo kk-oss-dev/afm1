@@ -12,17 +12,18 @@
         android:layout_gravity="center_vertical"
         android:src="@drawable/ic_folder_open_black_24dp" />
 
-    <TextView
-        android:id="@+id/name"
-        android:layout_width="wrap_content"
+    <com.github.axet.androidlibrary.widgets.PathMax
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
-        android:text="boot" />
+        android:layout_weight="1">
 
-    <View
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1" />
+        <TextView
+            android:id="@+id/name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="boot" />
+    </com.github.axet.androidlibrary.widgets.PathMax>
 
     <FrameLayout
         android:layout_width="wrap_content"
@@ -31,6 +32,7 @@
         android:padding="5dp">
 
         <ImageView
+            android:id="@+id/circle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
@@ -38,12 +40,14 @@
             android:tint="#eee" />
 
         <ImageView
+            android:id="@+id/unselected"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:src="@drawable/ic_radio_button_unchecked_black_24dp" />
 
         <ImageView
+            android:id="@+id/selected"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
