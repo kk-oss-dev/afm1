@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.DocumentsContract;
 import android.support.annotation.Nullable;
+import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.HorizontalScrollView;
@@ -74,7 +75,7 @@ public class PathView extends HorizontalScrollView {
             if (ss.length < 2)
                 f = new File(OpenFileDialog.ROOT);
             else
-                f = new File(ss[1]);
+                f = new File(OpenFileDialog.ROOT, ss[1]);
             add(f);
         } else {
             throw new Storage.UnknownUri();
@@ -123,6 +124,7 @@ public class PathView extends HorizontalScrollView {
             if (f != null) {
                 b = new TextView(getContext());
                 b.setText(">");
+                ViewCompat.setAlpha(b, 0.3f);
                 ll.addView(b, 0);
             }
         }

@@ -1,33 +1,46 @@
 package com.github.axet.filemanager.fragments;
 
 import android.content.ContentResolver;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.provider.DocumentsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.github.axet.androidlibrary.app.Storage;
-import com.github.axet.filemanager.activitites.MainActivity;
 import com.github.axet.filemanager.R;
+import com.github.axet.filemanager.activitites.MainActivity;
+import com.github.axet.filemanager.app.FilesApplication;
+import com.github.axet.filemanager.app.SuperUser;
+import com.github.axet.filemanager.services.StorageProvider;
 import com.github.axet.filemanager.widgets.PathView;
 
 import org.apache.commons.io.FileUtils;
 
+import java.io.File;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class FilesFragment extends Fragment {
     public static final int RESULT_PERMS = 1;
@@ -50,7 +63,6 @@ public class FilesFragment extends Fragment {
 
     public static class File {
         public boolean dir;
-        public boolean sym;
         public String name;
         public long size;
         public Uri uri;
@@ -59,8 +71,19 @@ public class FilesFragment extends Fragment {
             this.uri = uri;
             this.name = n;
             this.dir = dir;
-            this.sym = s;
             this.size = size;
+        }
+
+        public File(java.io.File f) {
+            this.uri = Uri.fromFile(f);
+            this.name = f.getName();
+            this.dir = f.isDirectory();
+            this.size = f.length();
+        }
+
+        @Override
+        public String toString() {
+            return name;
         }
     }
 
@@ -84,18 +107,40 @@ public class FilesFragment extends Fragment {
         }
 
         @Override
-        public void onBindViewHolder(final Holder holder, final int position) {
+        public void onBindViewHolder(final Holder h, final int position) {
             final File f = files.get(position);
             if (f.dir)
-                holder.icon.setImageResource(R.drawable.ic_folder_open_black_24dp);
+                h.icon.setImageResource(R.drawable.ic_folder_open_black_24dp);
             else
-                holder.icon.setImageResource(R.drawable.ic_file);
-            holder.name.setText(f.name);
-            holder.itemView.setOnClickListener(new View.OnClickListener() {
+                h.icon.setImageResource(R.drawable.ic_file);
+            h.name.setText(f.name);
+            h.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (f.dir)
                         load(f.uri);
+                }
+            });
+            h.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    if (f.dir)
+                        return false;
+                    PopupMenu menu = new PopupMenu(getContext(), v);
+                    menu.inflate(R.menu.menu_file);
+                    menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                        @Override
+                        public boolean onMenuItemClick(MenuItem item) {
+                            Intent intent = new Intent(Intent.ACTION_VIEW);
+                            String type = Storage.getTypeByName(f.name);
+                            intent.setDataAndType(f.uri, type);
+                            intent.putExtra("name", f.name);
+                            item.setIntent(intent);
+                            return onOptionsItemSelected(item);
+                        }
+                    });
+                    menu.show();
+                    return true;
                 }
             });
         }
@@ -144,16 +189,28 @@ public class FilesFragment extends Fragment {
         list.setAdapter(adapter);
 
         button = rootView.findViewById(R.id.permissions);
-        if (Storage.permitted(getContext(), Storage.PERMISSIONS_RW))
-            button.setVisibility(View.GONE);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Storage.permitted(FilesFragment.this, Storage.PERMISSIONS_RW, RESULT_PERMS);
             }
         });
+        updateButton();
 
         return rootView;
+    }
+
+    void updateButton() {
+        String s = uri.getScheme();
+        if (s.equals(ContentResolver.SCHEME_FILE)) {
+            SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
+            if (shared.getBoolean(FilesApplication.PREF_ROOT, false) || Storage.permitted(getContext(), Storage.PERMISSIONS_RW))
+                button.setVisibility(View.GONE);
+        } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+            button.setVisibility(View.GONE);
+        } else {
+            throw new Storage.UnknownUri();
+        }
     }
 
     @Override
@@ -162,7 +219,7 @@ public class FilesFragment extends Fragment {
         switch (requestCode) {
             case RESULT_PERMS:
                 load();
-                button.setVisibility(View.GONE);
+                updateButton();
                 break;
         }
     }
@@ -174,27 +231,39 @@ public class FilesFragment extends Fragment {
     }
 
     public void load(Uri u) {
-        uri = u;
-        path.setUri(uri);
-        load();
-        final MainActivity main = (MainActivity) getActivity();
-        main.update();
+        if (uri == null) {
+            getArguments().putParcelable("uri", u);
+        } else {
+            uri = u;
+            updateButton();
+            path.setUri(uri);
+            load();
+            final MainActivity main = (MainActivity) getActivity();
+            main.update();
+        }
     }
 
     public void load() {
         adapter.files.clear();
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
-            java.io.File file = Storage.getFile(uri);
-            java.io.File[] ff = file.listFiles();
-            if (ff != null) {
-                for (java.io.File f : ff) {
-                    boolean sym = false;
-                    try {
-                        sym = FileUtils.isSymlink(f);
-                    } catch (IOException e) {
+            SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
+            if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
+                ArrayList<java.io.File> ff = SuperUser.ls(uri);
+                for (java.io.File f : ff)
+                    adapter.files.add(new File(f));
+            } else {
+                java.io.File file = Storage.getFile(uri);
+                java.io.File[] ff = file.listFiles();
+                if (ff != null) {
+                    for (java.io.File f : ff) {
+                        boolean sym = false;
+                        try {
+                            sym = FileUtils.isSymlink(f);
+                        } catch (IOException e) {
+                        }
+                        adapter.files.add(new File(Uri.fromFile(f), f.getName(), f.isDirectory(), sym, f.length()));
                     }
-                    adapter.files.add(new File(Uri.fromFile(f), f.getName(), f.isDirectory(), sym, f.length()));
                 }
             }
         } else if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
@@ -227,5 +296,23 @@ public class FilesFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_open) {
+            Intent intent = item.getIntent();
+            Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
+            startActivity(open);
+            return true;
+        }
+        if (id == R.id.action_share) {
+            Intent intent = item.getIntent();
+            Intent share = StorageProvider.getProvider().shareIntent(intent.getData(), intent.getType(), intent.getStringExtra("name"));
+            startActivity(share);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }

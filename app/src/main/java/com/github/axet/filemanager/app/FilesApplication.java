@@ -17,6 +17,9 @@ public class FilesApplication extends MainApplication {
     public static final String PREF_BOOKMARK_COUNT = "bookmark_count";
     public static final String PREF_BOOKMARK_PREFIX = "bookmark_";
 
+    public static final String PREF_THEME = "theme";
+    public static final String PREF_ROOT = "root";
+
     public Bookmarks bookmarks;
 
     public static FilesApplication from(Context context) {

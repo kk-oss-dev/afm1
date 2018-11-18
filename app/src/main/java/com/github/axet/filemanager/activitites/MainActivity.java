@@ -70,6 +70,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     Menu bookmarksMenu;
     ViewPager.OnPageChangeListener onPageChangeListener;
 
+    public static void start(Context context) {
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        context.startActivity(intent);
+    }
+
     public static String getDefault() {
         return Uri.fromFile(Environment.getExternalStorageDirectory()).toString();
     }
@@ -271,6 +278,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (intent == null)
             return;
         String a = intent.getAction();
+        if (a == null)
+            return;
         if (a.equals(Intent.ACTION_VIEW)) {
             Uri u = intent.getData();
             if (u != null)
@@ -293,8 +302,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.action_settings)
+        if (id == R.id.action_settings) {
+            SettingsActivity.start(this);
             return true;
+        }
 
         if (id == R.id.action_addstorage) {
             choicer = new OpenChoicer(OpenFileDialog.DIALOG_TYPE.FOLDER_DIALOG, false) {
@@ -417,6 +428,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         mSectionsPagerAdapter.save();
     }
 
+    public String getDrawerName(Uri u) {
+        String s = u.getScheme();
+        if (s.startsWith(ContentResolver.SCHEME_FILE)) {
+            File f = Storage.getFile(u);
+            if (f.equals(Environment.getExternalStorageDirectory()))
+                return "/sdcard";
+            else
+                return ".../" + f.getName();
+        } else {
+            return storage.getDisplayName(u);
+        }
+    }
+
     public void reloadMenu() {
         int accent = ThemeUtils.getThemeColor(this, R.attr.colorAccent);
         bookmarksMenu.clear();
@@ -426,17 +450,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             m.setIcon(new ColorDrawable(Color.TRANSPARENT));
         }
         for (Uri u : app.bookmarks) {
-            String s = u.getScheme();
-            String n;
-            if (s.startsWith(ContentResolver.SCHEME_FILE)) {
-                File f = Storage.getFile(u);
-                if (f.equals(Environment.getExternalStorageDirectory()))
-                    n = "/sdcard";
-                else
-                    n = ".../" + f.getName();
-            } else {
-                n = storage.getDisplayName(u);
-            }
+            String n = getDrawerName(u);
             MenuItem m = bookmarksMenu.add(n);
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setData(u);

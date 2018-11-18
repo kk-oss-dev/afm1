@@ -1,0 +1,7 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <SwitchPreferenceCompat
+        android:defaultValue="false"
+        android:key="root"
+        android:summary="Browse file using root"
+        android:title="Root Browser" />
+</PreferenceScreen>
