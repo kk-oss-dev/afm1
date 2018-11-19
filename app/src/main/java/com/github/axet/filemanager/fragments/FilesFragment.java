@@ -36,6 +36,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.github.axet.androidlibrary.app.Storage;
+import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.Toast;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activitites.MainActivity;
@@ -261,6 +262,8 @@ public class FilesFragment extends Fragment {
         TextView filesCount;
         TextView filesTotal;
 
+        AlertDialog d;
+
         public PasteBuilder(Context context) {
             super(context);
         }
@@ -297,7 +300,7 @@ public class FilesFragment extends Fragment {
                 }
             });
 
-            final AlertDialog d = super.create();
+            d = super.create();
             d.setOnShowListener(new DialogInterface.OnShowListener() {
                 @Override
                 public void onShow(DialogInterface dialog) {
@@ -353,7 +356,7 @@ public class FilesFragment extends Fragment {
         }
     }
 
-    public static class SortReverse implements Comparator<NativeFile> { // deepest files first
+    public static class SortDelete implements Comparator<NativeFile> { // deepest files first
         @Override
         public int compare(NativeFile o1, NativeFile o2) {
             int c = Boolean.valueOf(o1.dir).compareTo(o2.dir);
@@ -733,7 +736,7 @@ public class FilesFragment extends Fragment {
                         PendingOperation op = new PendingOperation(getContext(), uri, selected);
                         while (op.calc())
                             ;
-                        Collections.sort(op.files, new SortReverse());
+                        Collections.sort(op.files, new SortDelete());
                         while (op.filesIndex < op.files.size()) {
                             NativeFile u = op.files.get(op.filesIndex);
                             storage.delete(u.uri);
@@ -754,12 +757,64 @@ public class FilesFragment extends Fragment {
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onOptionsItemSelected(final MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_open) {
             Intent intent = item.getIntent();
             Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
             startActivity(open);
+            return true;
+        }
+        if (id == R.id.action_openimage) {
+            Intent intent = item.getIntent();
+            Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
+            open.setDataAndType(open.getData(), "image/*");
+            startActivity(open);
+            return true;
+        }
+        if (id == R.id.action_openaudio) {
+            Intent intent = item.getIntent();
+            Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
+            open.setDataAndType(open.getData(), "audio/*");
+            startActivity(open);
+            return true;
+        }
+        if (id == R.id.action_view) {
+            return true;
+        }
+        if (id == R.id.action_rename) {
+            final Intent intent = item.getIntent();
+            final OpenFileDialog.EditTextDialog dialog = new OpenFileDialog.EditTextDialog(getContext());
+            dialog.setTitle("Rename");
+            dialog.setText(storage.getName(intent.getData()));
+            dialog.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface d, int which) {
+                    storage.rename(intent.getData(), dialog.getText());
+                    load();
+                }
+            });
+            dialog.show();
+            return true;
+        }
+        if (id == R.id.action_delete) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+            builder.setTitle("Delete");
+            builder.setMessage(R.string.are_you_sure);
+            builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    Intent intent = item.getIntent();
+                    storage.delete(intent.getData());
+                    load();
+                }
+            });
+            builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                }
+            });
+            builder.show();
             return true;
         }
         if (id == R.id.action_share) {
@@ -815,6 +870,11 @@ public class FilesFragment extends Fragment {
             public void onDismiss() {
                 load();
             }
+
+            @Override
+            public void onNegative() {
+                d.dismiss();
+            }
         };
         String n = "Paste";
         if (app.copy != null)
@@ -829,7 +889,7 @@ public class FilesFragment extends Fragment {
             public void run() {
                 while (op.calc())
                     ;
-                Collections.sort(op.files, new SortReverse());
+                Collections.sort(op.files, new SortDelete());
                 while (op.filesIndex < op.files.size()) {
                     NativeFile f = op.files.get(op.filesIndex);
                     try {

@@ -7,8 +7,30 @@
         android:id="@+id/action_open"
         android:title="Open" />
     <item
-        android:id="@+id/action_share"
         android:orderInCategory="100"
+        android:id="@+id/action_openimage"
+        android:title="Open as Image" />
+    <item
+        android:orderInCategory="200"
+        android:id="@+id/action_openaudio"
+        android:title="Open as Audio" />
+    <item
+        android:orderInCategory="300"
+        android:id="@+id/action_view"
+        android:title="View" />
+    <item
+        android:id="@+id/action_share"
+        android:orderInCategory="400"
         android:title="Share"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_rename"
+        android:orderInCategory="400"
+        android:title="Rename"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_delete"
+        android:orderInCategory="400"
+        android:title="Delete"
         app:showAsAction="never" />
 </menu>
