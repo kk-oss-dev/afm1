@@ -23,14 +23,4 @@
         android:orderInCategory="400"
         android:title="Share"
         app:showAsAction="never" />
-    <item
-        android:id="@+id/action_rename"
-        android:orderInCategory="400"
-        android:title="Rename"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/action_delete"
-        android:orderInCategory="400"
-        android:title="Delete"
-        app:showAsAction="never" />
 </menu>

@@ -14,6 +14,7 @@ import com.github.axet.filemanager.R;
 public class SelectView extends LinearLayoutCompat implements CollapsibleActionView {
     public AppCompatImageButton open;
     public AppCompatImageButton share;
+    public AppCompatImageButton rename;
     public AppCompatImageButton copy;
     public AppCompatImageButton cut;
     public AppCompatImageButton delete;
@@ -63,6 +64,20 @@ public class SelectView extends LinearLayoutCompat implements CollapsibleActionV
             }
         });
         // addView(share);
+
+        rename = new AppCompatImageButton(getContext(), null, android.support.v7.appcompat.R.attr.toolbarNavigationButtonStyle);
+        rename.setImageResource(R.drawable.ic_edit_black_24dp);
+        rename.setColorFilter(Color.WHITE);
+        lp = generateDefaultLayoutParams();
+        lp.gravity = GravityCompat.START;
+        rename.setLayoutParams(lp);
+        rename.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                collapseActionView();
+            }
+        });
+        addView(rename);
 
         copy = new AppCompatImageButton(getContext(), null, android.support.v7.appcompat.R.attr.toolbarNavigationButtonStyle);
         copy.setImageResource(R.drawable.ic_content_copy_black_24dp);

@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -75,6 +76,7 @@ public class FilesFragment extends Fragment {
     MenuItem toolbar;
     MenuItem paste;
     MenuItem pasteCancel;
+    SelectView select;
     ArrayList<Uri> selected = new ArrayList<>();
     BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -433,7 +435,7 @@ public class FilesFragment extends Fragment {
                             selected.remove(f.uri);
                         else
                             selected.add(f.uri);
-                        notifyDataSetChanged();
+                        updateSelection();
                         return;
                     }
                     if (f.dir) {
@@ -690,7 +692,7 @@ public class FilesFragment extends Fragment {
         paste = menu.findItem(R.id.action_paste);
         pasteCancel = menu.findItem(R.id.action_paste_cancel);
         updatePaste();
-        final SelectView select = (SelectView) MenuItemCompat.getActionView(toolbar);
+        select = (SelectView) MenuItemCompat.getActionView(toolbar);
         select.listener = new CollapsibleActionView() {
             @Override
             public void onActionViewExpanded() {
@@ -754,6 +756,24 @@ public class FilesFragment extends Fragment {
                 builder.show();
             }
         });
+        select.rename.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final Uri f = selected.get(0);
+                final OpenFileDialog.EditTextDialog dialog = new OpenFileDialog.EditTextDialog(getContext());
+                dialog.setTitle("Rename");
+                dialog.setText(storage.getName(f));
+                dialog.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int which) {
+                        storage.rename(f, dialog.getText());
+                        load();
+                        closeSelection();
+                    }
+                });
+                dialog.show();
+            }
+        });
     }
 
     @Override
@@ -780,41 +800,6 @@ public class FilesFragment extends Fragment {
             return true;
         }
         if (id == R.id.action_view) {
-            return true;
-        }
-        if (id == R.id.action_rename) {
-            final Intent intent = item.getIntent();
-            final OpenFileDialog.EditTextDialog dialog = new OpenFileDialog.EditTextDialog(getContext());
-            dialog.setTitle("Rename");
-            dialog.setText(storage.getName(intent.getData()));
-            dialog.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface d, int which) {
-                    storage.rename(intent.getData(), dialog.getText());
-                    load();
-                }
-            });
-            dialog.show();
-            return true;
-        }
-        if (id == R.id.action_delete) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-            builder.setTitle("Delete");
-            builder.setMessage(R.string.are_you_sure);
-            builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    Intent intent = item.getIntent();
-                    storage.delete(intent.getData());
-                    load();
-                }
-            });
-            builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                }
-            });
-            builder.show();
             return true;
         }
         if (id == R.id.action_share) {
@@ -845,12 +830,23 @@ public class FilesFragment extends Fragment {
         app.cut = null;
         updatePaste();
         MenuItemCompat.expandActionView(toolbar);
+        updateSelection();
+    }
+
+    public void updateSelection() {
+        if (selected.size() == 1) {
+            select.rename.setEnabled(true);
+            select.rename.setColorFilter(Color.WHITE);
+        } else {
+            select.rename.setEnabled(false);
+            select.rename.setColorFilter(Color.GRAY);
+        }
         adapter.notifyDataSetChanged();
     }
 
     public void closeSelection() {
         MenuItemCompat.collapseActionView(toolbar);
-        adapter.notifyDataSetChanged();
+        updateSelection();
     }
 
     public void paste() {
