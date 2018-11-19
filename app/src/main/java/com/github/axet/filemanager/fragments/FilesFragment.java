@@ -18,6 +18,7 @@ import android.provider.DocumentsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.provider.DocumentFile;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AlertDialog;
@@ -25,6 +26,7 @@ import android.support.v7.view.CollapsibleActionView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -54,16 +56,30 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 
 public class FilesFragment extends Fragment {
+    public static final String TAG = FilesFragment.class.getSimpleName();
+
     public static final int RESULT_PERMS = 1;
 
     public static final String PASTE_UPDATE = FilesFragment.class.getCanonicalName() + ".PASTE_UPDATE";
+
+    public static final SimpleDateFormat SIMPLE = new SimpleDateFormat("yyyy-MM-dd HH.mm.ss");
+    public static final SimpleDateFormat ISO8601 = new SimpleDateFormat("yyyyMMdd\'T\'HHmmss");
+
+    public static final NumberFormat BYTES = new DecimalFormat("###,###,###,###,###.#", new DecimalFormatSymbols() {{
+        setGroupingSeparator(' ');
+    }});
 
     Handler handler = new Handler();
     FilesApplication app;
@@ -98,13 +114,15 @@ public class FilesFragment extends Fragment {
         return str;
     }
 
-    public static class PendingOperation {
+    public static class PendingOperation implements Runnable {
         Context context;
         ContentResolver resolver;
         Storage storage;
+        SharedPreferences shared;
 
         int calcIndex;
         ArrayList<Uri> calcs;
+        ArrayList<Uri> calcsStart; // initial calcs dir for UI
         Uri calcUri;
 
         int filesIndex;
@@ -112,23 +130,30 @@ public class FilesFragment extends Fragment {
 
         InputStream is;
         OutputStream os;
-        SpeedInfo info; // speed info
+        Uri t; // target file, to update last modified time or delete in case of errors
+
+        SpeedInfo info = new SpeedInfo(); // speed info
         long current; // current file transfers
         long processed; // processed files bytes
         long total; // total size of all files
 
-        boolean readonly; // delete/overwrite file marked readonly without confarmation?
-        boolean small; // overwrite file smaller then source
-        boolean newer; // overwrite same size file but newer date
+        EnumSet<OPERATION> small = EnumSet.of(OPERATION.ASK); // overwrite file smaller then source
+        EnumSet<OPERATION> big = EnumSet.of(OPERATION.ASK); // overwrite file bigger then source
+        EnumSet<OPERATION> newer = EnumSet.of(OPERATION.ASK); // overwrite same size file but newer date
+        EnumSet<OPERATION> same = EnumSet.of(OPERATION.ASK); // same file size and date
 
         byte[] buf = new byte[SuperUser.BUF_SIZE];
+
+        enum OPERATION {NONE, ASK, SKIP, OVERWRITE}
 
         public PendingOperation(Context context, Uri root, ArrayList<Uri> ff) {
             this.context = context;
             this.resolver = context.getContentResolver();
             this.storage = new Storage(context);
+            this.shared = PreferenceManager.getDefaultSharedPreferences(context);
             calcIndex = 0;
-            calcs = ff;
+            calcs = new ArrayList<>(ff);
+            calcsStart = new ArrayList<>(ff);
             calcUri = root;
         }
 
@@ -141,15 +166,35 @@ public class FilesFragment extends Fragment {
         public void calc(Uri uri) {
             String s = uri.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {
-                File r = Storage.getFile(calcUri);
-                File f = Storage.getFile(uri);
-                files.add(new NativeFile(uri, f.getPath().substring(r.getPath().length()), f.isDirectory(), f.length()));
-                total += f.length();
-                if (f.isDirectory()) {
-                    File[] kk = f.listFiles();
-                    if (kk != null) {
-                        for (File k : kk)
-                            calc(Uri.fromFile(k));
+                if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
+                    File r = Storage.getFile(calcUri);
+                    ArrayList<File> ff = SuperUser.ls(uri);
+                    boolean found = false;
+                    for (File f : ff) {
+                        NativeFile k = new NativeFile(Uri.fromFile(f), f.getPath().substring(r.getPath().length()), f.isDirectory(), f.length(), f.lastModified());
+                        if (k.uri.equals(uri))
+                            found = true;
+                        files.add(k);
+                        if (f.isDirectory())
+                            calcs.add(Uri.fromFile(f));
+                        else
+                            total += f.length();
+                    }
+                    if (!found) { // directories not listed from 'ls', adding...
+                        File f = Storage.getFile(uri);
+                        files.add(new NativeFile(uri, f.getPath().substring(r.getPath().length()), f.isDirectory(), f.length(), f.lastModified()));
+                    }
+                } else {
+                    File r = Storage.getFile(calcUri);
+                    File f = Storage.getFile(uri);
+                    files.add(new NativeFile(uri, f.getPath().substring(r.getPath().length()), f.isDirectory(), f.length(), f.lastModified()));
+                    total += f.length();
+                    if (f.isDirectory()) {
+                        File[] kk = f.listFiles();
+                        if (kk != null) {
+                            for (File k : kk)
+                                calcs.add(Uri.fromFile(k));
+                        }
                     }
                 }
             } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
@@ -167,8 +212,9 @@ public class FilesFragment extends Fragment {
                         String type = cursor.getString(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_MIME_TYPE));
                         String name = cursor.getString(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
                         long size = cursor.getLong(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE));
+                        long last = cursor.getLong(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_LAST_MODIFIED));
                         boolean d = type.equals(DocumentsContract.Document.MIME_TYPE_DIR);
-                        files.add(new NativeFile(uri, id.substring(r.length()), d, size));
+                        files.add(new NativeFile(uri, id.substring(r.length()), d, size, last));
                         total += size;
                         if (d) {
                             Uri doc = DocumentsContract.buildChildDocumentsUriUsingTree(uri, id);
@@ -177,7 +223,7 @@ public class FilesFragment extends Fragment {
                                 while (cursor2.moveToNext()) {
                                     id = cursor2.getString(cursor2.getColumnIndex(DocumentsContract.Document.COLUMN_DOCUMENT_ID));
                                     Uri child = DocumentsContract.buildDocumentUriUsingTree(doc, id);
-                                    calc(child);
+                                    calcs.add(child);
                                 }
                                 cursor2.close();
                             }
@@ -190,11 +236,15 @@ public class FilesFragment extends Fragment {
             }
         }
 
-        public void open(NativeFile f, Uri to) throws IOException {
+        public void open(final NativeFile f, Uri to) throws IOException {
             String s = f.uri.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {
-                File k = Storage.getFile(f.uri);
-                is = new FileInputStream(k);
+                if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
+                    is = SuperUser.cat(f.uri);
+                } else {
+                    File k = Storage.getFile(f.uri);
+                    is = new FileInputStream(k);
+                }
             } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
                 is = resolver.openInputStream(f.uri);
             } else {
@@ -203,11 +253,17 @@ public class FilesFragment extends Fragment {
             s = to.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 File k = Storage.getFile(to);
-                File m = new File(k, f.name);
-                os = new FileOutputStream(m);
+                final File m = new File(k, f.name);
+                if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
+                    os = SuperUser.write(Uri.fromFile(m));
+                } else {
+                    os = new FileOutputStream(m);
+                }
+                t = Uri.fromFile(m);
             } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
                 Uri doc = storage.createFile(to, f.name);
                 os = resolver.openOutputStream(doc);
+                t = doc;
             } else {
                 throw new Storage.UnknownUri();
             }
@@ -215,7 +271,12 @@ public class FilesFragment extends Fragment {
         }
 
         public void delete(NativeFile f) {
-            storage.delete(f.uri);
+            if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
+                File k = Storage.getFile(f.uri);
+                SuperUser.delete(k);
+            } else {
+                storage.delete(f.uri);
+            }
         }
 
         public void close(NativeFile f) throws IOException {
@@ -226,6 +287,62 @@ public class FilesFragment extends Fragment {
             if (os != null) {
                 os.close();
                 os = null;
+            }
+            String s = t.getScheme();
+            if (s.equals(ContentResolver.SCHEME_FILE)) {
+                File k = Storage.getFile(t);
+                if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
+                    SuperUser.touch(k, f.last);
+                } else {
+                    k.setLastModified(f.last);
+                }
+            } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+                ; // not supported
+            } else {
+                throw new Storage.UnknownUri();
+            }
+            t = null;
+        }
+
+        public void close() {
+            try {
+                if (is != null) {
+                    is.close();
+                    is = null;
+                }
+                if (os != null) {
+                    os.close();
+                    os = null;
+                }
+                if (t != null) {
+                    String s = t.getScheme();
+                    if (s.equals(ContentResolver.SCHEME_FILE)) {
+                        File k = Storage.getFile(t);
+                        if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
+                            SuperUser.delete(k);
+                        } else {
+                            storage.delete(t);
+                        }
+                    } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+                        storage.delete(t);
+                    }
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public Uri target(NativeFile f, Uri to) {
+            String s = to.getScheme();
+            if (s.equals(ContentResolver.SCHEME_FILE)) {
+                File k = Storage.getFile(to);
+                File m = new File(k, f.name);
+                return Uri.fromFile(m);
+            } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
+                Uri doc = storage.child(to, f.name);
+                return doc;
+            } else {
+                throw new Storage.UnknownUri();
             }
         }
 
@@ -242,6 +359,18 @@ public class FilesFragment extends Fragment {
             }
         }
 
+        public EnumSet<OPERATION> check(NativeFile f, NativeFile t) { // ask user for confirmations?
+            if (t.size < f.size)
+                return small;
+            if (t.size > f.size)
+                return big;
+            if (t.size == f.size && t.last > f.last)
+                return newer;
+            if (t.size == f.size && t.last == f.last)
+                return same;
+            return EnumSet.of(OPERATION.NONE); // not asking
+        }
+
         public boolean copy() throws IOException {
             int len;
             if ((len = is.read(buf)) < 0)
@@ -250,6 +379,10 @@ public class FilesFragment extends Fragment {
             current += len;
             processed += len;
             return true;
+        }
+
+        @Override
+        public void run() {
         }
     }
 
@@ -268,10 +401,6 @@ public class FilesFragment extends Fragment {
 
         public PasteBuilder(Context context) {
             super(context);
-        }
-
-        @Override
-        public AlertDialog create() {
             setCancelable(false);
             LayoutInflater inflater = LayoutInflater.from(getContext());
             v = inflater.inflate(R.layout.paste, null);
@@ -301,7 +430,10 @@ public class FilesFragment extends Fragment {
                     PasteBuilder.this.onDismiss();
                 }
             });
+        }
 
+        @Override
+        public AlertDialog create() {
             d = super.create();
             d.setOnShowListener(new DialogInterface.OnShowListener() {
                 @Override
@@ -339,12 +471,8 @@ public class FilesFragment extends Fragment {
             return super.show();
         }
 
-        public void post(Throwable e) {
-            ;
-        }
-
-        public void postDismiss() {
-            ;
+        public void dismiss() {
+            d.dismiss();
         }
     }
 
@@ -373,12 +501,14 @@ public class FilesFragment extends Fragment {
         public String name;
         public long size;
         public Uri uri;
+        public long last;
 
-        public NativeFile(Uri uri, String n, boolean dir, long size) {
+        public NativeFile(Uri uri, String n, boolean dir, long size, long last) {
             this.uri = uri;
             this.name = n;
             this.dir = dir;
             this.size = size;
+            this.last = last;
         }
 
         public NativeFile(File f) {
@@ -386,6 +516,15 @@ public class FilesFragment extends Fragment {
             this.name = f.getName();
             this.dir = f.isDirectory();
             this.size = f.length();
+            this.last = f.lastModified();
+        }
+
+        public NativeFile(DocumentFile f) {
+            this.uri = f.getUri();
+            this.name = f.getName();
+            this.dir = f.isDirectory();
+            this.size = f.length();
+            this.last = f.lastModified();
         }
 
         @Override
@@ -648,7 +787,7 @@ public class FilesFragment extends Fragment {
                 File[] ff = file.listFiles();
                 if (ff != null) {
                     for (File f : ff) {
-                        adapter.files.add(new NativeFile(Uri.fromFile(f), f.getName(), f.isDirectory(), f.length()));
+                        adapter.files.add(new NativeFile(Uri.fromFile(f), f.getName(), f.isDirectory(), f.length(), f.lastModified()));
                     }
                 }
             }
@@ -667,8 +806,9 @@ public class FilesFragment extends Fragment {
                     String type = cursor.getString(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_MIME_TYPE));
                     String name = cursor.getString(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
                     long size = cursor.getLong(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE));
+                    long last = cursor.getLong(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_LAST_MODIFIED));
                     Uri u = DocumentsContract.buildDocumentUriUsingTree(uri, id);
-                    adapter.files.add(new NativeFile(u, name, type.equals(DocumentsContract.Document.MIME_TYPE_DIR), size));
+                    adapter.files.add(new NativeFile(u, name, type.equals(DocumentsContract.Document.MIME_TYPE_DIR), size, last));
                 }
                 cursor.close();
             }
@@ -741,11 +881,12 @@ public class FilesFragment extends Fragment {
                         Collections.sort(op.files, new SortDelete());
                         while (op.filesIndex < op.files.size()) {
                             NativeFile u = op.files.get(op.filesIndex);
-                            storage.delete(u.uri);
+                            op.delete(u);
                             op.filesIndex++;
                         }
                         closeSelection();
                         load();
+                        Toast.makeText(getContext(), "Deleted " + op.files.size() + " files", Toast.LENGTH_SHORT).show();
                     }
                 });
                 builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -785,14 +926,24 @@ public class FilesFragment extends Fragment {
             startActivity(open);
             return true;
         }
-        if (id == R.id.action_openimage) {
+        if (id == R.id.action_openas) {
+            return true;
+        }
+        if (id == R.id.action_openastext) {
+            Intent intent = item.getIntent();
+            Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
+            open.setDataAndType(open.getData(), "text/*");
+            startActivity(open);
+            return true;
+        }
+        if (id == R.id.action_openasimage) {
             Intent intent = item.getIntent();
             Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
             open.setDataAndType(open.getData(), "image/*");
             startActivity(open);
             return true;
         }
-        if (id == R.id.action_openaudio) {
+        if (id == R.id.action_openasaudio) {
             Intent intent = item.getIntent();
             Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
             open.setDataAndType(open.getData(), "audio/*");
@@ -855,11 +1006,10 @@ public class FilesFragment extends Fragment {
             ff = app.copy;
         if (app.cut != null)
             ff = app.cut;
-        final PendingOperation op = new PendingOperation(getContext(), app.uri, ff);
         final PasteBuilder builder = new PasteBuilder(getContext()) {
             @Override
             public void onNeutral() {
-                pasteConflict();
+                ;
             }
 
             @Override
@@ -869,50 +1019,158 @@ public class FilesFragment extends Fragment {
 
             @Override
             public void onNegative() {
-                d.dismiss();
+                dismiss();
             }
         };
-        String n = "Paste";
+        final String n;
         if (app.copy != null)
             n = "Copying";
-        if (app.cut != null)
+        else if (app.cut != null)
             n = "Move";
+        else
+            n = "Paste";
         builder.setTitle(n);
-        final AlertDialog d = builder.create();
 
-        Thread thread = new Thread() {
+        final PendingOperation op = new PendingOperation(getContext(), app.uri, ff) {
             @Override
             public void run() {
-                while (op.calc())
-                    ;
-                Collections.sort(op.files, new SortDelete());
-                while (op.filesIndex < op.files.size()) {
-                    NativeFile f = op.files.get(op.filesIndex);
-                    try {
-                        if (f.dir) {
-                            op.mkdirs(f, uri);
+                try {
+                    if (calcIndex < calcs.size()) {
+                        calc();
+                        builder.copy.setText("Calculating: " + storage.getDisplayName(files.get(files.size() - 1).uri));
+                        builder.filesCount.setText(filesIndex + " / " + files.size());
+                        builder.progressFile.setProgress(0);
+                        builder.progressTotal.setProgress(0);
+                        builder.filesTotal.setText(FilesApplication.formatSize(context, 0) + " / " + FilesApplication.formatSize(context, total));
+                        if (calcsStart.size() == 1) {
+                            builder.from.setText("From: " + storage.getDisplayName(calcsStart.get(0)));
                         } else {
-                            op.open(f, uri);
-                            while (op.copy())
-                                ;
-                            op.close(f);
+                            String str = "From: " + storage.getDisplayName(calcUri) + "{";
+                            for (Uri u : calcsStart)
+                                str += Storage.getDocumentName(u) + ",";
+                            str = stripRight(str, ",");
+                            str += "}";
+                            builder.from.setText(str);
                         }
-                        if (app.cut != null)
-                            op.delete(f);
-                    } catch (IOException e) {
-                        builder.post(e);
+                        builder.to.setText("To: " + storage.getDisplayName(uri));
+                        post();
+                        return;
                     }
-                    op.filesIndex++;
+                    if (is != null && os != null) {
+                        NativeFile f = files.get(filesIndex);
+                        int old = filesIndex;
+                        Uri oldt = t;
+                        try {
+                            if (!copy()) { // done?
+                                close(f);
+                                if (app.cut != null)
+                                    delete(f);
+                                filesIndex++;
+                            }
+                            info.step(current);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                        int a = info.getAverageSpeed();
+                        String e;
+                        long diff = 0;
+                        if (a > 0) {
+                            diff = (f.size - current) * 1000 / a;
+                        }
+                        if (diff > 0)
+                            e = FilesApplication.formatLeftExact(context, diff);
+                        else
+                            e = "∞";
+                        builder.copy.setText(n + " " + FilesApplication.formatSize(context, a) + "/s" + ", " + e);
+                        builder.filesCount.setText(old + " / " + files.size());
+                        builder.progressFile.setProgress((int) (current * 100 / f.size));
+                        builder.progressTotal.setProgress((int) (processed * 100 / total));
+                        builder.filesTotal.setText(FilesApplication.formatSize(context, processed) + " / " + FilesApplication.formatSize(context, total));
+                        builder.from.setText("From: " + storage.getDisplayName(f.uri));
+                        builder.to.setText("To: " + storage.getDisplayName(oldt));
+                        post();
+                        return;
+                    }
+                    if (filesIndex < files.size()) {
+                        NativeFile f = files.get(filesIndex);
+                        try {
+                            if (f.dir) {
+                                mkdirs(f, uri);
+                                filesIndex++;
+                            } else {
+                                String s = uri.getScheme();
+                                NativeFile t = null;
+                                if (s.equals(ContentResolver.SCHEME_FILE)) {
+                                    File k = Storage.getFile(uri);
+                                    File m = new File(k, f.name);
+                                    if (m.exists())
+                                        t = new NativeFile(m);
+                                } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
+                                    Uri doc = DocumentsContract.buildDocumentUriUsingTree(uri, f.name);
+                                    DocumentFile k = DocumentFile.fromSingleUri(context, doc);
+                                    if (k.exists())
+                                        t = new NativeFile(k);
+                                } else {
+                                    throw new Storage.UnknownUri();
+                                }
+                                if (t != null) {
+                                    switch (check(f, t).iterator().next()) {
+                                        case NONE:
+                                            break;
+                                        case ASK:
+                                            pasteConflict(this, builder, f, t);
+                                            return;
+                                        case SKIP:
+                                            filesIndex++;
+                                            post();
+                                            return;
+                                        case OVERWRITE:
+                                            storage.delete(t.uri);
+                                            break;
+                                    }
+                                }
+                                open(f, uri);
+                                info.start(current);
+                            }
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                        post();
+                        return;
+                    }
+                    builder.dismiss(); // all done!
+                } catch (RuntimeException e) {
+                    pasteError(e);
                 }
-                builder.postDismiss();
+            }
+
+            public void post() {
+                handler.removeCallbacks(this);
+                handler.post(this);
             }
         };
-        thread.start();
+        op.run();
 
+        builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                builder.onDismiss();
+                handler.removeCallbacks(op);
+            }
+        });
+        final AlertDialog d = builder.create();
         d.show();
     }
 
-    public void pasteConflict() {
+    public void pasteError(Throwable e) {
+        Log.e(TAG, "paste", e);
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("Error");
+        builder.setMessage(e.getMessage());
+        builder.show();
+    }
+
+    public void pasteConflict(final PendingOperation op, final PasteBuilder paste, final NativeFile f, final NativeFile t) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         String n = "Paste";
         if (app.copy != null)
@@ -920,13 +1178,70 @@ public class FilesFragment extends Fragment {
         if (app.cut != null)
             n = "Move conflict";
         builder.setTitle(n);
-        builder.setView(R.layout.paste_conflict);
+        LayoutInflater inflater = LayoutInflater.from(getContext());
+        View v = inflater.inflate(R.layout.paste_conflict, null);
+        builder.setView(v);
+        builder.setCancelable(false);
         builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                ;
+                op.close();
+                paste.dismiss();
             }
         });
-        builder.show();
+
+        final AlertDialog d = builder.create();
+
+        TextView target = (TextView) v.findViewById(R.id.target);
+        TextView source = (TextView) v.findViewById(R.id.source);
+
+        View overwrite = v.findViewById(R.id.overwrite);
+        overwrite.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                op.delete(t);
+                op.run();
+                d.dismiss();
+            }
+        });
+
+        View overwriteall = v.findViewById(R.id.overwriteall);
+        overwriteall.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EnumSet<PendingOperation.OPERATION> o = op.check(f, t);
+                o.clear();
+                o.add(PendingOperation.OPERATION.OVERWRITE);
+                op.run();
+                d.dismiss();
+            }
+        });
+
+        View skip = v.findViewById(R.id.skip);
+        skip.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                op.filesIndex++;
+                op.run();
+                d.dismiss();
+            }
+        });
+
+        View skipall = v.findViewById(R.id.skipall);
+        skipall.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EnumSet<PendingOperation.OPERATION> o = op.check(f, t);
+                o.clear();
+                o.add(PendingOperation.OPERATION.SKIP);
+                op.run();
+                d.dismiss();
+            }
+        });
+
+        target.setText("Overwrite: " + storage.getDisplayName(t.uri) + "\n\t\t" + BYTES.format(t.size) + " bytes, " + SIMPLE.format(t.last));
+        source.setText("With: " + storage.getDisplayName(f.uri) + "\n\t\t" + BYTES.format(f.size) + " bytes, " + SIMPLE.format(f.last));
+
+        d.show();
     }
 }

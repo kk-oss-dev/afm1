@@ -3,20 +3,30 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.github.axet.filemanager.activitites.MainActivity">
     <item
-        android:orderInCategory="000"
         android:id="@+id/action_open"
+        android:orderInCategory="000"
         android:title="Open" />
     <item
-        android:orderInCategory="100"
-        android:id="@+id/action_openimage"
-        android:title="Open as Image" />
+        android:id="@+id/action_openas"
+        android:title="Open as ...">
+        <menu>
+            <item
+                android:id="@+id/action_openastext"
+                android:orderInCategory="100"
+                android:title="Text" />
+            <item
+                android:id="@+id/action_openasimage"
+                android:orderInCategory="200"
+                android:title="Image" />
+            <item
+                android:id="@+id/action_openasaudio"
+                android:orderInCategory="300"
+                android:title="Audio" />
+        </menu>
+    </item>
     <item
-        android:orderInCategory="200"
-        android:id="@+id/action_openaudio"
-        android:title="Open as Audio" />
-    <item
-        android:orderInCategory="300"
         android:id="@+id/action_view"
+        android:orderInCategory="300"
         android:title="View" />
     <item
         android:id="@+id/action_share"

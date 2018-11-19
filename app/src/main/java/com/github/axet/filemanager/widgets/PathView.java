@@ -95,9 +95,9 @@ public class PathView extends HorizontalScrollView {
             if (n.isEmpty())
                 n = OpenFileDialog.ROOT;
             b.setText(n);
-            int p5 = ThemeUtils.dp2px(getContext(), 5);
+            int p15 = ThemeUtils.dp2px(getContext(), 15);
             int p10 = ThemeUtils.dp2px(getContext(), 10);
-            b.setPadding(p10, p5, p10, p5);
+            b.setPadding(p10, p15, p10, p15);
             final Uri u;
             String s = uri.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {

@@ -7,102 +7,65 @@
     android:padding="5dp">
 
     <TextView
+        android:id="@+id/target"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Overwrite: c:/file.txt
-        1 233 22 bytes, 2013-03-22 13:44:33" />
+        android:text="Overwrite: c:/file.txt\n\t1 233 22 bytes, 2013-03-22 13:44:33" />
+
+    <View
+        android:layout_width="0dp"
+        android:layout_height="5dp" />
 
     <TextView
+        android:id="@+id/source"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="With: c:/file.txt
-        1 222 11 bytes, 2011:03-22 11:11:11" />
+        android:text="With: c:/file.txt\n\t1 222 11 bytes, 2011:03-22 11:11:11" />
 
-    <LinearLayout
+    <TableLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:paddingLeft="40dp"
+        android:paddingRight="40dp">
 
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Overwrite" />
+        <TableRow>
 
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+            <Button
+                android:id="@+id/overwrite"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Overwrite" />
 
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Overwrite all" />
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
 
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+            <Button
+                android:id="@+id/skip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Skip" />
+        </TableRow>
 
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Skip" />
-    </LinearLayout>
+        <TableRow>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+            <Button
+                android:id="@+id/overwriteall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Overwrite all" />
 
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Cancel" />
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
 
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Overwrite all older" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Skip all" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Rename" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Append" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="2" />
-    </LinearLayout>
+            <Button
+                android:id="@+id/skipall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Skip all" />
+        </TableRow>
+    </TableLayout>
 </LinearLayout>

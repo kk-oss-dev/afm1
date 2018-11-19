@@ -4,18 +4,22 @@ import android.net.Uri;
 
 import com.github.axet.androidlibrary.app.Storage;
 
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
-    public static String LS = "ls {0} {1}";
+    public static final String BIN_LS = which("ls");
+
+    public static final SimpleDateFormat TOUCHDATE = new SimpleDateFormat("yyyyMMddHHmm.ss");
+
+    public static final String TOUCH = BIN_TOUCH + " -mct {0} {1}";
+    public static final String DELETE = BIN_RM + " -r {0}";
+    public static final String LS = BIN_LS + " -AlH {0}";
 
     public static class NativeFile extends File {
         long size;
@@ -41,7 +45,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     public static ArrayList<File> ls(Uri uri) {
         ArrayList<File> ff = new ArrayList<>();
         File f = Storage.getFile(uri);
-        Commands cmd = new Commands(MessageFormat.format(LS, "-Al", escape(f)));
+        Commands cmd = new Commands(MessageFormat.format(LS, escape(f)));
         cmd.stdout(true);
         Result r = su(cmd).must();
         Scanner scanner = new Scanner(r.stdout);
@@ -54,7 +58,10 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                 String size = m.group(5);
                 String name = m.group(6);
                 if (perms.startsWith("d")) {
-                    ff.add(new NativeFile(new File(f, name), true, Long.valueOf(size)));
+                    File k = new File(name);
+                    if (!f.equals(k))
+                        k = new File(f, name);
+                    ff.add(new NativeFile(k, true, Long.valueOf(size)));
                 } else if (perms.startsWith("l")) {
                     String[] ss = name.split("->");
                     name = ss[0].trim();
@@ -62,14 +69,28 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                     File t = new File(ss[1].trim());
                     if (t.isDirectory())
                         d = true;
-                    ff.add(new NativeFile(new File(f, name), d, Long.valueOf(size)));
+                    File k = new File(name);
+                    if (!f.equals(k))
+                        k = new File(f, name);
+                    ff.add(new NativeFile(k, d, Long.valueOf(size)));
                 } else {
-                    ff.add(new NativeFile(new File(f, name), false, Long.valueOf(size)));
+                    File k = new File(name);
+                    if (!f.equals(k))
+                        k = new File(f, name);
+                    ff.add(new NativeFile(k, false, Long.valueOf(size)));
                 }
             }
         }
         scanner.close();
         return ff;
+    }
+
+    public static Result touch(File f, long last) {
+        return su(TOUCH, TOUCHDATE.format(last), escape(f));
+    }
+
+    public static Result delete(File f) {
+        return su(DELETE, escape(f));
     }
 
     public static long length(Uri uri) {
