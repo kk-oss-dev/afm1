@@ -48,7 +48,7 @@ public class SelectView extends LinearLayoutCompat implements CollapsibleActionV
                 collapseActionView();
             }
         });
-        addView(open);
+        // addView(open);
 
         share = new AppCompatImageButton(getContext(), null, android.support.v7.appcompat.R.attr.toolbarNavigationButtonStyle);
         share.setImageResource(R.drawable.ic_share_black_24dp);
@@ -62,7 +62,7 @@ public class SelectView extends LinearLayoutCompat implements CollapsibleActionV
                 collapseActionView();
             }
         });
-        addView(share);
+        // addView(share);
 
         copy = new AppCompatImageButton(getContext(), null, android.support.v7.appcompat.R.attr.toolbarNavigationButtonStyle);
         copy.setImageResource(R.drawable.ic_content_copy_black_24dp);

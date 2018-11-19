@@ -1,7 +1,6 @@
 package com.github.axet.filemanager.app;
 
 import android.net.Uri;
-import android.util.Log;
 
 import com.github.axet.androidlibrary.app.Storage;
 
@@ -42,7 +41,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     public static ArrayList<File> ls(Uri uri) {
         ArrayList<File> ff = new ArrayList<>();
         File f = Storage.getFile(uri);
-        Commands cmd = new Commands(MessageFormat.format(LS, "-Al", f.getPath()));
+        Commands cmd = new Commands(MessageFormat.format(LS, "-Al", escape(f)));
         cmd.stdout(true);
         Result r = su(cmd).must();
         Scanner scanner = new Scanner(r.stdout);
@@ -73,42 +72,11 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         return ff;
     }
 
-    public static InputStream cat(Uri uri) {
-        File f = Storage.getFile(uri);
-        Commands cmd = new Commands(MessageFormat.format("cat {0}", f.getPath()));
-        try {
-            final Process su = Runtime.getRuntime().exec(BIN_SU);
-            DataOutputStream os = new DataOutputStream(su.getOutputStream());
-            os.writeBytes(cmd.build());
-            os.flush();
-            os.writeBytes(BIN_EXIT + EOL);
-            os.flush();
-            return new InputStream() {
-                Process p = su;
-                InputStream is = p.getInputStream();
-
-                @Override
-                public int read() throws IOException {
-                    return is.read();
-                }
-
-                @Override
-                public void close() throws IOException {
-                    super.close();
-                    p.destroy();
-                }
-            };
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public static long length(Uri uri) {
         File f = Storage.getFile(uri);
-        Commands cmd = new Commands(MessageFormat.format("stat -c%s {0}", f.getPath()));
+        Commands cmd = new Commands(MessageFormat.format("stat -c%s {0}", escape(f)));
         cmd.stdout(true);
         Result r = su(cmd);
         return Long.valueOf(r.stdout.trim());
     }
-
 }

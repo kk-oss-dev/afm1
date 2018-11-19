@@ -23,6 +23,7 @@ public class FilesApplication extends MainApplication {
     public Bookmarks bookmarks;
     public ArrayList<Uri> copy; // selected files
     public ArrayList<Uri> cut; // selected files
+    public Uri uri; // selected root
 
     public static FilesApplication from(Context context) {
         return (FilesApplication) MainApplication.from(context);
