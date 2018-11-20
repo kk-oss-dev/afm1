@@ -19,3 +19,10 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-dontobfuscate
+
+-dontwarn com.github.axet.wget.**
+-dontwarn org.apache.commons.**
+
+-keep class com.github.axet.androidlibrary.widgets.SearchView {*;}
