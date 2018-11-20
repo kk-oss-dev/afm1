@@ -42,6 +42,7 @@ import android.view.animation.Transformation;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.github.axet.androidlibrary.app.Storage;
 import com.github.axet.androidlibrary.widgets.AboutPreferenceCompat;
@@ -403,6 +404,11 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                     app.bookmarks.save();
                     reloadMenu();
                 }
+
+                @Override
+                public void onRequestPermissionsFailed(String[] permissions) {
+                    Toast.makeText(context, R.string.not_permitted, Toast.LENGTH_SHORT).show();
+                }
             };
             choicer.setPermissionsDialog(this, Storage.PERMISSIONS_RW, RESULT_ADDBOOKMARK);
             choicer.show(null);
@@ -504,7 +510,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
             case RESULT_ADDBOOKMARK:
-                choicer.onRequestPermissionsFailed(permissions);
+                choicer.onRequestPermissionsResult(permissions, grantResults);
                 break;
         }
     }
