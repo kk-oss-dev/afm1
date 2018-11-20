@@ -44,6 +44,7 @@ import android.widget.TextView;
 
 import com.github.axet.androidlibrary.app.Storage;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
+import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.androidlibrary.widgets.Toast;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activitites.MainActivity;
@@ -183,7 +184,7 @@ public class FilesFragment extends Fragment {
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 File r = Storage.getFile(calcUri);
                 if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
-                    ArrayList<File> ff = SuperUser.ls(SuperUser.LSa, uri);
+                    ArrayList<File> ff = SuperUser.ls(SuperUser.LSa, Storage.getFile(uri));
                     for (File f : ff) {
                         NativeFile k = new NativeFile(Uri.fromFile(f), f.getPath().substring(r.getPath().length()), f.isDirectory(), f.length(), f.lastModified());
                         files.add(k);
@@ -245,21 +246,25 @@ public class FilesFragment extends Fragment {
             }
         }
 
-        public void open(final NativeFile f, Uri to) throws IOException {
-            String s = f.uri.getScheme();
+        public InputStream open(Uri uri) throws IOException {
+            String s = uri.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
-                    is = SuperUser.cat(f.uri);
+                    return SuperUser.cat(uri);
                 } else {
-                    File k = Storage.getFile(f.uri);
-                    is = new FileInputStream(k);
+                    File k = Storage.getFile(uri);
+                    return new FileInputStream(k);
                 }
             } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
-                is = resolver.openInputStream(f.uri);
+                return resolver.openInputStream(uri);
             } else {
                 throw new Storage.UnknownUri();
             }
-            s = to.getScheme();
+        }
+
+        public void open(final NativeFile f, Uri to) throws IOException {
+            is = open(f.uri);
+            String s = to.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 File k = Storage.getFile(to);
                 final File m = new File(k, f.name);
@@ -357,7 +362,7 @@ public class FilesFragment extends Fragment {
             }
         }
 
-        public Uri target(NativeFile f, Uri to) {
+        public Uri target(Uri to, NativeFile f) {
             String s = to.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 File k = Storage.getFile(to);
@@ -371,7 +376,7 @@ public class FilesFragment extends Fragment {
             }
         }
 
-        public void mkdir(String name, Uri to) {
+        public void mkdir(Uri to, String name) {
             String s = to.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 File k = Storage.getFile(to);
@@ -386,6 +391,50 @@ public class FilesFragment extends Fragment {
                 Uri doc = storage.createFolder(to, name);
                 if (doc == null)
                     throw new RuntimeException("Unable to create dir: " + name);
+            } else {
+                throw new Storage.UnknownUri();
+            }
+        }
+
+        public long length(Uri uri) {
+            String s = uri.getScheme();
+            if (s.equals(ContentResolver.SCHEME_FILE)) {
+                File k = Storage.getFile(uri);
+                if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
+                    return SuperUser.length(k);
+                } else {
+                    return k.length();
+                }
+            } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+                return storage.getLength(uri);
+            } else {
+                throw new Storage.UnknownUri();
+            }
+        }
+
+        public void touch(Uri to, String name) {
+            String s = to.getScheme();
+            if (s.equals(ContentResolver.SCHEME_FILE)) {
+                File k = Storage.getFile(to);
+                File m = new File(k, name);
+                if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
+                    SuperUser.touch(m).must();
+                } else {
+                    if (!m.exists()) {
+                        try {
+                            new FileOutputStream(m).close();
+                            return;
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    if (!m.setLastModified(System.currentTimeMillis()))
+                        throw new RuntimeException("unable to touch: " + m);
+                }
+            } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+                Uri doc = storage.createFile(to, name);
+                if (doc == null)
+                    throw new RuntimeException("Unable to create file: " + name);
             } else {
                 throw new Storage.UnknownUri();
             }
@@ -625,7 +674,9 @@ public class FilesFragment extends Fragment {
 
         public Holder(View itemView) {
             super(itemView);
+            int accent = ThemeUtils.getThemeColor(getContext(), R.attr.colorAccent);
             icon = (ImageView) itemView.findViewById(R.id.icon);
+            icon.setColorFilter(accent);
             name = (TextView) itemView.findViewById(R.id.name);
             circle = itemView.findViewById(R.id.circle);
             unselected = itemView.findViewById(R.id.unselected);
@@ -860,7 +911,7 @@ public class FilesFragment extends Fragment {
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
             if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
                 try {
-                    ArrayList<File> ff = SuperUser.ls(SuperUser.LSA, uri);
+                    ArrayList<File> ff = SuperUser.ls(SuperUser.LSA, Storage.getFile(uri));
                     for (File f : ff)
                         adapter.files.add(new NativeFile(f));
                 } catch (RuntimeException e) {
@@ -944,6 +995,11 @@ public class FilesFragment extends Fragment {
             startActivity(open);
             return true;
         }
+        if (id == R.id.action_view) {
+            MainActivity main = (MainActivity) getActivity();
+            main.openHex(item.getIntent().getData());
+            return true;
+        }
         if (id == R.id.action_openas) {
             return true;
         }
@@ -966,9 +1022,6 @@ public class FilesFragment extends Fragment {
             Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
             open.setDataAndType(open.getData(), "audio/*");
             startActivity(open);
-            return true;
-        }
-        if (id == R.id.action_view) {
             return true;
         }
         if (id == R.id.action_share) {
@@ -997,7 +1050,7 @@ public class FilesFragment extends Fragment {
             app.uri = uri;
             updatePaste();
             closeSelection();
-            Toast.makeText(getContext(), "Copied " + app.copy.size() + " files", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), getString(R.string.toast_files_copied, app.copy.size()), Toast.LENGTH_SHORT).show();
             return true;
         }
         if (id == R.id.action_cut) {
@@ -1006,28 +1059,28 @@ public class FilesFragment extends Fragment {
             app.uri = uri;
             updatePaste();
             closeSelection();
-            Toast.makeText(getContext(), "Cut " + app.cut.size() + " files", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), getString(R.string.toast_files_cut, app.cut.size()), Toast.LENGTH_SHORT).show();
             return true;
         }
         if (id == R.id.action_delete) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-            builder.setTitle("Delete");
+            builder.setTitle(R.string.files_delete);
             builder.setMessage(R.string.are_you_sure);
             builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     final PasteBuilder paste = new PasteBuilder(getContext());
-                    paste.setTitle("Deleting");
+                    paste.setTitle(getString(R.string.files_deleting));
                     final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
                         @Override
                         public void run() {
                             if (calcIndex < calcs.size()) {
                                 if (!calc())
                                     Collections.sort(files, new SortDelete());
-                                paste.copy.setText("Calculating: " + formatCalc());
+                                paste.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
                                 paste.update(this);
                                 paste.progressFile.setVisibility(View.GONE);
-                                paste.from.setText("Deleting: " + formatStart());
+                                paste.from.setText(getString(R.string.files_deleting) + ": " + formatStart());
                                 paste.to.setVisibility(View.GONE);
                                 post();
                                 return;
@@ -1042,7 +1095,7 @@ public class FilesFragment extends Fragment {
                                 paste.copy.setVisibility(View.GONE);
                                 paste.update(this, old, f);
                                 paste.progressFile.setVisibility(View.GONE);
-                                paste.from.setText("Deleting: " + storage.getDisplayName(f.uri));
+                                paste.from.setText(getString(R.string.files_deleting) + ": " + storage.getDisplayName(f.uri));
                                 paste.to.setVisibility(View.GONE);
                                 post();
                                 return;
@@ -1050,7 +1103,7 @@ public class FilesFragment extends Fragment {
                             paste.dismiss();
                             closeSelection();
                             reload();
-                            Toast.makeText(getContext(), "Deleted " + files.size() + " files", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), getString(R.string.toast_files_deleted, files.size()), Toast.LENGTH_SHORT).show();
                         }
 
                         public void post() {
@@ -1080,7 +1133,7 @@ public class FilesFragment extends Fragment {
         if (id == R.id.action_rename && item.isEnabled()) {
             final Uri f = selected.get(0);
             final OpenFileDialog.EditTextDialog dialog = new OpenFileDialog.EditTextDialog(getContext());
-            dialog.setTitle("Rename");
+            dialog.setTitle(R.string.files_rename);
             dialog.setText(storage.getName(f));
             dialog.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                 @Override
@@ -1137,9 +1190,9 @@ public class FilesFragment extends Fragment {
         final PasteBuilder paste = new PasteBuilder(getContext());
         final String n;
         if (app.copy != null)
-            n = "Copying";
+            n = getString(R.string.files_copying);
         else if (app.cut != null)
-            n = "Move";
+            n = getString(R.string.files_moving);
         else
             n = "Paste";
         paste.setTitle(n);
@@ -1153,7 +1206,7 @@ public class FilesFragment extends Fragment {
                 try {
                     if (calcIndex < calcs.size()) {
                         calc();
-                        paste.copy.setText(getString(R.string.copy_calculating) + formatCalc());
+                        paste.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
                         paste.update(this);
                         paste.from.setText(getString(R.string.copy_from) + formatStart());
                         paste.to.setText(getString(R.string.copy_to) + storage.getDisplayName(uri));
@@ -1211,7 +1264,7 @@ public class FilesFragment extends Fragment {
                         NativeFile f = files.get(filesIndex);
                         try {
                             if (f.dir) {
-                                mkdir(f.name, uri);
+                                mkdir(uri, f.name);
                                 filesIndex++;
                                 if (app.cut != null) {
                                     delete.add(f);
@@ -1265,7 +1318,7 @@ public class FilesFragment extends Fragment {
                         paste.copy.setVisibility(View.GONE);
                         paste.progressFile.setVisibility(View.GONE);
                         paste.progressTotal.setVisibility(View.GONE);
-                        paste.from.setText("Deleting: " + storage.getDisplayName(f.uri));
+                        paste.from.setText(getString(R.string.files_deleting) + ": " + storage.getDisplayName(f.uri));
                         paste.to.setVisibility(View.GONE);
                         post();
                         return;
@@ -1348,11 +1401,7 @@ public class FilesFragment extends Fragment {
 
     public void pasteConflict(final PendingOperation op, final PasteBuilder paste, final NativeFile f, final NativeFile t) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        String n = "Paste";
-        if (app.copy != null)
-            n = "Copying conflict";
-        if (app.cut != null)
-            n = "Move conflict";
+        String n = getString(R.string.files_conflict);
         builder.setTitle(n);
         LayoutInflater inflater = LayoutInflater.from(getContext());
         View v = inflater.inflate(R.layout.paste_conflict, null);

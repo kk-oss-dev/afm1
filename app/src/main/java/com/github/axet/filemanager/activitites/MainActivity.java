@@ -28,7 +28,6 @@ import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
@@ -43,9 +42,11 @@ import android.view.animation.Transformation;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.github.axet.androidlibrary.app.Storage;
 import com.github.axet.androidlibrary.widgets.AboutPreferenceCompat;
+import com.github.axet.androidlibrary.widgets.AppCompatThemeActivity;
 import com.github.axet.androidlibrary.widgets.OpenChoicer;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.PathMax;
@@ -53,13 +54,14 @@ import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.app.FilesApplication;
 import com.github.axet.filemanager.fragments.FilesFragment;
+import com.github.axet.filemanager.fragments.HexDialogFragment;
 
 import net.i2p.android.ext.floatingactionbutton.FloatingActionButton;
 import net.i2p.android.ext.floatingactionbutton.FloatingActionsMenu;
 
 import java.io.File;
 
-public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+public class MainActivity extends AppCompatThemeActivity implements NavigationView.OnNavigationItemSelectedListener {
     public static final int RESULT_ADDBOOKMARK = 1;
 
     public static final String ADD_BOOKMARK = "ADDBOOKMARK";
@@ -169,6 +171,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     @Override
+    public int getAppTheme() {
+        return FilesApplication.getTheme(this, FilesApplication.PREF_THEME, R.style.AppThemeLight_NoActionBar, R.style.AppThemeDark_NoActionBar, getString(R.string.Theme_Dark));
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -200,7 +207,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             @Override
             public void onClick(View v) {
                 final OpenFileDialog.EditTextDialog edit = new OpenFileDialog.EditTextDialog(MainActivity.this);
-                edit.setTitle("Create Folder");
+                edit.setTitle(R.string.create_folder);
                 edit.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -217,20 +224,44 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         }
                         uri = f.getUri();
                         FilesFragment.PendingOperation op = new FilesFragment.PendingOperation(MainActivity.this);
-                        op.mkdir(s, uri);
+                        op.mkdir(uri, s);
                         f.reload();
-                        fab.collapse();
 
                     }
                 });
                 edit.show();
+                fab.collapse();
             }
         });
         FloatingActionButton fabFile = (FloatingActionButton) findViewById(R.id.fab_create_file);
         fabFile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ;
+                final OpenFileDialog.EditTextDialog edit = new OpenFileDialog.EditTextDialog(MainActivity.this);
+                edit.setTitle(R.string.create_file);
+                edit.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String s = edit.getText();
+                        Uri uri;
+                        FilesFragment f = null;
+                        switch (mViewPager.getCurrentItem()) {
+                            case 0:
+                                f = mSectionsPagerAdapter.left;
+                                break;
+                            case 1:
+                                f = mSectionsPagerAdapter.right;
+                                break;
+                        }
+                        uri = f.getUri();
+                        FilesFragment.PendingOperation op = new FilesFragment.PendingOperation(MainActivity.this);
+                        op.touch(uri, s);
+                        f.reload();
+
+                    }
+                });
+                edit.show();
+                fab.collapse();
             }
         });
 
@@ -296,11 +327,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         mSectionsPagerAdapter.update();
 
         Menu m = navigationView.getMenu();
-        bookmarksMenu = m.addSubMenu("Bookmarks");
+        bookmarksMenu = m.addSubMenu(R.string.bookmarks);
 
         SubMenu settingsMenu = m.addSubMenu(R.string.menu_settings);
         settingsMenu.setIcon(R.drawable.ic_settings_black_24dp);
-        MenuItem add = settingsMenu.add("Add Bookmark");
+        MenuItem add = settingsMenu.add(R.string.add_bookmark);
         add.setIntent(new Intent(ADD_BOOKMARK));
         add.setIcon(R.drawable.ic_add_black_24dp);
 
@@ -345,6 +376,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         return true;
     }
 
+    public void openHex(Uri uri) {
+        HexDialogFragment d = HexDialogFragment.create(uri);
+        d.show(getSupportFragmentManager(), "");
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -367,6 +403,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     app.bookmarks.add(uri);
                     app.bookmarks.save();
                     reloadMenu();
+                }
+
+                @Override
+                public void onRequestPermissionsFailed(String[] permissions) {
+                    Toast.makeText(context, R.string.not_permitted, Toast.LENGTH_SHORT).show();
                 }
             };
             choicer.setPermissionsDialog(this, Storage.PERMISSIONS_RW, RESULT_ADDBOOKMARK);
@@ -469,7 +510,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
             case RESULT_ADDBOOKMARK:
-                choicer.onRequestPermissionsFailed(permissions);
+                choicer.onRequestPermissionsResult(permissions, grantResults);
                 break;
         }
     }
@@ -501,7 +542,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         int accent = ThemeUtils.getThemeColor(this, R.attr.colorAccent);
         bookmarksMenu.clear();
         if (app.bookmarks.isEmpty()) {
-            MenuItem m = bookmarksMenu.add("Empty");
+            MenuItem m = bookmarksMenu.add(R.string.empty_list);
             m.setEnabled(false);
             m.setIcon(new ColorDrawable(Color.TRANSPARENT));
         }
@@ -520,7 +561,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 @Override
                 public void onClick(View v) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                    builder.setTitle("Delete Bookmark");
+                    builder.setTitle(R.string.delete_bookmark);
                     builder.setMessage(R.string.are_you_sure);
                     builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                         @Override
