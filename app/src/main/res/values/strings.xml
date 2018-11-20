@@ -35,4 +35,5 @@
     <string name="files_copying">Copying</string>
     <string name="files_moving">Moving</string>
     <string name="files_conflict">Conflict</string>
+    <string name="unsupported">Not supported format</string>
 </resources>

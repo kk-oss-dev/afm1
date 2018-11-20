@@ -29,13 +29,13 @@ public class HexDialogFragment extends DialogFragment {
     public static class TorrentPagerAdapter extends FragmentPagerAdapter {
         Context context;
         HexFragment left;
-        Fragment right;
+        MediaFragment right;
 
         public TorrentPagerAdapter(Context context, FragmentManager fm, Uri uri) {
             super(fm);
             this.context = context;
             left = HexFragment.newInstance(uri);
-            right = new Fragment();
+            right = MediaFragment.newInstance(uri);
         }
 
         @Override
