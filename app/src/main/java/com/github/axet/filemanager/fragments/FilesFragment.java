@@ -73,6 +73,7 @@ public class FilesFragment extends Fragment {
     public static final int RESULT_PERMS = 1;
 
     public static final String PASTE_UPDATE = FilesFragment.class.getCanonicalName() + ".PASTE_UPDATE";
+    public static final String MOVE_UPDATE = FilesFragment.class.getCanonicalName() + ".MOVE_UPDATE";
 
     public static final SimpleDateFormat SIMPLE = new SimpleDateFormat("yyyy-MM-dd HH.mm.ss");
     public static final SimpleDateFormat ISO8601 = new SimpleDateFormat("yyyyMMdd\'T\'HHmmss");
@@ -102,6 +103,8 @@ public class FilesFragment extends Fragment {
                 return;
             if (a.equals(PASTE_UPDATE))
                 adapter.notifyDataSetChanged();
+            if (a.equals(MOVE_UPDATE))
+                reload();
         }
     };
 
@@ -188,6 +191,7 @@ public class FilesFragment extends Fragment {
                     }
                 } else {
                     File f = Storage.getFile(uri);
+                    files.add(new NativeFile(uri, f.getPath().substring(r.getPath().length()), f.isDirectory(), f.length(), f.lastModified()));
                     if (f.isDirectory()) {
                         File[] kk = f.listFiles();
                         if (kk != null) {
@@ -195,7 +199,6 @@ public class FilesFragment extends Fragment {
                                 calcs.add(Uri.fromFile(k));
                         }
                     } else {
-                        files.add(new NativeFile(uri, f.getPath().substring(r.getPath().length()), f.isDirectory(), f.length(), f.lastModified()));
                         total += f.length();
                     }
                 }
@@ -363,21 +366,21 @@ public class FilesFragment extends Fragment {
             }
         }
 
-        public void mkdir(NativeFile f, Uri to) {
-            String s = f.uri.getScheme();
+        public void mkdir(String name, Uri to) {
+            String s = to.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 File k = Storage.getFile(to);
-                File m = new File(k, f.name);
+                File m = new File(k, name);
                 if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
                     SuperUser.mkdir(m).must();
                 } else {
-                    if (!m.mkdir())
+                    if (!m.exists() && !m.mkdir())
                         throw new RuntimeException("unable to create dir: " + m);
                 }
             } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
-                Uri doc = storage.createFolder(to, f.name);
+                Uri doc = storage.createFolder(to, name);
                 if (doc == null)
-                    throw new RuntimeException("Unable to create dir: " + f.name);
+                    throw new RuntimeException("Unable to create dir: " + name);
             } else {
                 throw new Storage.UnknownUri();
             }
@@ -777,10 +780,11 @@ public class FilesFragment extends Fragment {
         });
         updateButton();
 
-        load();
+        reload();
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(PASTE_UPDATE);
+        filter.addAction(MOVE_UPDATE);
         getContext().registerReceiver(receiver, filter);
 
         return rootView;
@@ -817,7 +821,7 @@ public class FilesFragment extends Fragment {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
             case RESULT_PERMS:
-                load();
+                reload();
                 updateButton();
                 break;
         }
@@ -836,13 +840,13 @@ public class FilesFragment extends Fragment {
             uri = u;
             updateButton();
             path.setUri(uri);
-            load();
+            reload();
             MainActivity main = (MainActivity) getActivity();
             main.update();
         }
     }
 
-    public void load() {
+    public void reload() {
         error.setVisibility(View.GONE);
         adapter.files.clear();
         String s = uri.getScheme();
@@ -897,7 +901,7 @@ public class FilesFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        load();
+        reload();
     }
 
     @Override
@@ -983,7 +987,7 @@ public class FilesFragment extends Fragment {
                                 }
                                 paste.dismiss();
                                 closeSelection();
-                                load();
+                                reload();
                                 Toast.makeText(getContext(), "Deleted " + files.size() + " files", Toast.LENGTH_SHORT).show();
                             }
 
@@ -992,7 +996,6 @@ public class FilesFragment extends Fragment {
                                 handler.post(this);
                             }
                         };
-                        op.run();
                         paste.dismiss = new DialogInterface.OnDismissListener() {
                             @Override
                             public void onDismiss(DialogInterface dialog) {
@@ -1001,6 +1004,7 @@ public class FilesFragment extends Fragment {
                             }
                         };
                         paste.show();
+                        op.run();
                     }
                 });
                 builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -1022,7 +1026,7 @@ public class FilesFragment extends Fragment {
                     @Override
                     public void onClick(DialogInterface d, int which) {
                         storage.rename(f, dialog.getText());
-                        load();
+                        reload();
                         closeSelection();
                     }
                 });
@@ -1074,7 +1078,7 @@ public class FilesFragment extends Fragment {
             return true;
         }
         if (id == R.id.action_refresh) {
-            load();
+            reload();
             return true;
         }
         if (id == R.id.action_paste_cancel) {
@@ -1197,7 +1201,7 @@ public class FilesFragment extends Fragment {
                         NativeFile f = files.get(filesIndex);
                         try {
                             if (f.dir) {
-                                mkdir(f, uri);
+                                mkdir(f.name, uri);
                                 filesIndex++;
                                 if (app.cut != null) {
                                     delete.add(f);
@@ -1256,8 +1260,10 @@ public class FilesFragment extends Fragment {
                         post();
                         return;
                     }
-                    if (app.cut != null)
+                    if (app.cut != null) {
                         app.cut = null; // not possible to move twice
+                        getContext().sendBroadcast(new Intent(MOVE_UPDATE));
+                    }
                     paste.dismiss(); // all done!
                 } catch (RuntimeException e) {
                     pasteError(paste, this, e);
@@ -1273,7 +1279,6 @@ public class FilesFragment extends Fragment {
                 handler.postDelayed(this, l);
             }
         };
-        op.run();
 
         paste.neutral = new View.OnClickListener() {
             @Override
@@ -1300,11 +1305,13 @@ public class FilesFragment extends Fragment {
                 paste.dismiss();
                 op.close();
                 handler.removeCallbacks(op);
-                load();
+                reload();
             }
         };
         final AlertDialog d = paste.create();
         d.show();
+
+        op.run();
     }
 
     public void pasteError(final PasteBuilder paste, final PendingOperation op, Throwable e) {
