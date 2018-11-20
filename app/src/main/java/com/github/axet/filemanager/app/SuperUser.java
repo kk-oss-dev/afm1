@@ -21,7 +21,12 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
 
     public static final String TOUCH = BIN_TOUCH + " -mct {0} {1}";
     public static final String DELETE = BIN_RM + " -r {0}";
-    public static final String LS = BIN_LS + " -AlH {0}";
+    public static final String LSA = BIN_LS + " -AlH {0}";
+    public static final String LSa = BIN_LS + " -alH {0}";
+    public static final String MKDIR = BIN_MKDIR + " {0}";
+
+    public static final File DOT = new File(".");
+    public static final File DOTDOT = new File("..");
 
     public static class NativeFile extends File {
         long size;
@@ -50,10 +55,10 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         }
     }
 
-    public static ArrayList<File> ls(Uri uri) {
+    public static ArrayList<File> ls(String opt, Uri uri) {
         ArrayList<File> ff = new ArrayList<>();
         File f = Storage.getFile(uri);
-        Commands cmd = new Commands(MessageFormat.format(LS, escape(f)));
+        Commands cmd = new Commands(MessageFormat.format(opt, escape(f)));
         cmd.stdout(true);
         Result r = su(cmd).must();
         Scanner scanner = new Scanner(r.stdout);
@@ -63,40 +68,47 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             Matcher m = p.matcher(line);
             if (m.matches()) {
                 String perms = m.group(1);
-                String size = m.group(5);
-                long s = 0;
+                long size = 0;
                 try {
-                    s = Long.valueOf(size);
+                    size = Long.valueOf(m.group(5));
                 } catch (NumberFormatException e) {
                 }
-                String date = m.group(6);
                 long last = 0;
                 try {
-                    last = LSDATE.parse(date).getTime();
+                    last = LSDATE.parse(m.group(6)).getTime();
                 } catch (ParseException e) {
                 }
                 String name = m.group(7);
                 if (perms.startsWith("d")) {
                     File k = new File(name);
-                    if (!f.equals(k))
-                        k = new File(f, name);
-                    ff.add(new NativeFile(k, true, s, last));
+                    if (!k.equals(DOTDOT)) {
+                        if (k.equals(DOT))
+                            k = f;
+                        else
+                            k = new File(f, name);
+                        ff.add(new NativeFile(k, true, size, last));
+                    }
                 } else if (perms.startsWith("l")) {
                     String[] ss = name.split("->");
                     name = ss[0].trim();
-                    boolean d = false;
                     File t = new File(ss[1].trim());
-                    if (t.isDirectory())
-                        d = true;
                     File k = new File(name);
-                    if (!f.equals(k))
-                        k = new File(f, name);
-                    ff.add(new NativeFile(k, d, s, last));
+                    if (!k.equals(DOTDOT)) {
+                        if (k.equals(DOT))
+                            k = f;
+                        else
+                            k = new File(f, name);
+                        ff.add(new NativeFile(k, t.isDirectory(), size, last));
+                    }
                 } else {
                     File k = new File(name);
-                    if (!f.equals(k))
-                        k = new File(f, name);
-                    ff.add(new NativeFile(k, false, s, last));
+                    if (!k.equals(DOTDOT)) {
+                        if (k.equals(DOT))
+                            k = f;
+                        if (!f.equals(k)) // ls file return full path, ls dir return relative path
+                            k = new File(f, name);
+                        ff.add(new NativeFile(k, false, size, last));
+                    }
                 }
             }
         }
@@ -110,6 +122,10 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
 
     public static Result delete(File f) {
         return su(DELETE, escape(f));
+    }
+
+    public static Result mkdir(File f) {
+        return su(MKDIR, escape(f));
     }
 
     public static long length(Uri uri) {

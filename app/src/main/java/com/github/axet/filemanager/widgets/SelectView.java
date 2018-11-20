@@ -7,13 +7,11 @@ import android.support.v7.view.CollapsibleActionView;
 import android.support.v7.widget.AppCompatImageButton;
 import android.support.v7.widget.LinearLayoutCompat;
 import android.util.AttributeSet;
-import android.view.View;
+import android.view.Menu;
 
 import com.github.axet.filemanager.R;
 
 public class SelectView extends LinearLayoutCompat implements CollapsibleActionView {
-    public AppCompatImageButton open;
-    public AppCompatImageButton share;
     public AppCompatImageButton rename;
     public AppCompatImageButton copy;
     public AppCompatImageButton cut;
@@ -36,34 +34,8 @@ public class SelectView extends LinearLayoutCompat implements CollapsibleActionV
         create();
     }
 
-    public void create() {
-        open = new AppCompatImageButton(getContext(), null, android.support.v7.appcompat.R.attr.toolbarNavigationButtonStyle);
-        open.setImageResource(R.drawable.ic_open_in_new_black_24dp);
-        open.setColorFilter(Color.WHITE);
-        LayoutParams lp = generateDefaultLayoutParams();
-        lp.gravity = GravityCompat.START;
-        open.setLayoutParams(lp);
-        open.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                collapseActionView();
-            }
-        });
-        // addView(open);
-
-        share = new AppCompatImageButton(getContext(), null, android.support.v7.appcompat.R.attr.toolbarNavigationButtonStyle);
-        share.setImageResource(R.drawable.ic_share_black_24dp);
-        share.setColorFilter(Color.WHITE);
-        lp = generateDefaultLayoutParams();
-        lp.gravity = GravityCompat.START;
-        share.setLayoutParams(lp);
-        share.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                collapseActionView();
-            }
-        });
-        // addView(share);
+    public void create() { // TODO send onOptionSelected events
+        LayoutParams lp;
 
         rename = new AppCompatImageButton(getContext(), null, android.support.v7.appcompat.R.attr.toolbarNavigationButtonStyle);
         rename.setImageResource(R.drawable.ic_edit_black_24dp);
@@ -71,12 +43,6 @@ public class SelectView extends LinearLayoutCompat implements CollapsibleActionV
         lp = generateDefaultLayoutParams();
         lp.gravity = GravityCompat.START;
         rename.setLayoutParams(lp);
-        rename.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                collapseActionView();
-            }
-        });
         addView(rename);
 
         copy = new AppCompatImageButton(getContext(), null, android.support.v7.appcompat.R.attr.toolbarNavigationButtonStyle);
@@ -85,12 +51,6 @@ public class SelectView extends LinearLayoutCompat implements CollapsibleActionV
         lp = generateDefaultLayoutParams();
         lp.gravity = GravityCompat.START;
         copy.setLayoutParams(lp);
-        copy.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                collapseActionView();
-            }
-        });
         addView(copy);
 
         cut = new AppCompatImageButton(getContext(), null, android.support.v7.appcompat.R.attr.toolbarNavigationButtonStyle);
@@ -99,12 +59,6 @@ public class SelectView extends LinearLayoutCompat implements CollapsibleActionV
         lp = generateDefaultLayoutParams();
         lp.gravity = GravityCompat.START;
         cut.setLayoutParams(lp);
-        cut.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                collapseActionView();
-            }
-        });
         addView(cut);
 
         delete = new AppCompatImageButton(getContext(), null, android.support.v7.appcompat.R.attr.toolbarNavigationButtonStyle);
@@ -113,16 +67,7 @@ public class SelectView extends LinearLayoutCompat implements CollapsibleActionV
         lp = generateDefaultLayoutParams();
         lp.gravity = GravityCompat.START;
         delete.setLayoutParams(lp);
-        delete.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                collapseActionView();
-            }
-        });
         addView(delete);
-    }
-
-    public void collapseActionView() {
     }
 
     @Override
