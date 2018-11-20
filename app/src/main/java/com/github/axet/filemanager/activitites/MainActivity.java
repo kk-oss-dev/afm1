@@ -45,6 +45,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.github.axet.androidlibrary.app.Storage;
+import com.github.axet.androidlibrary.widgets.AboutPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.OpenChoicer;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.PathMax;
@@ -301,6 +302,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
+
+        if (id == R.id.action_about) {
+            AboutPreferenceCompat.buildDialog(this, R.raw.about).show();
+            return true;
+        }
 
         if (id == R.id.action_settings) {
             SettingsActivity.start(this);
