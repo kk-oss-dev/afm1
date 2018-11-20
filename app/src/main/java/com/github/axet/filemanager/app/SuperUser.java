@@ -1,9 +1,5 @@
 package com.github.axet.filemanager.app;
 
-import android.net.Uri;
-
-import com.github.axet.androidlibrary.app.Storage;
-
 import java.io.File;
 import java.text.MessageFormat;
 import java.text.ParseException;
@@ -55,9 +51,8 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         }
     }
 
-    public static ArrayList<File> ls(String opt, Uri uri) {
+    public static ArrayList<File> ls(String opt, File f) {
         ArrayList<File> ff = new ArrayList<>();
-        File f = Storage.getFile(uri);
         Commands cmd = new Commands(MessageFormat.format(opt, escape(f)));
         cmd.stdout(true);
         Result r = su(cmd).must();
@@ -128,11 +123,10 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         return su(MKDIR, escape(f));
     }
 
-    public static long length(Uri uri) {
-        File f = Storage.getFile(uri);
+    public static long length(File f) {
         Commands cmd = new Commands(MessageFormat.format("stat -c%s {0}", escape(f)));
         cmd.stdout(true);
-        Result r = su(cmd);
+        Result r = su(cmd).must();
         return Long.valueOf(r.stdout.trim());
     }
 }

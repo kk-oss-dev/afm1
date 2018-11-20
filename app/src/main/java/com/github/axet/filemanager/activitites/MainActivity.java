@@ -224,7 +224,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                         }
                         uri = f.getUri();
                         FilesFragment.PendingOperation op = new FilesFragment.PendingOperation(MainActivity.this);
-                        op.mkdir(s, uri);
+                        op.mkdir(uri, s);
                         f.reload();
 
                     }
@@ -255,7 +255,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                         }
                         uri = f.getUri();
                         FilesFragment.PendingOperation op = new FilesFragment.PendingOperation(MainActivity.this);
-                        op.touch(s, uri);
+                        op.touch(uri, s);
                         f.reload();
 
                     }

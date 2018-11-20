@@ -31,10 +31,10 @@ public class HexDialogFragment extends DialogFragment {
         HexFragment left;
         Fragment right;
 
-        public TorrentPagerAdapter(Context context, FragmentManager fm, long t) {
+        public TorrentPagerAdapter(Context context, FragmentManager fm, Uri uri) {
             super(fm);
             this.context = context;
-            left = new HexFragment();
+            left = HexFragment.newInstance(uri);
             right = new Fragment();
         }
 
@@ -136,10 +136,10 @@ public class HexDialogFragment extends DialogFragment {
     public View createView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         v = inflater.inflate(R.layout.hex_dialog, container);
 
-        long t = getArguments().getLong("torrent");
+        Uri uri = getArguments().getParcelable("uri");
 
         pager = (ViewPager) v.findViewById(R.id.pager);
-        TorrentPagerAdapter adapter = new TorrentPagerAdapter(getContext(), getChildFragmentManager(), t);
+        TorrentPagerAdapter adapter = new TorrentPagerAdapter(getContext(), getChildFragmentManager(), uri);
         pager.setAdapter(adapter);
 
         TabLayout tabLayout = (TabLayout) v.findViewById(R.id.tab_layout);

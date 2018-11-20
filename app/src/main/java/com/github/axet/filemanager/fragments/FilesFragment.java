@@ -184,7 +184,7 @@ public class FilesFragment extends Fragment {
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 File r = Storage.getFile(calcUri);
                 if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
-                    ArrayList<File> ff = SuperUser.ls(SuperUser.LSa, uri);
+                    ArrayList<File> ff = SuperUser.ls(SuperUser.LSa, Storage.getFile(uri));
                     for (File f : ff) {
                         NativeFile k = new NativeFile(Uri.fromFile(f), f.getPath().substring(r.getPath().length()), f.isDirectory(), f.length(), f.lastModified());
                         files.add(k);
@@ -246,21 +246,25 @@ public class FilesFragment extends Fragment {
             }
         }
 
-        public void open(final NativeFile f, Uri to) throws IOException {
-            String s = f.uri.getScheme();
+        public InputStream open(Uri uri) throws IOException {
+            String s = uri.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
-                    is = SuperUser.cat(f.uri);
+                    return SuperUser.cat(uri);
                 } else {
-                    File k = Storage.getFile(f.uri);
-                    is = new FileInputStream(k);
+                    File k = Storage.getFile(uri);
+                    return new FileInputStream(k);
                 }
             } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
-                is = resolver.openInputStream(f.uri);
+                return resolver.openInputStream(uri);
             } else {
                 throw new Storage.UnknownUri();
             }
-            s = to.getScheme();
+        }
+
+        public void open(final NativeFile f, Uri to) throws IOException {
+            is = open(f.uri);
+            String s = to.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 File k = Storage.getFile(to);
                 final File m = new File(k, f.name);
@@ -358,7 +362,7 @@ public class FilesFragment extends Fragment {
             }
         }
 
-        public Uri target(NativeFile f, Uri to) {
+        public Uri target(Uri to, NativeFile f) {
             String s = to.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 File k = Storage.getFile(to);
@@ -372,7 +376,7 @@ public class FilesFragment extends Fragment {
             }
         }
 
-        public void mkdir(String name, Uri to) {
+        public void mkdir(Uri to, String name) {
             String s = to.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 File k = Storage.getFile(to);
@@ -392,7 +396,23 @@ public class FilesFragment extends Fragment {
             }
         }
 
-        public void touch(String name, Uri to) {
+        public long length(Uri uri) {
+            String s = uri.getScheme();
+            if (s.equals(ContentResolver.SCHEME_FILE)) {
+                File k = Storage.getFile(uri);
+                if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
+                    return SuperUser.length(k);
+                } else {
+                    return k.length();
+                }
+            } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+                return storage.getLength(uri);
+            } else {
+                throw new Storage.UnknownUri();
+            }
+        }
+
+        public void touch(Uri to, String name) {
             String s = to.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 File k = Storage.getFile(to);
@@ -891,7 +911,7 @@ public class FilesFragment extends Fragment {
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
             if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
                 try {
-                    ArrayList<File> ff = SuperUser.ls(SuperUser.LSA, uri);
+                    ArrayList<File> ff = SuperUser.ls(SuperUser.LSA, Storage.getFile(uri));
                     for (File f : ff)
                         adapter.files.add(new NativeFile(f));
                 } catch (RuntimeException e) {
@@ -1244,7 +1264,7 @@ public class FilesFragment extends Fragment {
                         NativeFile f = files.get(filesIndex);
                         try {
                             if (f.dir) {
-                                mkdir(f.name, uri);
+                                mkdir(uri, f.name);
                                 filesIndex++;
                                 if (app.cut != null) {
                                     delete.add(f);
