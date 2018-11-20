@@ -804,6 +804,7 @@ public class FilesFragment extends Fragment {
     }
 
     void updateButton() {
+        button.setVisibility(View.VISIBLE);
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
@@ -902,6 +903,7 @@ public class FilesFragment extends Fragment {
     public void onResume() {
         super.onResume();
         reload();
+        updateButton();
     }
 
     @Override

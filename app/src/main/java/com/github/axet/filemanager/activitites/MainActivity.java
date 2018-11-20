@@ -194,7 +194,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             ver.setVisibility(View.GONE);
         }
 
-        FloatingActionsMenu fab = (FloatingActionsMenu) findViewById(R.id.fab);
+        final FloatingActionsMenu fab = (FloatingActionsMenu) findViewById(R.id.fab);
         FloatingActionButton fabFolder = (FloatingActionButton) findViewById(R.id.fab_create_folder);
         fabFolder.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -219,6 +219,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         FilesFragment.PendingOperation op = new FilesFragment.PendingOperation(MainActivity.this);
                         op.mkdir(s, uri);
                         f.reload();
+                        fab.collapse();
 
                     }
                 });
@@ -302,6 +303,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         MenuItem add = settingsMenu.add("Add Bookmark");
         add.setIntent(new Intent(ADD_BOOKMARK));
         add.setIcon(R.drawable.ic_add_black_24dp);
+
+        SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
+        mViewPager.setCurrentItem(shared.getInt(FilesApplication.PREF_ACTIVE, 0));
 
         onPageChangeListener.onPageScrollStateChanged(ViewPager.SCROLL_STATE_IDLE);
 
@@ -473,6 +477,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     protected void onPause() {
         super.onPause();
+        SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+        SharedPreferences.Editor editor = shared.edit();
+        editor.putInt(FilesApplication.PREF_ACTIVE, mViewPager.getCurrentItem());
+        editor.commit();
         mSectionsPagerAdapter.save();
     }
 

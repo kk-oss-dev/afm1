@@ -13,6 +13,7 @@ import java.util.ArrayList;
 public class FilesApplication extends MainApplication {
     public static final String PREF_LEFT = "left";
     public static final String PREF_RIGHT = "right";
+    public static final String PREF_ACTIVE = "active";
 
     public static final String PREF_BOOKMARK_COUNT = "bookmark_count";
     public static final String PREF_BOOKMARK_PREFIX = "bookmark_";
