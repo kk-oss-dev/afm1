@@ -307,6 +307,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         reloadMenu();
 
+        SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
+        mViewPager.setCurrentItem(shared.getInt(FilesApplication.PREF_ACTIVE, 0));
+
         openIntent(getIntent());
     }
 
@@ -473,6 +476,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     protected void onPause() {
         super.onPause();
+        SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+        SharedPreferences.Editor editor = shared.edit();
+        editor.putInt(FilesApplication.PREF_ACTIVE, mViewPager.getCurrentItem());
+        editor.commit();
         mSectionsPagerAdapter.save();
     }
 
