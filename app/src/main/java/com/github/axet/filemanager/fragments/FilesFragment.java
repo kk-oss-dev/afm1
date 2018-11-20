@@ -1,5 +1,6 @@
 package com.github.axet.filemanager.fragments;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -9,6 +10,8 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -18,6 +21,7 @@ import android.provider.DocumentsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.provider.DocumentFile;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewCompat;
@@ -93,6 +97,7 @@ public class FilesFragment extends Fragment {
     MenuItem toolbar;
     MenuItem paste;
     MenuItem pasteCancel;
+    MenuItem rename;
     SelectView select;
     ArrayList<Uri> selected = new ArrayList<>();
     BroadcastReceiver receiver = new BroadcastReceiver() {
@@ -906,6 +911,7 @@ public class FilesFragment extends Fragment {
         updateButton();
     }
 
+    @SuppressLint("RestrictedApi")
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
@@ -914,6 +920,7 @@ public class FilesFragment extends Fragment {
         pasteCancel = menu.findItem(R.id.action_paste_cancel);
         updatePaste();
         select = (SelectView) MenuItemCompat.getActionView(toolbar);
+        rename = select.menu.findItem(R.id.action_rename);
         select.listener = new CollapsibleActionView() {
             @Override
             public void onActionViewExpanded() {
@@ -925,120 +932,11 @@ public class FilesFragment extends Fragment {
                 selected.clear();
             }
         };
-        select.copy.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                app.copy = new ArrayList<>(selected);
-                app.cut = null;
-                app.uri = uri;
-                updatePaste();
-                closeSelection();
-                Toast.makeText(getContext(), "Copied " + app.copy.size() + " files", Toast.LENGTH_SHORT).show();
-            }
-        });
-        select.cut.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                app.copy = null;
-                app.cut = new ArrayList<>(selected);
-                app.uri = uri;
-                updatePaste();
-                closeSelection();
-                Toast.makeText(getContext(), "Cut " + app.cut.size() + " files", Toast.LENGTH_SHORT).show();
-            }
-        });
-        select.delete.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-                builder.setTitle("Delete");
-                builder.setMessage(R.string.are_you_sure);
-                builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        final PasteBuilder paste = new PasteBuilder(getContext());
-                        paste.setTitle("Deleting");
-                        final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
-                            @Override
-                            public void run() {
-                                if (calcIndex < calcs.size()) {
-                                    if (!calc())
-                                        Collections.sort(files, new SortDelete());
-                                    paste.copy.setText("Calculating: " + formatCalc());
-                                    paste.update(this);
-                                    paste.progressFile.setVisibility(View.GONE);
-                                    paste.from.setText("Deleting: " + formatStart());
-                                    paste.to.setVisibility(View.GONE);
-                                    post();
-                                    return;
-                                }
-                                if (filesIndex < files.size()) {
-                                    int old = filesIndex;
-                                    NativeFile f = files.get(filesIndex);
-                                    delete(f);
-                                    if (!f.dir)
-                                        processed += f.size;
-                                    filesIndex++;
-                                    paste.copy.setVisibility(View.GONE);
-                                    paste.update(this, old, f);
-                                    paste.progressFile.setVisibility(View.GONE);
-                                    paste.from.setText("Deleting: " + storage.getDisplayName(f.uri));
-                                    paste.to.setVisibility(View.GONE);
-                                    post();
-                                    return;
-                                }
-                                paste.dismiss();
-                                closeSelection();
-                                reload();
-                                Toast.makeText(getContext(), "Deleted " + files.size() + " files", Toast.LENGTH_SHORT).show();
-                            }
-
-                            public void post() {
-                                handler.removeCallbacks(this);
-                                handler.post(this);
-                            }
-                        };
-                        paste.dismiss = new DialogInterface.OnDismissListener() {
-                            @Override
-                            public void onDismiss(DialogInterface dialog) {
-                                handler.removeCallbacks(op);
-                                paste.dismiss();
-                            }
-                        };
-                        paste.show();
-                        op.run();
-                    }
-                });
-                builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                    }
-                });
-                builder.show();
-            }
-        });
-        select.rename.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                final Uri f = selected.get(0);
-                final OpenFileDialog.EditTextDialog dialog = new OpenFileDialog.EditTextDialog(getContext());
-                dialog.setTitle("Rename");
-                dialog.setText(storage.getName(f));
-                dialog.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface d, int which) {
-                        storage.rename(f, dialog.getText());
-                        reload();
-                        closeSelection();
-                    }
-                });
-                dialog.show();
-            }
-        });
     }
 
     @Override
     public boolean onOptionsItemSelected(final MenuItem item) {
+        Log.d(TAG, "onOptionsItemSelected " + storage.getDisplayName(uri) + " " + item);
         int id = item.getItemId();
         if (id == R.id.action_open) {
             Intent intent = item.getIntent();
@@ -1093,6 +991,108 @@ public class FilesFragment extends Fragment {
             paste();
             return true;
         }
+        if (id == R.id.action_copy) {
+            app.copy = new ArrayList<>(selected);
+            app.cut = null;
+            app.uri = uri;
+            updatePaste();
+            closeSelection();
+            Toast.makeText(getContext(), "Copied " + app.copy.size() + " files", Toast.LENGTH_SHORT).show();
+            return true;
+        }
+        if (id == R.id.action_cut) {
+            app.copy = null;
+            app.cut = new ArrayList<>(selected);
+            app.uri = uri;
+            updatePaste();
+            closeSelection();
+            Toast.makeText(getContext(), "Cut " + app.cut.size() + " files", Toast.LENGTH_SHORT).show();
+            return true;
+        }
+        if (id == R.id.action_delete) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+            builder.setTitle("Delete");
+            builder.setMessage(R.string.are_you_sure);
+            builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    final PasteBuilder paste = new PasteBuilder(getContext());
+                    paste.setTitle("Deleting");
+                    final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
+                        @Override
+                        public void run() {
+                            if (calcIndex < calcs.size()) {
+                                if (!calc())
+                                    Collections.sort(files, new SortDelete());
+                                paste.copy.setText("Calculating: " + formatCalc());
+                                paste.update(this);
+                                paste.progressFile.setVisibility(View.GONE);
+                                paste.from.setText("Deleting: " + formatStart());
+                                paste.to.setVisibility(View.GONE);
+                                post();
+                                return;
+                            }
+                            if (filesIndex < files.size()) {
+                                int old = filesIndex;
+                                NativeFile f = files.get(filesIndex);
+                                delete(f);
+                                if (!f.dir)
+                                    processed += f.size;
+                                filesIndex++;
+                                paste.copy.setVisibility(View.GONE);
+                                paste.update(this, old, f);
+                                paste.progressFile.setVisibility(View.GONE);
+                                paste.from.setText("Deleting: " + storage.getDisplayName(f.uri));
+                                paste.to.setVisibility(View.GONE);
+                                post();
+                                return;
+                            }
+                            paste.dismiss();
+                            closeSelection();
+                            reload();
+                            Toast.makeText(getContext(), "Deleted " + files.size() + " files", Toast.LENGTH_SHORT).show();
+                        }
+
+                        public void post() {
+                            handler.removeCallbacks(this);
+                            handler.post(this);
+                        }
+                    };
+                    paste.dismiss = new DialogInterface.OnDismissListener() {
+                        @Override
+                        public void onDismiss(DialogInterface dialog) {
+                            handler.removeCallbacks(op);
+                            paste.dismiss();
+                        }
+                    };
+                    paste.show();
+                    op.run();
+                }
+            });
+            builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                }
+            });
+            builder.show();
+            return true;
+        }
+        if (id == R.id.action_rename && item.isEnabled()) {
+            final Uri f = selected.get(0);
+            final OpenFileDialog.EditTextDialog dialog = new OpenFileDialog.EditTextDialog(getContext());
+            dialog.setTitle("Rename");
+            dialog.setText(storage.getName(f));
+            dialog.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface d, int which) {
+                    storage.rename(f, dialog.getText());
+                    reload();
+                    closeSelection();
+                }
+            });
+            dialog.show();
+            return true;
+        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -1106,11 +1106,19 @@ public class FilesFragment extends Fragment {
 
     public void updateSelection() {
         if (selected.size() == 1) {
-            select.rename.setEnabled(true);
-            select.rename.setColorFilter(Color.WHITE);
+            rename.setEnabled(true);
+            Drawable d = DrawableCompat.wrap(rename.getIcon());
+            d.mutate();
+            //DrawableCompat.setTint(d, Color.WHITE);
+            d.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_ATOP);
+            rename.setIcon(d);
         } else {
-            select.rename.setEnabled(false);
-            select.rename.setColorFilter(Color.GRAY);
+            rename.setEnabled(false);
+            Drawable d = DrawableCompat.wrap(rename.getIcon());
+            d.mutate();
+            //DrawableCompat.setTint(d, Color.GRAY);
+            d.setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_ATOP);
+            rename.setIcon(d);
         }
         adapter.notifyDataSetChanged();
     }

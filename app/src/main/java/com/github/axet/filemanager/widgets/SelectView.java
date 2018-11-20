@@ -1,23 +1,33 @@
 package com.github.axet.filemanager.widgets;
 
+import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.graphics.Color;
 import android.support.v4.view.GravityCompat;
 import android.support.v7.view.CollapsibleActionView;
+import android.support.v7.view.menu.MenuBuilder;
 import android.support.v7.widget.AppCompatImageButton;
 import android.support.v7.widget.LinearLayoutCompat;
 import android.util.AttributeSet;
-import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.Window;
 
 import com.github.axet.filemanager.R;
 
 public class SelectView extends LinearLayoutCompat implements CollapsibleActionView {
-    public AppCompatImageButton rename;
-    public AppCompatImageButton copy;
-    public AppCompatImageButton cut;
-    public AppCompatImageButton delete;
-
+    public MenuBuilder menu;
     public CollapsibleActionView listener;
+
+    public static Activity from(Context context) {
+        if (context instanceof Activity)
+            return (Activity) context;
+        if (context instanceof ContextWrapper)
+            return from(((ContextWrapper) context).getBaseContext());
+        throw new RuntimeException("unknown context");
+    }
 
     public SelectView(Context context) {
         super(context);
@@ -34,40 +44,29 @@ public class SelectView extends LinearLayoutCompat implements CollapsibleActionV
         create();
     }
 
-    public void create() { // TODO send onOptionSelected events
-        LayoutParams lp;
+    @SuppressLint("RestrictedApi")
+    public void create() {
+        menu = new MenuBuilder(getContext());
 
-        rename = new AppCompatImageButton(getContext(), null, android.support.v7.appcompat.R.attr.toolbarNavigationButtonStyle);
-        rename.setImageResource(R.drawable.ic_edit_black_24dp);
-        rename.setColorFilter(Color.WHITE);
-        lp = generateDefaultLayoutParams();
-        lp.gravity = GravityCompat.START;
-        rename.setLayoutParams(lp);
-        addView(rename);
+        final Activity a = from(getContext());
+        a.getMenuInflater().inflate(R.menu.menu_select, menu);
 
-        copy = new AppCompatImageButton(getContext(), null, android.support.v7.appcompat.R.attr.toolbarNavigationButtonStyle);
-        copy.setImageResource(R.drawable.ic_content_copy_black_24dp);
-        copy.setColorFilter(Color.WHITE);
-        lp = generateDefaultLayoutParams();
-        lp.gravity = GravityCompat.START;
-        copy.setLayoutParams(lp);
-        addView(copy);
-
-        cut = new AppCompatImageButton(getContext(), null, android.support.v7.appcompat.R.attr.toolbarNavigationButtonStyle);
-        cut.setImageResource(R.drawable.ic_content_cut_black_24dp);
-        cut.setColorFilter(Color.WHITE);
-        lp = generateDefaultLayoutParams();
-        lp.gravity = GravityCompat.START;
-        cut.setLayoutParams(lp);
-        addView(cut);
-
-        delete = new AppCompatImageButton(getContext(), null, android.support.v7.appcompat.R.attr.toolbarNavigationButtonStyle);
-        delete.setImageResource(R.drawable.ic_delete_black_24dp);
-        delete.setColorFilter(Color.WHITE);
-        lp = generateDefaultLayoutParams();
-        lp.gravity = GravityCompat.START;
-        delete.setLayoutParams(lp);
-        addView(delete);
+        for (int i = 0; i < menu.size(); i++) {
+            final MenuItem item = menu.getItem(i);
+            AppCompatImageButton image = new AppCompatImageButton(getContext(), null, android.support.v7.appcompat.R.attr.toolbarNavigationButtonStyle);
+            image.setImageDrawable(item.getIcon());
+            image.setColorFilter(Color.WHITE);
+            LayoutParams lp = generateDefaultLayoutParams();
+            lp.gravity = GravityCompat.START;
+            image.setLayoutParams(lp);
+            image.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    a.onMenuItemSelected(Window.FEATURE_OPTIONS_PANEL, item);
+                }
+            });
+            addView(image);
+        }
     }
 
     @Override
