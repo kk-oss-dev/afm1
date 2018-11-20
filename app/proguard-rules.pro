@@ -26,3 +26,4 @@
 -dontwarn org.apache.commons.**
 
 -keep class com.github.axet.androidlibrary.widgets.SearchView {*;}
+-keep class com.github.axet.filemanager.widgets.SelectView {*;}
