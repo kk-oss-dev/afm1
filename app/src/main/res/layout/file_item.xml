@@ -37,7 +37,7 @@
             android:layout_gravity="center"
             android:padding="10dp"
             android:src="@drawable/ic_circle"
-            android:tint="#eee" />
+            android:tint="?colorButtonNormal" />
 
         <ImageView
             android:id="@+id/unselected"
@@ -45,7 +45,9 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:padding="5dp"
-            android:src="@drawable/ic_radio_button_unchecked_black_24dp" />
+            android:src="@drawable/ic_radio_button_unchecked_black_24dp"
+            android:tint="?colorAccent"
+            android:visibility="gone" />
 
         <ImageView
             android:id="@+id/selected"
@@ -53,6 +55,8 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:padding="5dp"
-            android:src="@drawable/ic_check_circle_black_24dp" />
+            android:src="@drawable/ic_check_circle_black_24dp"
+            android:tint="?colorAccent"
+            android:visibility="gone" />
     </FrameLayout>
 </LinearLayout>

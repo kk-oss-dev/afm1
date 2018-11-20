@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <attr name="menu_labels_style" format="reference" />
+    <attr name="side_nav_bar" format="reference" />
+
+    <string-array name="themes_values" translatable="false">
+        <item>@string/Theme_Light</item>
+        <item>@string/Theme_Dark</item>
+    </string-array>
 </resources>

@@ -1,12 +1,11 @@
 <resources>
 
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+    <style name="AppThemeLight" parent="AppThemeLightLib">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
+        <item name="colorAccent">@color/colorAccentLight</item>
         <item name="menu_labels_style">@style/menu_labels_style_light</item>
-        <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
+        <item name="side_nav_bar">@drawable/side_nav_bar_light</item>
     </style>
 
     <style name="menu_labels_style_light">
@@ -14,7 +13,7 @@
         <item name="android:background">@drawable/roundlabel_light</item>
     </style>
 
-    <style name="AppTheme.NoActionBar">
+    <style name="AppThemeLight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
     </style>
@@ -22,5 +21,20 @@
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="AppThemeDark" parent="AppThemeDarkLib">
+        <item name="menu_labels_style">@style/menu_labels_style_dark</item>
+        <item name="side_nav_bar">@drawable/side_nav_bar_dark</item>
+    </style>
+
+    <style name="AppThemeDark.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="menu_labels_style_dark">
+        <item name="android:padding">5dp</item>
+        <item name="android:background">@drawable/roundlabel_dark</item>
+    </style>
 
 </resources>

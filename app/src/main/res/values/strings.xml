@@ -5,6 +5,11 @@
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="title_activity_settings">Settings</string>
 
+    <string-array name="themes_text">
+        <item>Theme White</item>
+        <item>Theme Dark</item>
+    </string-array>
+
     <string name="copy_from">From:</string>
     <string name="copy_to">To:</string>
     <string name="copy_calculating">Calculating:</string>
@@ -15,4 +20,8 @@
     <string name="copy_overwrite_with">With:</string>
 
     <string name="size_bytes">bytes</string>
+    <string name="add_bookmark">Add Bookmark</string>
+    <string name="bookmarks">Bookmarks</string>
+    <string name="empty_list">Empty</string>
+    <string name="delete_bookmark">Delete Bookmark</string>
 </resources>

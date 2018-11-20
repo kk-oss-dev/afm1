@@ -44,6 +44,7 @@ import android.widget.TextView;
 
 import com.github.axet.androidlibrary.app.Storage;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
+import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.androidlibrary.widgets.Toast;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activitites.MainActivity;
@@ -391,6 +392,34 @@ public class FilesFragment extends Fragment {
             }
         }
 
+        public void touch(String name, Uri to) {
+            String s = to.getScheme();
+            if (s.equals(ContentResolver.SCHEME_FILE)) {
+                File k = Storage.getFile(to);
+                File m = new File(k, name);
+                if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
+                    SuperUser.touch(m).must();
+                } else {
+                    if (!m.exists()) {
+                        try {
+                            new FileOutputStream(m).close();
+                            return;
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    if (!m.setLastModified(System.currentTimeMillis()))
+                        throw new RuntimeException("unable to touch: " + m);
+                }
+            } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+                Uri doc = storage.createFile(to, name);
+                if (doc == null)
+                    throw new RuntimeException("Unable to create file: " + name);
+            } else {
+                throw new Storage.UnknownUri();
+            }
+        }
+
         public EnumSet<OPERATION> check(NativeFile f, NativeFile t) { // ask user for confirmations?
             if (t.size < f.size)
                 return small;
@@ -625,7 +654,9 @@ public class FilesFragment extends Fragment {
 
         public Holder(View itemView) {
             super(itemView);
+            int accent = ThemeUtils.getThemeColor(getContext(), R.attr.colorAccent);
             icon = (ImageView) itemView.findViewById(R.id.icon);
+            icon.setColorFilter(accent);
             name = (TextView) itemView.findViewById(R.id.name);
             circle = itemView.findViewById(R.id.circle);
             unselected = itemView.findViewById(R.id.unselected);
@@ -942,6 +973,11 @@ public class FilesFragment extends Fragment {
             Intent intent = item.getIntent();
             Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
             startActivity(open);
+            return true;
+        }
+        if (id == R.id.action_view) {
+            MainActivity main = (MainActivity) getActivity();
+            main.openHex(item.getIntent().getData());
             return true;
         }
         if (id == R.id.action_openas) {
