@@ -54,6 +54,9 @@ import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.app.FilesApplication;
 import com.github.axet.filemanager.fragments.FilesFragment;
 
+import net.i2p.android.ext.floatingactionbutton.FloatingActionButton;
+import net.i2p.android.ext.floatingactionbutton.FloatingActionsMenu;
+
 import java.io.File;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -190,6 +193,45 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } catch (PackageManager.NameNotFoundException e) {
             ver.setVisibility(View.GONE);
         }
+
+        FloatingActionsMenu fab = (FloatingActionsMenu) findViewById(R.id.fab);
+        FloatingActionButton fabFolder = (FloatingActionButton) findViewById(R.id.fab_create_folder);
+        fabFolder.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final OpenFileDialog.EditTextDialog edit = new OpenFileDialog.EditTextDialog(MainActivity.this);
+                edit.setTitle("Create Folder");
+                edit.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String s = edit.getText();
+                        Uri uri;
+                        FilesFragment f = null;
+                        switch (mViewPager.getCurrentItem()) {
+                            case 0:
+                                f = mSectionsPagerAdapter.left;
+                                break;
+                            case 1:
+                                f = mSectionsPagerAdapter.right;
+                                break;
+                        }
+                        uri = f.getUri();
+                        FilesFragment.PendingOperation op = new FilesFragment.PendingOperation(MainActivity.this);
+                        op.mkdir(s, uri);
+                        f.reload();
+
+                    }
+                });
+                edit.show();
+            }
+        });
+        FloatingActionButton fabFile = (FloatingActionButton) findViewById(R.id.fab_create_file);
+        fabFile.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ;
+            }
+        });
 
         app = FilesApplication.from(this);
 

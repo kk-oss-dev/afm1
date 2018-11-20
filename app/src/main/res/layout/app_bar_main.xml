@@ -51,7 +51,7 @@
         app:fab_labelsPosition="left">
 
         <net.i2p.android.ext.floatingactionbutton.FloatingActionButton
-            android:id="@+id/torrent_create_button"
+            android:id="@+id/fab_create_folder"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_folder_open_black_24dp"
@@ -61,7 +61,7 @@
             app:fab_title="New Folder" />
 
         <net.i2p.android.ext.floatingactionbutton.FloatingActionButton
-            android:id="@+id/torrent_add_button"
+            android:id="@+id/fab_create_file"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_file"
