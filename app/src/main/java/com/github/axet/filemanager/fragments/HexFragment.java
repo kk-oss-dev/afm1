@@ -40,29 +40,47 @@ public class HexFragment extends Fragment {
         return String.valueOf((char) b);
     }
 
-    public static int measureMax(Holder h, RecyclerView list) {
+    public static int measureMax(RecyclerView list) {
+        Holder h = new Holder(list);
+        int w = list.getWidth() - list.getPaddingLeft() - list.getPaddingRight();
         int old = 0;
         for (int i = 1; i < 10; i++) {
             String s = formatSize(i);
             h.text.setText(s);
-            h.text.measure(0, 0);
-            if (h.text.getMeasuredWidth() > list.getWidth())
+            h.itemView.measure(0, 0);
+            if (h.itemView.getMeasuredWidth() > w)
                 return old;
             old = i;
         }
         return old;
     }
 
-    public class Holder extends RecyclerView.ViewHolder {
+    public static float measureFont(RecyclerView list, int max) {
+        Holder h = new Holder(list);
+        String s = formatSize(max);
+        h.text.setText(s);
+        int w = list.getWidth() - list.getPaddingLeft() - list.getPaddingRight();
+        float old = 0;
+        for (float f = 10; f < 20; f += 0.1) {
+            h.text.setTextSize(f);
+            h.itemView.measure(0, 0);
+            if (h.itemView.getMeasuredWidth() > w)
+                return old;
+            old = f;
+        }
+        return old;
+    }
+
+    public static class Holder extends RecyclerView.ViewHolder {
         TextView text;
 
         public Holder(View itemView) {
             super(itemView);
-            text = (TextView) itemView;
+            text = (TextView) itemView.findViewById(R.id.text);
         }
 
         public Holder(ViewGroup parent) {
-            this(LayoutInflater.from(getContext()).inflate(R.layout.hex_item, parent, false));
+            this(LayoutInflater.from(parent.getContext()).inflate(R.layout.hex_item, parent, false));
         }
 
         public void format(long addr, byte[] buf, int max) {
@@ -91,11 +109,12 @@ public class HexFragment extends Fragment {
         int max; // row bytes length
         int count; // number of rows
         ArrayList<byte[]> ll = new ArrayList<>();
+        float sp;
 
         public void create() {
             uri = getArguments().getParcelable("uri");
-            Holder h = new Holder(list);
-            int c = measureMax(h, list);
+            int c = measureMax(list);
+            sp = measureFont(list, c);
             max = c * 4;
             FilesFragment.PendingOperation op = new FilesFragment.PendingOperation(getContext());
             size = op.length(uri);
@@ -116,7 +135,9 @@ public class HexFragment extends Fragment {
 
         @Override
         public Holder onCreateViewHolder(ViewGroup parent, int viewType) {
-            return new Holder(parent);
+            Holder h = new Holder(parent);
+            h.text.setTextSize(sp);
+            return h;
         }
 
         @Override
