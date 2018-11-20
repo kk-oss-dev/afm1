@@ -12,7 +12,6 @@
 
     <string name="copy_from">From:</string>
     <string name="copy_to">To:</string>
-    <string name="copy_calculating">Calculating:</string>
     <string name="copy_pause">Pause</string>
     <string name="copy_resume">Resume</string>
     <string name="copy_retry">Retry</string>
@@ -24,4 +23,16 @@
     <string name="bookmarks">Bookmarks</string>
     <string name="empty_list">Empty</string>
     <string name="delete_bookmark">Delete Bookmark</string>
+    <string name="create_folder">Create Folder</string>
+    <string name="create_file">Create File</string>
+    <string name="toast_files_copied">Copied %1$d file(s)</string>
+    <string name="toast_files_cut">Cut %1$d file(s)</string>
+    <string name="files_delete">Delete</string>
+    <string name="toast_files_deleted">Deleted %1$d file(s)</string>
+    <string name="files_rename">Rename</string>
+    <string name="files_deleting">Deleting</string>
+    <string name="files_calculating">Calculating</string>
+    <string name="files_copying">Copying</string>
+    <string name="files_moving">Moving</string>
+    <string name="files_conflict">Conflict</string>
 </resources>

@@ -206,7 +206,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             @Override
             public void onClick(View v) {
                 final OpenFileDialog.EditTextDialog edit = new OpenFileDialog.EditTextDialog(MainActivity.this);
-                edit.setTitle("Create Folder");
+                edit.setTitle(R.string.create_folder);
                 edit.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -237,7 +237,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             @Override
             public void onClick(View v) {
                 final OpenFileDialog.EditTextDialog edit = new OpenFileDialog.EditTextDialog(MainActivity.this);
-                edit.setTitle("Create File");
+                edit.setTitle(R.string.create_file);
                 edit.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {

@@ -1004,9 +1004,6 @@ public class FilesFragment extends Fragment {
             startActivity(open);
             return true;
         }
-        if (id == R.id.action_view) {
-            return true;
-        }
         if (id == R.id.action_share) {
             Intent intent = item.getIntent();
             Intent share = StorageProvider.getProvider().shareIntent(intent.getData(), intent.getType(), intent.getStringExtra("name"));
@@ -1033,7 +1030,7 @@ public class FilesFragment extends Fragment {
             app.uri = uri;
             updatePaste();
             closeSelection();
-            Toast.makeText(getContext(), "Copied " + app.copy.size() + " files", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), getString(R.string.toast_files_copied, app.copy.size()), Toast.LENGTH_SHORT).show();
             return true;
         }
         if (id == R.id.action_cut) {
@@ -1042,28 +1039,28 @@ public class FilesFragment extends Fragment {
             app.uri = uri;
             updatePaste();
             closeSelection();
-            Toast.makeText(getContext(), "Cut " + app.cut.size() + " files", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), getString(R.string.toast_files_cut, app.cut.size()), Toast.LENGTH_SHORT).show();
             return true;
         }
         if (id == R.id.action_delete) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-            builder.setTitle("Delete");
+            builder.setTitle(R.string.files_delete);
             builder.setMessage(R.string.are_you_sure);
             builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     final PasteBuilder paste = new PasteBuilder(getContext());
-                    paste.setTitle("Deleting");
+                    paste.setTitle(getString(R.string.files_deleting));
                     final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
                         @Override
                         public void run() {
                             if (calcIndex < calcs.size()) {
                                 if (!calc())
                                     Collections.sort(files, new SortDelete());
-                                paste.copy.setText("Calculating: " + formatCalc());
+                                paste.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
                                 paste.update(this);
                                 paste.progressFile.setVisibility(View.GONE);
-                                paste.from.setText("Deleting: " + formatStart());
+                                paste.from.setText(getString(R.string.files_deleting) + ": " + formatStart());
                                 paste.to.setVisibility(View.GONE);
                                 post();
                                 return;
@@ -1078,7 +1075,7 @@ public class FilesFragment extends Fragment {
                                 paste.copy.setVisibility(View.GONE);
                                 paste.update(this, old, f);
                                 paste.progressFile.setVisibility(View.GONE);
-                                paste.from.setText("Deleting: " + storage.getDisplayName(f.uri));
+                                paste.from.setText(getString(R.string.files_deleting) + ": " + storage.getDisplayName(f.uri));
                                 paste.to.setVisibility(View.GONE);
                                 post();
                                 return;
@@ -1086,7 +1083,7 @@ public class FilesFragment extends Fragment {
                             paste.dismiss();
                             closeSelection();
                             reload();
-                            Toast.makeText(getContext(), "Deleted " + files.size() + " files", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), getString(R.string.toast_files_deleted, files.size()), Toast.LENGTH_SHORT).show();
                         }
 
                         public void post() {
@@ -1116,7 +1113,7 @@ public class FilesFragment extends Fragment {
         if (id == R.id.action_rename && item.isEnabled()) {
             final Uri f = selected.get(0);
             final OpenFileDialog.EditTextDialog dialog = new OpenFileDialog.EditTextDialog(getContext());
-            dialog.setTitle("Rename");
+            dialog.setTitle(R.string.files_rename);
             dialog.setText(storage.getName(f));
             dialog.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                 @Override
@@ -1173,9 +1170,9 @@ public class FilesFragment extends Fragment {
         final PasteBuilder paste = new PasteBuilder(getContext());
         final String n;
         if (app.copy != null)
-            n = "Copying";
+            n = getString(R.string.files_copying);
         else if (app.cut != null)
-            n = "Move";
+            n = getString(R.string.files_moving);
         else
             n = "Paste";
         paste.setTitle(n);
@@ -1189,7 +1186,7 @@ public class FilesFragment extends Fragment {
                 try {
                     if (calcIndex < calcs.size()) {
                         calc();
-                        paste.copy.setText(getString(R.string.copy_calculating) + formatCalc());
+                        paste.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
                         paste.update(this);
                         paste.from.setText(getString(R.string.copy_from) + formatStart());
                         paste.to.setText(getString(R.string.copy_to) + storage.getDisplayName(uri));
@@ -1301,7 +1298,7 @@ public class FilesFragment extends Fragment {
                         paste.copy.setVisibility(View.GONE);
                         paste.progressFile.setVisibility(View.GONE);
                         paste.progressTotal.setVisibility(View.GONE);
-                        paste.from.setText("Deleting: " + storage.getDisplayName(f.uri));
+                        paste.from.setText(getString(R.string.files_deleting) + ": " + storage.getDisplayName(f.uri));
                         paste.to.setVisibility(View.GONE);
                         post();
                         return;
@@ -1384,11 +1381,7 @@ public class FilesFragment extends Fragment {
 
     public void pasteConflict(final PendingOperation op, final PasteBuilder paste, final NativeFile f, final NativeFile t) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        String n = "Paste";
-        if (app.copy != null)
-            n = "Copying conflict";
-        if (app.cut != null)
-            n = "Move conflict";
+        String n = getString(R.string.files_conflict);
         builder.setTitle(n);
         LayoutInflater inflater = LayoutInflater.from(getContext());
         View v = inflater.inflate(R.layout.paste_conflict, null);
