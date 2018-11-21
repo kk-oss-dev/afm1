@@ -36,4 +36,22 @@
     <string name="files_moving">Moving</string>
     <string name="files_conflict">Conflict</string>
     <string name="unsupported">Not supported format</string>
+    <string name="add_bookmark_from_saf">... from SAF</string>
+    <string name="add_bookmark_from_from_storage">... from storage</string>
+    <string name="file_open">Open</string>
+    <string name="file_open_as">Open as ...</string>
+    <string name="open_as_text">Text</string>
+    <string name="open_as_image">Image</string>
+    <string name="open_as_audio">Audio</string>
+    <string name="file_view">View</string>
+    <string name="files_paste">Paste</string>
+    <string name="files_cancel_paste">Cancel Paste</string>
+    <string name="refresh">Refresh</string>
+    <string name="search">Search</string>
+    <string name="button_overwrite">Overwrite</string>
+    <string name="button_skip">Skip</string>
+    <string name="button_overwrite_all">Overwrite all</string>
+    <string name="button_skip_all">Skip all</string>
+    <string name="button_permissions">Get Permissions</string>
+    <string name="button_new_file">New File</string>
 </resources>

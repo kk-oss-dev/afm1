@@ -38,7 +38,7 @@
                 android:id="@+id/overwrite"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Overwrite" />
+                android:text="@string/button_overwrite" />
 
             <View
                 android:layout_width="0dp"
@@ -49,7 +49,7 @@
                 android:id="@+id/skip"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Skip" />
+                android:text="@string/button_skip" />
         </TableRow>
 
         <TableRow>
@@ -58,7 +58,7 @@
                 android:id="@+id/overwriteall"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Overwrite all" />
+                android:text="@string/button_overwrite_all" />
 
             <View
                 android:layout_width="0dp"
@@ -69,7 +69,7 @@
                 android:id="@+id/skipall"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Skip all" />
+                android:text="@string/button_skip_all" />
         </TableRow>
     </TableLayout>
 </LinearLayout>

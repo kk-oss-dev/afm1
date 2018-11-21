@@ -5,32 +5,32 @@
     <item
         android:id="@+id/action_open"
         android:orderInCategory="000"
-        android:title="Open" />
+        android:title="@string/file_open" />
     <item
         android:id="@+id/action_openas"
-        android:title="Open as ...">
+        android:title="@string/file_open_as">
         <menu>
             <item
                 android:id="@+id/action_openastext"
                 android:orderInCategory="100"
-                android:title="Text" />
+                android:title="@string/open_as_text" />
             <item
                 android:id="@+id/action_openasimage"
                 android:orderInCategory="200"
-                android:title="Image" />
+                android:title="@string/open_as_image" />
             <item
                 android:id="@+id/action_openasaudio"
                 android:orderInCategory="300"
-                android:title="Audio" />
+                android:title="@string/open_as_audio" />
         </menu>
     </item>
     <item
         android:id="@+id/action_view"
         android:orderInCategory="300"
-        android:title="View" />
+        android:title="@string/file_view" />
     <item
         android:id="@+id/action_share"
         android:orderInCategory="400"
-        android:title="Share"
+        android:title="@string/ShareAction"
         app:showAsAction="never" />
 </menu>

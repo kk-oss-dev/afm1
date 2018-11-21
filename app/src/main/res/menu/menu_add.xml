@@ -5,10 +5,10 @@
     <item
         android:orderInCategory="000"
         android:id="@+id/action_addstorage"
-        android:title="... from storage" />
+        android:title="@string/add_bookmark_from_from_storage" />
     <item
         android:id="@+id/action_addsaf"
         android:orderInCategory="100"
-        android:title="... from SAF"
+        android:title="@string/add_bookmark_from_saf"
         app:showAsAction="never" />
 </menu>
