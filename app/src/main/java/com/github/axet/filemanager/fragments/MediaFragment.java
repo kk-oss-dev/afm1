@@ -29,6 +29,7 @@ public class MediaFragment extends Fragment {
 
     HorizontalScrollView scroll;
     RecyclerView list;
+    boolean supported;
 
     // https://stackoverflow.com/questions/898669/how-can-i-detect-if-a-file-is-binary-non-text-in-python
     public static class FileTxt {
@@ -145,6 +146,11 @@ public class MediaFragment extends Fragment {
             return new Holder(parent);
         }
 
+        void load() {
+            for (int i = 0; i < 50; i++)
+                next();
+        }
+
         boolean next() {
             if (scanner == null)
                 return false;
@@ -211,6 +217,7 @@ public class MediaFragment extends Fragment {
             if (bm != null) {
                 ImageView i = new ImageView(getContext());
                 i.setImageBitmap(bm);
+                supported = true;
                 return i;
             }
         } catch (IOException e) {
@@ -229,7 +236,7 @@ public class MediaFragment extends Fragment {
                 View wrap = v.findViewById(R.id.wrap);
                 View mono = v.findViewById(R.id.mono);
                 final Adapter a = new Adapter();
-                a.next();
+                a.load();
                 wrap.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
@@ -248,6 +255,7 @@ public class MediaFragment extends Fragment {
                 list = (RecyclerView) v.findViewById(R.id.list);
                 list.setLayoutManager(new LinearLayoutManager(getContext()));
                 list.setAdapter(a);
+                supported = true;
                 return v;
             }
         } catch (IOException e) {
