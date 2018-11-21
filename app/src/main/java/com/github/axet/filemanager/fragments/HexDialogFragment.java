@@ -25,6 +25,7 @@ public class HexDialogFragment extends DialogFragment {
     ViewPager pager;
     View v;
     Button play;
+    TorrentPagerAdapter adapter;
 
     public static class TorrentPagerAdapter extends FragmentPagerAdapter {
         Context context;
@@ -110,6 +111,8 @@ public class HexDialogFragment extends DialogFragment {
         d.setOnShowListener(new DialogInterface.OnShowListener() {
             @Override
             public void onShow(DialogInterface dialog) {
+                if (adapter.right.supported)
+                    pager.setCurrentItem(1, false);
                 play = d.getButton(DialogInterface.BUTTON_NEUTRAL);
                 play.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -139,7 +142,7 @@ public class HexDialogFragment extends DialogFragment {
         Uri uri = getArguments().getParcelable("uri");
 
         pager = (ViewPager) v.findViewById(R.id.pager);
-        TorrentPagerAdapter adapter = new TorrentPagerAdapter(getContext(), getChildFragmentManager(), uri);
+        adapter = new TorrentPagerAdapter(getContext(), getChildFragmentManager(), uri);
         pager.setAdapter(adapter);
 
         TabLayout tabLayout = (TabLayout) v.findViewById(R.id.tab_layout);
@@ -147,5 +150,10 @@ public class HexDialogFragment extends DialogFragment {
 
         pager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
         return v;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
     }
 }
