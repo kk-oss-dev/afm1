@@ -324,25 +324,22 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
 
         tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
-        mSectionsPagerAdapter.update();
 
         Menu m = navigationView.getMenu();
         bookmarksMenu = m.addSubMenu(R.string.bookmarks);
-
         SubMenu settingsMenu = m.addSubMenu(R.string.menu_settings);
         settingsMenu.setIcon(R.drawable.ic_settings_black_24dp);
         MenuItem add = settingsMenu.add(R.string.add_bookmark);
         add.setIntent(new Intent(ADD_BOOKMARK));
         add.setIcon(R.drawable.ic_add_black_24dp);
+        reloadMenu();
 
         SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
         mViewPager.setCurrentItem(shared.getInt(FilesApplication.PREF_ACTIVE, 0));
 
-        onPageChangeListener.onPageScrollStateChanged(ViewPager.SCROLL_STATE_IDLE);
-
-        reloadMenu();
-
         openIntent(getIntent());
+
+        update();
     }
 
     @Override
@@ -530,7 +527,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         if (s.startsWith(ContentResolver.SCHEME_FILE)) {
             File f = Storage.getFile(u);
             if (f.equals(Environment.getExternalStorageDirectory()))
-                return "/sdcard";
+                return f.getPath();
             else
                 return ".../" + f.getName();
         } else {

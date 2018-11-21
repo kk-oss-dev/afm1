@@ -2,27 +2,33 @@ package com.github.axet.filemanager.fragments;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.github.axet.filemanager.R;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Scanner;
 
 public class MediaFragment extends Fragment {
     public static final String TAG = MediaFragment.class.getSimpleName();
+
+    HorizontalScrollView scroll;
+    RecyclerView list;
 
     // https://stackoverflow.com/questions/898669/how-can-i-detect-if-a-file-is-binary-non-text-in-python
     public static class FileTxt {
@@ -83,6 +89,97 @@ public class MediaFragment extends Fragment {
         }
     }
 
+    public static class Holder extends RecyclerView.ViewHolder {
+        TextView text;
+
+        public Holder(View itemView) {
+            super(itemView);
+            text = (TextView) itemView.findViewById(R.id.text);
+        }
+
+        public Holder(ViewGroup parent) {
+            this(LayoutInflater.from(parent.getContext()).inflate(R.layout.media_item, parent, false));
+        }
+    }
+
+    public class Adapter extends RecyclerView.Adapter<HexFragment.Holder> {
+        FilesFragment.PendingOperation op;
+        Uri uri;
+        InputStream is;
+        Scanner scanner;
+        ArrayList<String> ll = new ArrayList<>();
+        boolean mono = true;
+
+        public Adapter() {
+            create();
+        }
+
+        public void create() {
+            op = new FilesFragment.PendingOperation(getContext());
+            uri = getArguments().getParcelable("uri");
+            try {
+                is = op.open(uri);
+                scanner = new Scanner(is);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public void close() {
+            if (op != null) {
+                op.close();
+                op = null;
+            }
+            if (is != null) {
+                try {
+                    is.close();
+                    is = null;
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        @Override
+        public HexFragment.Holder onCreateViewHolder(ViewGroup parent, int viewType) {
+            HexFragment.Holder h = new HexFragment.Holder(parent);
+            return h;
+        }
+
+        boolean next() {
+            if (scanner == null)
+                return false;
+            if (scanner.hasNextLine())
+                ll.add(scanner.nextLine());
+            else
+                scanner = null;
+            return true;
+        }
+
+        @Override
+        public void onBindViewHolder(HexFragment.Holder holder, int position) {
+            if (position >= ll.size() - 1 - list.getChildCount()) { // load screen + keep second screen
+                list.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (next())
+                            notifyDataSetChanged();
+                    }
+                });
+            }
+            if (mono)
+                holder.text.setTypeface(Typeface.MONOSPACE, Typeface.NORMAL);
+            else
+                holder.text.setTypeface(Typeface.DEFAULT, Typeface.NORMAL);
+            holder.text.setText(ll.get(position));
+        }
+
+        @Override
+        public int getItemCount() {
+            return ll.size();
+        }
+    }
+
     public MediaFragment() {
     }
 
@@ -129,22 +226,34 @@ public class MediaFragment extends Fragment {
             if (len < buf.length && !f.done)
                 f.detected = true;
             if (f.detected) {
-                ScrollView v = new ScrollView(getContext());
-                TextView text = new TextView(getContext());
-                text.setText(new String(buf));
-                v.addView(text);
+                View v = inflater.inflate(R.layout.media_text, container, false);
+                View wrap = v.findViewById(R.id.wrap);
+                View mono = v.findViewById(R.id.mono);
+                final Adapter a = new Adapter();
+                a.next();
+                wrap.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        scroll.setFillViewport(!scroll.isFillViewport());
+                    }
+                });
+                mono.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        a.mono = !a.mono;
+                        a.notifyDataSetChanged();
+                    }
+                });
+                scroll = (HorizontalScrollView) v.findViewById(R.id.scroll);
+                list = (RecyclerView) v.findViewById(R.id.list);
+                list.setLayoutManager(new LinearLayoutManager(getContext()));
+                list.setAdapter(a);
                 return v;
             }
         } catch (IOException e) {
             Log.d(TAG, "Unable to read", e);
         }
-        FrameLayout f = new FrameLayout(getContext());
-        ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        f.setLayoutParams(lp);
-        TextView rootView = new TextView(getContext());
-        rootView.setText(R.string.unsupported);
-        f.addView(rootView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
-        return f;
+        return HexFragment.error(getContext(), getContext().getString(R.string.unsupported));
     }
 
     @Override
