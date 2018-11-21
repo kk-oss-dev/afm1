@@ -215,6 +215,14 @@ public class HexFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        if (list != null) {
+            list.setAdapter(null);
+            list = null;
+        }
+        if (adapter != null) {
+            adapter.close();
+            adapter = null;
+        }
     }
 
     @Override
@@ -255,12 +263,5 @@ public class HexFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        list.setAdapter(null);
-        adapter.close();
     }
 }
