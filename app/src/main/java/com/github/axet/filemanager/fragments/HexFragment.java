@@ -1,16 +1,20 @@
 package com.github.axet.filemanager.fragments;
 
+import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.filemanager.R;
 
 import java.io.IOException;
@@ -21,6 +25,7 @@ import java.util.Arrays;
 public class HexFragment extends Fragment {
     public static final String TAG = HexFragment.class.getSimpleName();
 
+    Adapter adapter;
     RecyclerView list;
 
     public static String formatSize(int c) {
@@ -71,6 +76,18 @@ public class HexFragment extends Fragment {
         return old;
     }
 
+    public static View error(Context context, String msg) {
+        FrameLayout f = new FrameLayout(context);
+        int dp5 = ThemeUtils.dp2px(context, 5);
+        f.setPadding(dp5, dp5, dp5, dp5);
+        ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        f.setLayoutParams(lp);
+        TextView rootView = new TextView(context);
+        rootView.setText(msg);
+        f.addView(rootView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+        return f;
+    }
+
     public static class Holder extends RecyclerView.ViewHolder {
         TextView text;
 
@@ -103,34 +120,48 @@ public class HexFragment extends Fragment {
     }
 
     public class Adapter extends RecyclerView.Adapter<Holder> {
+        FilesFragment.PendingOperation op;
+        Uri uri;
         InputStream is;
         long size;
-        Uri uri;
         int max; // row bytes length
         int count; // number of rows
         ArrayList<byte[]> ll = new ArrayList<>();
         float sp;
 
         public void create() {
+            op = new FilesFragment.PendingOperation(getContext());
             uri = getArguments().getParcelable("uri");
-            int c = measureMax(list);
-            sp = measureFont(list, c);
-            max = c * 4;
-            FilesFragment.PendingOperation op = new FilesFragment.PendingOperation(getContext());
-            size = op.length(uri);
-            count = (int) (size / max);
-            if (size % max > 0)
-                count += 1;
             try {
                 is = op.open(uri);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+            size = op.length(uri);
         }
 
-        @Override
-        public void onAttachedToRecyclerView(RecyclerView recyclerView) {
-            super.onAttachedToRecyclerView(recyclerView);
+        public void open() {
+            int c = measureMax(list);
+            sp = measureFont(list, c);
+            max = c * 4;
+            count = (int) (size / max);
+            if (size % max > 0)
+                count += 1;
+        }
+
+        public void close() {
+            if (op != null) {
+                op.close();
+                op = null;
+            }
+            if (is != null) {
+                try {
+                    is.close();
+                    is = null;
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
 
         @Override
@@ -158,8 +189,8 @@ public class HexFragment extends Fragment {
 
         @Override
         public int getItemCount() {
-            if (is == null)
-                create();
+            if (max == 0)
+                open();
             return count;
         }
     }
@@ -188,8 +219,13 @@ public class HexFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        adapter = new Adapter();
+        try {
+            adapter.create();
+        } catch (RuntimeException e) {
+            return error(getContext(), e.getMessage());
+        }
         View rootView = inflater.inflate(R.layout.fragment_hex, container, false);
-        Adapter adapter = new Adapter();
         list = (RecyclerView) rootView.findViewById(R.id.list);
         list.setLayoutManager(new LinearLayoutManager(getContext()) {
             @Override
@@ -219,5 +255,12 @@ public class HexFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        list.setAdapter(null);
+        adapter.close();
     }
 }

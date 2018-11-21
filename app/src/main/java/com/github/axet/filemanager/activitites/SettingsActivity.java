@@ -2,19 +2,23 @@ package com.github.axet.filemanager.activitites;
 
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
 import android.view.MenuItem;
 
 import com.github.axet.androidlibrary.widgets.AppCompatSettingsThemeActivity;
+import com.github.axet.androidlibrary.widgets.Toast;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.app.FilesApplication;
+import com.github.axet.filemanager.app.SuperUser;
 
 public class SettingsActivity extends AppCompatSettingsThemeActivity {
 
@@ -29,22 +33,11 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity {
         @Override
         public boolean onPreferenceChange(Preference preference, Object value) {
             String stringValue = value.toString();
-
             if (preference instanceof ListPreference) {
-                // For list preferences, look up the correct display value in
-                // the preference's 'entries' list.
                 ListPreference listPreference = (ListPreference) preference;
                 int index = listPreference.findIndexOfValue(stringValue);
-
-                // Set the summary to reflect the new value.
-                preference.setSummary(
-                        index >= 0
-                                ? listPreference.getEntries()[index]
-                                : null);
-
+                preference.setSummary(index >= 0 ? listPreference.getEntries()[index] : null);
             } else {
-                // For all other preferences, set the summary to the value's
-                // simple string representation.
                 preference.setSummary(stringValue);
             }
             return true;
@@ -52,15 +45,8 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity {
     };
 
     private static void bindPreferenceSummaryToValue(Preference preference) {
-        // Set the listener to watch for value changes.
         preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
-
-        // Trigger the listener immediately with the preference's
-        // current value.
-        sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
-                PreferenceManager
-                        .getDefaultSharedPreferences(preference.getContext())
-                        .getString(preference.getKey(), ""));
+        sBindPreferenceSummaryToValueListener.onPreferenceChange(preference, PreferenceManager.getDefaultSharedPreferences(preference.getContext()).getString(preference.getKey(), ""));
     }
 
     @Override
@@ -90,7 +76,6 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity {
     private void setupActionBar() {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
-            // Show the Up button in the action bar.
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
     }
@@ -101,6 +86,22 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity {
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             addPreferencesFromResource(R.xml.pref_general);
             setHasOptionsMenu(true);
+            Preference root = findPreference(FilesApplication.PREF_ROOT);
+            root.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    if ((boolean) newValue) {
+                        SuperUser.Result r = SuperUser.su(SuperUser.BIN_TRUE);
+                        if (!r.ok()) {
+                            Toast.makeText(getContext(), r.message(), Toast.LENGTH_LONG).show();
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+            });
+            if (!SuperUser.isRooted())
+                root.setVisible(false);
         }
 
         @Override
