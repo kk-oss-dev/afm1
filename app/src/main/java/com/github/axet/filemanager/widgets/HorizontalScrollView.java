@@ -3,6 +3,7 @@ package com.github.axet.filemanager.widgets;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.View;
 
 public class HorizontalScrollView extends android.widget.HorizontalScrollView {
@@ -42,5 +43,22 @@ public class HorizontalScrollView extends android.widget.HorizontalScrollView {
         } else {
             super.onLayout(changed, l, t, r, b);
         }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        if (!isFillViewport())
+            return false;
+        return super.onTouchEvent(ev);
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (!isFillViewport())
+            return false;
+        View child = getChildAt(0);
+        if (child.getMeasuredWidth() <= getWidth())
+            return false;
+        return super.onInterceptTouchEvent(ev);
     }
 }

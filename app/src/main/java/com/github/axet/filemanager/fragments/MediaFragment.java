@@ -30,6 +30,7 @@ public class MediaFragment extends Fragment {
     HorizontalScrollView scroll;
     RecyclerView list;
     boolean supported;
+    Adapter adapter;
 
     // https://stackoverflow.com/questions/898669/how-can-i-detect-if-a-file-is-binary-non-text-in-python
     public static class FileTxt {
@@ -205,14 +206,19 @@ public class MediaFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        if (adapter != null) {
+            adapter.close();
+            adapter = null;
+        }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         FilesFragment.PendingOperation op = new FilesFragment.PendingOperation(getContext());
         Uri uri = getArguments().getParcelable("uri");
+        InputStream is = null;
         try {
-            InputStream is = op.open(uri);
+            is = op.open(uri);
             Bitmap bm = BitmapFactory.decodeStream(is);
             if (bm != null) {
                 ImageView i = new ImageView(getContext());
@@ -222,10 +228,17 @@ public class MediaFragment extends Fragment {
             }
         } catch (IOException e) {
             Log.d(TAG, "Unable to read", e);
+        } finally {
+            try {
+                if (is != null)
+                    is.close();
+            } catch (IOException e) {
+                Log.d(TAG, "unable to close", e);
+            }
         }
         try {
-            InputStream is = op.open(uri);
-            byte[] buf = new byte[16 * 1024];
+            is = op.open(uri);
+            byte[] buf = new byte[1 * 1024];
             int len = is.read(buf);
             FileTxt f = new FileTxt();
             f.write(buf, 0, len);
@@ -235,31 +248,39 @@ public class MediaFragment extends Fragment {
                 View v = inflater.inflate(R.layout.media_text, container, false);
                 View wrap = v.findViewById(R.id.wrap);
                 View mono = v.findViewById(R.id.mono);
-                final Adapter a = new Adapter();
-                a.load();
+                adapter = new Adapter();
+                adapter.load();
                 wrap.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         scroll.setFillViewport(!scroll.isFillViewport());
-                        a.notifyDataSetChanged();
+                        adapter.notifyDataSetChanged();
                     }
                 });
                 mono.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        a.mono = !a.mono;
-                        a.notifyDataSetChanged();
+                        adapter.mono = !adapter.mono;
+                        adapter.notifyDataSetChanged();
                     }
                 });
                 scroll = (HorizontalScrollView) v.findViewById(R.id.scroll);
                 list = (RecyclerView) v.findViewById(R.id.list);
                 list.setLayoutManager(new LinearLayoutManager(getContext()));
-                list.setAdapter(a);
+                list.setAdapter(adapter);
                 supported = true;
                 return v;
             }
         } catch (IOException e) {
             Log.d(TAG, "Unable to read", e);
+        } finally {
+            try {
+                if (is != null) {
+                    is.close();
+                }
+            } catch (IOException e) {
+                Log.d(TAG, "unable to close", e);
+            }
         }
         return HexFragment.error(getContext(), getContext().getString(R.string.unsupported));
     }
