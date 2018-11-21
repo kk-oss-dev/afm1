@@ -31,6 +31,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -1086,6 +1087,7 @@ public class FilesFragment extends Fragment {
                             if (calcIndex < calcs.size()) {
                                 if (!calc())
                                     Collections.sort(files, new SortDelete());
+                                paste.copy.setGravity(Gravity.NO_GRAVITY);
                                 paste.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
                                 paste.update(this);
                                 paste.progressFile.setVisibility(View.GONE);
@@ -1101,10 +1103,10 @@ public class FilesFragment extends Fragment {
                                 if (!f.dir)
                                     processed += f.size;
                                 filesIndex++;
-                                paste.copy.setVisibility(View.GONE);
+                                paste.copy.setText(getString(R.string.files_deleting) + ": " + formatStart());
                                 paste.update(this, old, f);
                                 paste.progressFile.setVisibility(View.GONE);
-                                paste.from.setText(getString(R.string.files_deleting) + ": " + storage.getDisplayName(f.uri));
+                                paste.from.setText(storage.getDisplayName(f.uri));
                                 paste.to.setVisibility(View.GONE);
                                 post();
                                 return;
@@ -1118,6 +1120,24 @@ public class FilesFragment extends Fragment {
                         public void post() {
                             handler.removeCallbacks(this);
                             handler.post(this);
+                        }
+                    };
+                    paste.neutral = new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            final View.OnClickListener neutral = this;
+                            op.pause();
+                            handler.removeCallbacks(op);
+                            final Button b = paste.d.getButton(DialogInterface.BUTTON_NEUTRAL);
+                            b.setText(R.string.copy_resume);
+                            paste.neutral = new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    op.run();
+                                    b.setText(R.string.copy_pause);
+                                    paste.neutral = neutral;
+                                }
+                            };
                         }
                     };
                     paste.dismiss = new DialogInterface.OnDismissListener() {
@@ -1215,6 +1235,7 @@ public class FilesFragment extends Fragment {
                 try {
                     if (calcIndex < calcs.size()) {
                         calc();
+                        paste.copy.setGravity(Gravity.NO_GRAVITY);
                         paste.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
                         paste.update(this);
                         paste.from.setText(getString(R.string.copy_from) + " " + formatStart());
@@ -1255,8 +1276,12 @@ public class FilesFragment extends Fragment {
                                 };
                                 thread.start();
                             } else {
-                                if (delayed != null)
-                                    throw new RuntimeException(delayed);
+                                if (delayed != null) {
+                                    Throwable d = delayed;
+                                    thread = null;
+                                    delayed = null;
+                                    throw new RuntimeException(d);
+                                }
                             }
                             post(thread == null ? 0 : 1000);
                         }
@@ -1269,6 +1294,7 @@ public class FilesFragment extends Fragment {
                             e = FilesApplication.formatLeftExact(context, diff);
                         else
                             e = "∞";
+                        paste.copy.setGravity(Gravity.CENTER);
                         paste.copy.setText(n + " " + FilesApplication.formatSize(context, a) + "/s" + ", " + e);
                         paste.update(this, old, f);
                         paste.from.setText(getString(R.string.copy_from) + " " + storage.getDisplayName(f.uri));
