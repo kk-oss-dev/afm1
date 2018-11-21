@@ -13,11 +13,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.github.axet.filemanager.R;
+import com.github.axet.filemanager.widgets.HorizontalScrollView;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -102,7 +102,7 @@ public class MediaFragment extends Fragment {
         }
     }
 
-    public class Adapter extends RecyclerView.Adapter<HexFragment.Holder> {
+    public class Adapter extends RecyclerView.Adapter<Holder> {
         FilesFragment.PendingOperation op;
         Uri uri;
         InputStream is;
@@ -141,9 +141,8 @@ public class MediaFragment extends Fragment {
         }
 
         @Override
-        public HexFragment.Holder onCreateViewHolder(ViewGroup parent, int viewType) {
-            HexFragment.Holder h = new HexFragment.Holder(parent);
-            return h;
+        public Holder onCreateViewHolder(ViewGroup parent, int viewType) {
+            return new Holder(parent);
         }
 
         boolean next() {
@@ -153,17 +152,17 @@ public class MediaFragment extends Fragment {
                 ll.add(scanner.nextLine());
             else
                 scanner = null;
+            notifyDataSetChanged();
             return true;
         }
 
         @Override
-        public void onBindViewHolder(HexFragment.Holder holder, int position) {
+        public void onBindViewHolder(Holder holder, int position) {
             if (position >= ll.size() - 1 - list.getChildCount()) { // load screen + keep second screen
                 list.post(new Runnable() {
                     @Override
                     public void run() {
-                        if (next())
-                            notifyDataSetChanged();
+                        next();
                     }
                 });
             }
@@ -235,6 +234,7 @@ public class MediaFragment extends Fragment {
                     @Override
                     public void onClick(View v) {
                         scroll.setFillViewport(!scroll.isFillViewport());
+                        a.notifyDataSetChanged();
                     }
                 });
                 mono.setOnClickListener(new View.OnClickListener() {

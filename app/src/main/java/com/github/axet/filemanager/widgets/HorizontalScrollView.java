@@ -3,8 +3,11 @@ package com.github.axet.filemanager.widgets;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.View;
 
 public class HorizontalScrollView extends android.widget.HorizontalScrollView {
+    public boolean wrap = false;
+
     public HorizontalScrollView(Context context) {
         super(context);
     }
@@ -29,9 +32,13 @@ public class HorizontalScrollView extends android.widget.HorizontalScrollView {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        if (isFillViewport()) {
+        if (!isFillViewport()) {
             scrollTo(0, 0);
-            getChildAt(0).layout(0, 0, r - l, b - t);
+            View child = getChildAt(0);
+            int w = r - l;
+            int h = b - t;
+            child.measure(MeasureSpec.makeMeasureSpec(w, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(h, MeasureSpec.AT_MOST));
+            child.layout(0, 0, child.getMeasuredWidth(), child.getMeasuredHeight());
         } else {
             super.onLayout(changed, l, t, r, b);
         }
