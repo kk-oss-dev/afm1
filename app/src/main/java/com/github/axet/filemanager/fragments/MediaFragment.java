@@ -17,6 +17,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.github.axet.filemanager.R;
+import com.github.axet.filemanager.app.Storage;
 import com.github.axet.filemanager.widgets.HorizontalScrollView;
 
 import java.io.IOException;
@@ -105,7 +106,7 @@ public class MediaFragment extends Fragment {
     }
 
     public class Adapter extends RecyclerView.Adapter<Holder> {
-        FilesFragment.PendingOperation op;
+        Storage storage;
         Uri uri;
         InputStream is;
         Scanner scanner;
@@ -117,10 +118,10 @@ public class MediaFragment extends Fragment {
         }
 
         public void create() {
-            op = new FilesFragment.PendingOperation(getContext());
+            storage = new Storage(getContext());
             uri = getArguments().getParcelable("uri");
             try {
-                is = op.open(uri);
+                is = storage.open(uri);
                 scanner = new Scanner(is);
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -128,10 +129,6 @@ public class MediaFragment extends Fragment {
         }
 
         public void close() {
-            if (op != null) {
-                op.close();
-                op = null;
-            }
             if (is != null) {
                 try {
                     is.close();
@@ -214,11 +211,11 @@ public class MediaFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        FilesFragment.PendingOperation op = new FilesFragment.PendingOperation(getContext());
+        Storage storage = new Storage(getContext());
         Uri uri = getArguments().getParcelable("uri");
         InputStream is = null;
         try {
-            is = op.open(uri);
+            is = storage.open(uri);
             Bitmap bm = BitmapFactory.decodeStream(is);
             if (bm != null) {
                 ImageView i = new ImageView(getContext());
@@ -237,7 +234,7 @@ public class MediaFragment extends Fragment {
             }
         }
         try {
-            is = op.open(uri);
+            is = storage.open(uri);
             byte[] buf = new byte[1 * 1024];
             int len = is.read(buf);
             FileTxt f = new FileTxt();

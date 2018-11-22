@@ -44,7 +44,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.github.axet.androidlibrary.app.Storage;
 import com.github.axet.androidlibrary.widgets.AboutPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.AppCompatThemeActivity;
 import com.github.axet.androidlibrary.widgets.OpenChoicer;
@@ -53,6 +52,7 @@ import com.github.axet.androidlibrary.widgets.PathMax;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.app.FilesApplication;
+import com.github.axet.filemanager.app.Storage;
 import com.github.axet.filemanager.fragments.FilesFragment;
 import com.github.axet.filemanager.fragments.HexDialogFragment;
 
@@ -223,8 +223,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                                 break;
                         }
                         uri = f.getUri();
-                        FilesFragment.PendingOperation op = new FilesFragment.PendingOperation(MainActivity.this);
-                        op.mkdir(uri, s);
+                        storage.mkdir(uri, s);
                         f.reload();
 
                     }
@@ -254,8 +253,9 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                                 break;
                         }
                         uri = f.getUri();
-                        FilesFragment.PendingOperation op = new FilesFragment.PendingOperation(MainActivity.this);
-                        op.touch(uri, s);
+                        Storage storage = new Storage(MainActivity.this);
+                        uri = storage.child(uri, s);
+                        storage.touch(uri);
                         f.reload();
 
                     }

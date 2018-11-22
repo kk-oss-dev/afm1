@@ -83,7 +83,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                             k = new File(f, name);
                         ff.add(new NativeFile(k, true, size, last));
                     }
-                } else if (perms.startsWith("l")) {
+                } else if (perms.startsWith("listener")) {
                     String[] ss = name.split("->");
                     name = ss[0].trim();
                     File t = new File(ss[1].trim());
