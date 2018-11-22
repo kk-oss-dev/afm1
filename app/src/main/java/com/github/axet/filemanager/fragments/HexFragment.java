@@ -16,6 +16,7 @@ import android.widget.TextView;
 
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.filemanager.R;
+import com.github.axet.filemanager.app.Storage;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -120,7 +121,7 @@ public class HexFragment extends Fragment {
     }
 
     public class Adapter extends RecyclerView.Adapter<Holder> {
-        FilesFragment.PendingOperation op;
+        Storage storage;
         Uri uri;
         InputStream is;
         long size;
@@ -130,14 +131,14 @@ public class HexFragment extends Fragment {
         float sp;
 
         public void create() {
-            op = new FilesFragment.PendingOperation(getContext());
+            storage = new Storage(getContext());
             uri = getArguments().getParcelable("uri");
             try {
-                is = op.open(uri);
+                is = storage.open(uri);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            size = op.length(uri);
+            size = storage.getLength(uri);
         }
 
         public void open() {
@@ -150,10 +151,6 @@ public class HexFragment extends Fragment {
         }
 
         public void close() {
-            if (op != null) {
-                op.close();
-                op = null;
-            }
             if (is != null) {
                 try {
                     is.close();

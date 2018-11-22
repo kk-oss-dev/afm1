@@ -22,11 +22,11 @@ import java.io.File;
 
 public class PathView extends HorizontalScrollView {
     LinearLayout ll;
-    public Listener l;
+    public Listener listener;
     Uri uri;
 
     public interface Listener {
-        void setUri(Uri u);
+        void onUriSelected(Uri u);
     }
 
     public PathView(Context context) {
@@ -116,7 +116,7 @@ public class PathView extends HorizontalScrollView {
             b.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    l.setUri(u);
+                    listener.onUriSelected(u);
                 }
             });
             ll.addView(b, 0);
