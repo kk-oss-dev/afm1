@@ -91,11 +91,15 @@ public class FilesFragment extends Fragment {
     Uri uri;
     Adapter adapter;
     Storage storage;
+
+    PasteBuilder delete;
+    PasteBuilder paste;
+
     PathView path;
     View button;
     TextView error;
     MenuItem toolbar;
-    MenuItem paste;
+    MenuItem pasteMenu;
     MenuItem pasteCancel;
     MenuItem rename;
     SelectView select;
@@ -632,10 +636,10 @@ public class FilesFragment extends Fragment {
 
     void updatePaste() {
         if (app.copy != null || app.cut != null) {
-            paste.setVisible(true);
+            pasteMenu.setVisible(true);
             pasteCancel.setVisible(true);
         } else {
-            paste.setVisible(false);
+            pasteMenu.setVisible(false);
             pasteCancel.setVisible(false);
         }
         adapter.notifyDataSetChanged();
@@ -713,7 +717,7 @@ public class FilesFragment extends Fragment {
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
         toolbar = menu.findItem(R.id.action_selected);
-        paste = menu.findItem(R.id.action_paste);
+        pasteMenu = menu.findItem(R.id.action_paste);
         pasteCancel = menu.findItem(R.id.action_paste_cancel);
         updatePaste();
         select = (SelectView) MenuItemCompat.getActionView(toolbar);
@@ -815,8 +819,10 @@ public class FilesFragment extends Fragment {
             builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    final PasteBuilder paste = new PasteBuilder(getContext());
-                    paste.setTitle(getString(R.string.files_deleting));
+                    if (delete != null)
+                        return;
+                    delete = new PasteBuilder(getContext());
+                    delete.setTitle(getString(R.string.files_deleting));
                     final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
                         @Override
                         public void run() {
@@ -824,12 +830,12 @@ public class FilesFragment extends Fragment {
                                 if (calcIndex < calcs.size()) {
                                     if (!calc())
                                         Collections.sort(files, new SortDelete());
-                                    paste.copy.setGravity(Gravity.NO_GRAVITY);
-                                    paste.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
-                                    paste.update(this);
-                                    paste.progressFile.setVisibility(View.GONE);
-                                    paste.from.setText(getString(R.string.files_deleting) + ": " + formatStart());
-                                    paste.to.setVisibility(View.GONE);
+                                    delete.copy.setGravity(Gravity.NO_GRAVITY);
+                                    delete.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
+                                    delete.update(this);
+                                    delete.progressFile.setVisibility(View.GONE);
+                                    delete.from.setText(getString(R.string.files_deleting) + ": " + formatStart());
+                                    delete.to.setVisibility(View.GONE);
                                     post();
                                     return;
                                 }
@@ -841,20 +847,20 @@ public class FilesFragment extends Fragment {
                                     if (!f.dir)
                                         processed += f.size;
                                     filesIndex++;
-                                    paste.copy.setText(getString(R.string.files_deleting) + ": " + formatStart());
-                                    paste.update(this, old, f);
-                                    paste.progressFile.setVisibility(View.GONE);
-                                    paste.from.setText(storage.getDisplayName(f.uri));
-                                    paste.to.setVisibility(View.GONE);
+                                    delete.copy.setText(getString(R.string.files_deleting) + ": " + formatStart());
+                                    delete.update(this, old, f);
+                                    delete.progressFile.setVisibility(View.GONE);
+                                    delete.from.setText(storage.getDisplayName(f.uri));
+                                    delete.to.setVisibility(View.GONE);
                                     post();
                                     return;
                                 }
-                                paste.dismiss();
+                                delete.dismiss();
                                 closeSelection();
                                 reload();
                                 Toast.makeText(getContext(), getString(R.string.toast_files_deleted, files.size()), Toast.LENGTH_SHORT).show();
                             } catch (RuntimeException e) {
-                                pasteError(paste, this, e);
+                                pasteError(delete, this, e);
                             }
                         }
 
@@ -863,32 +869,33 @@ public class FilesFragment extends Fragment {
                             handler.post(this);
                         }
                     };
-                    paste.neutral = new View.OnClickListener() {
+                    delete.neutral = new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
                             final View.OnClickListener neutral = this;
                             op.pause();
                             handler.removeCallbacks(op);
-                            final Button b = paste.d.getButton(DialogInterface.BUTTON_NEUTRAL);
+                            final Button b = delete.d.getButton(DialogInterface.BUTTON_NEUTRAL);
                             b.setText(R.string.copy_resume);
-                            paste.neutral = new View.OnClickListener() {
+                            delete.neutral = new View.OnClickListener() {
                                 @Override
                                 public void onClick(View v) {
                                     op.run();
                                     b.setText(R.string.copy_pause);
-                                    paste.neutral = neutral;
+                                    delete.neutral = neutral;
                                 }
                             };
                         }
                     };
-                    paste.dismiss = new DialogInterface.OnDismissListener() {
+                    delete.dismiss = new DialogInterface.OnDismissListener() {
                         @Override
                         public void onDismiss(DialogInterface dialog) {
                             handler.removeCallbacks(op);
-                            paste.dismiss();
+                            delete.dismiss();
+                            delete = null;
                         }
                     };
-                    paste.show();
+                    delete.show();
                     op.run();
                 }
             });
@@ -957,7 +964,9 @@ public class FilesFragment extends Fragment {
             ff = app.copy;
         if (app.cut != null)
             ff = app.cut;
-        final PasteBuilder paste = new PasteBuilder(getContext());
+        if (paste != null)
+            return;
+        paste = new PasteBuilder(getContext());
         final String n;
         if (app.copy != null)
             n = getString(R.string.files_copying);
@@ -1152,6 +1161,7 @@ public class FilesFragment extends Fragment {
                 op.close();
                 handler.removeCallbacks(op);
                 reload();
+                paste = null;
             }
         };
         final AlertDialog d = paste.create();
