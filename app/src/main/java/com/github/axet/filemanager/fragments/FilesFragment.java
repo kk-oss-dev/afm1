@@ -70,6 +70,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FilesFragment extends Fragment {
     public static final String TAG = FilesFragment.class.getSimpleName();
@@ -126,8 +127,9 @@ public class FilesFragment extends Fragment {
         ContentResolver resolver;
         Storage storage;
         SharedPreferences shared;
-        Thread thread;
         final Object lock = new Object();
+        final AtomicBoolean interrupt = new AtomicBoolean(); // soft interrupt
+        Thread thread;
         Throwable delayed;
 
         int calcIndex;
@@ -152,8 +154,6 @@ public class FilesFragment extends Fragment {
         EnumSet<OPERATION> big = EnumSet.of(OPERATION.ASK); // overwrite file bigger then source
         EnumSet<OPERATION> newer = EnumSet.of(OPERATION.ASK); // overwrite same size file but newer date
         EnumSet<OPERATION> same = EnumSet.of(OPERATION.ASK); // same file size and date
-
-        byte[] buf = new byte[SuperUser.BUF_SIZE];
 
         enum OPERATION {NONE, ASK, SKIP, OVERWRITE}
 
@@ -232,6 +232,7 @@ public class FilesFragment extends Fragment {
         public void close() {
             try {
                 if (thread != null) {
+                    interrupt.set(true);
                     thread.interrupt();
                     try {
                         thread.join();
@@ -269,14 +270,12 @@ public class FilesFragment extends Fragment {
             return EnumSet.of(OPERATION.NONE); // not asking
         }
 
-        public boolean copy() throws IOException {
+        public int copy(byte[] buf) throws IOException {
             int len;
             if ((len = is.read(buf)) < 0)
-                return false;
+                return len;
             os.write(buf, 0, len);
-            current += len;
-            processed += len;
-            return true;
+            return len;
         }
 
         @Override
@@ -285,7 +284,7 @@ public class FilesFragment extends Fragment {
 
         public void pause() {
             if (thread != null) {
-                thread.interrupt();
+                interrupt.set(true);
                 try {
                     thread.join();
                 } catch (InterruptedException e) {
@@ -959,13 +958,15 @@ public class FilesFragment extends Fragment {
     }
 
     public void paste() {
+        if (paste != null)
+            return;
+        if (app.uri.equals(uri)) // prevent paste to the original 'tab'
+            return;
         ArrayList<Uri> ff = null;
         if (app.copy != null)
             ff = app.copy;
         if (app.cut != null)
             ff = app.cut;
-        if (paste != null)
-            return;
         paste = new PasteBuilder(getContext());
         final String n;
         if (app.copy != null)
@@ -993,19 +994,26 @@ public class FilesFragment extends Fragment {
                         post();
                         return;
                     }
-                    if (is != null && os != null) {
-                        final Storage.Node f = files.get(filesIndex);
-                        int old = filesIndex;
-                        Uri oldt = t;
-                        synchronized (lock) {
+                    synchronized (lock) {
+                        if (is != null && os != null) {
+                            final Storage.Node f = files.get(filesIndex);
+                            int old = filesIndex;
+                            Uri oldt = t;
                             if (thread == null) {
+                                interrupt.set(false);
                                 thread = new Thread("Copy thread") {
                                     @Override
                                     public void run() {
+                                        byte[] buf = new byte[SuperUser.BUF_SIZE];
                                         try {
-                                            while (copy()) {
-                                                info.step(current);
-                                                if (isInterrupted())
+                                            int len;
+                                            while ((len = copy(buf)) > 0) {
+                                                synchronized (lock) {
+                                                    current += len;
+                                                    processed += len;
+                                                    info.step(current);
+                                                }
+                                                if (Thread.currentThread().isInterrupted() || interrupt.get())
                                                     return;
                                             }
                                             synchronized (lock) {
@@ -1034,22 +1042,22 @@ public class FilesFragment extends Fragment {
                                 }
                             }
                             post(thread == null ? 0 : 1000);
+                            int a = info.getAverageSpeed();
+                            String e;
+                            long diff = 0;
+                            if (a > 0)
+                                diff = (f.size - current) * 1000 / a;
+                            if (diff >= 1000)
+                                e = FilesApplication.formatLeftExact(context, diff);
+                            else
+                                e = "∞";
+                            paste.copy.setGravity(Gravity.CENTER);
+                            paste.copy.setText(n + " " + FilesApplication.formatSize(context, a) + "/s" + ", " + e);
+                            paste.update(this, old, f);
+                            paste.from.setText(getString(R.string.copy_from) + " " + storage.getDisplayName(f.uri));
+                            paste.to.setText(getString(R.string.copy_to) + " " + storage.getDisplayName(oldt));
+                            return;
                         }
-                        int a = info.getAverageSpeed();
-                        String e;
-                        long diff = 0;
-                        if (a > 0)
-                            diff = (f.size - current) * 1000 / a;
-                        if (diff >= 1000)
-                            e = FilesApplication.formatLeftExact(context, diff);
-                        else
-                            e = "∞";
-                        paste.copy.setGravity(Gravity.CENTER);
-                        paste.copy.setText(n + " " + FilesApplication.formatSize(context, a) + "/s" + ", " + e);
-                        paste.update(this, old, f);
-                        paste.from.setText(getString(R.string.copy_from) + " " + storage.getDisplayName(f.uri));
-                        paste.to.setText(getString(R.string.copy_to) + " " + storage.getDisplayName(oldt));
-                        return;
                     }
                     if (filesIndex < files.size()) {
                         Storage.Node f = files.get(filesIndex);

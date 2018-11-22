@@ -6,7 +6,6 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -22,6 +21,7 @@ public class TextViewStream extends RecyclerView {
     InputStream is;
     Adapter adapter;
     Typeface tf = Typeface.MONOSPACE;
+    float sp = 10;
 
     public static class Holder extends RecyclerView.ViewHolder {
         TextView text;
@@ -32,7 +32,7 @@ public class TextViewStream extends RecyclerView {
         }
 
         public Holder(ViewGroup parent) {
-            this(LayoutInflater.from(parent.getContext()).inflate(R.layout.media_item, parent, false));
+            this(new TextView(parent.getContext()));
         }
     }
 
@@ -77,7 +77,7 @@ public class TextViewStream extends RecyclerView {
         }
 
         @Override
-        public void onBindViewHolder(Holder holder, int position) {
+        public void onBindViewHolder(Holder h, int position) {
             if (position >= ll.size() - 1 - getChildCount()) { // load screen + keep second screen
                 post(new Runnable() {
                     @Override
@@ -86,8 +86,9 @@ public class TextViewStream extends RecyclerView {
                     }
                 });
             }
-            holder.text.setTypeface(tf, Typeface.NORMAL);
-            holder.text.setText(ll.get(position));
+            h.text.setTypeface(tf, Typeface.NORMAL);
+            h.text.setText(ll.get(position));
+            h.text.setTextSize(sp);
         }
 
         @Override
@@ -130,6 +131,11 @@ public class TextViewStream extends RecyclerView {
         adapter = new Adapter();
         setAdapter(adapter);
         adapter.load();
+    }
+
+    public void setTextSize(float sp) {
+        this.sp = sp;
+        adapter.notifyDataSetChanged();
     }
 
     public void close() {
