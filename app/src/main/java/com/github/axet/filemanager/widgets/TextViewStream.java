@@ -28,7 +28,7 @@ public class TextViewStream extends RecyclerView {
 
         public Holder(View itemView) {
             super(itemView);
-            text = (TextView) itemView.findViewById(R.id.text);
+            text = (TextView) itemView;
         }
 
         public Holder(ViewGroup parent) {
