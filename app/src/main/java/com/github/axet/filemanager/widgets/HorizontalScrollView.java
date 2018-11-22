@@ -33,7 +33,7 @@ public class HorizontalScrollView extends android.widget.HorizontalScrollView {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        if (!isFillViewport()) {
+        if (wrap) {
             scrollTo(0, 0);
             View child = getChildAt(0);
             int w = r - l;
@@ -47,18 +47,27 @@ public class HorizontalScrollView extends android.widget.HorizontalScrollView {
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
-        if (!isFillViewport())
+        if (wrap)
             return false;
         return super.onTouchEvent(ev);
     }
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        if (!isFillViewport())
+        if (wrap)
             return false;
         View child = getChildAt(0);
         if (child.getMeasuredWidth() <= getWidth())
             return false;
         return super.onInterceptTouchEvent(ev);
+    }
+
+    public void setWrap(boolean b) {
+        wrap = b;
+        requestLayout();
+    }
+
+    public boolean getWrap() {
+        return wrap;
     }
 }
