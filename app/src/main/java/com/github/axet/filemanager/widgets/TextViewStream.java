@@ -10,8 +10,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.github.axet.filemanager.R;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -29,6 +27,7 @@ public class TextViewStream extends RecyclerView {
         public Holder(View itemView) {
             super(itemView);
             text = (TextView) itemView;
+            text.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         }
 
         public Holder(ViewGroup parent) {

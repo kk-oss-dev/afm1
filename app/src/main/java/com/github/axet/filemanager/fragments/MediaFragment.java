@@ -145,7 +145,7 @@ public class MediaFragment extends Fragment {
         }
         try {
             is = storage.open(uri);
-            byte[] buf = new byte[1 * 1024];
+            byte[] buf = new byte[1024];
             int len = is.read(buf);
             FileTxt f = new FileTxt();
             f.write(buf, 0, len);
@@ -158,7 +158,7 @@ public class MediaFragment extends Fragment {
                 wrap.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        scroll.setFillViewport(!scroll.isFillViewport());
+                        scroll.setWrap(!scroll.getWrap());
                         text.notifyDataSetChanged();
                     }
                 });

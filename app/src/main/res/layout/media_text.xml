@@ -41,7 +41,7 @@
 
         <com.github.axet.filemanager.widgets.TextViewStream
             android:id="@+id/list"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="match_parent" />
     </com.github.axet.filemanager.widgets.HorizontalScrollView>
 </RelativeLayout>
