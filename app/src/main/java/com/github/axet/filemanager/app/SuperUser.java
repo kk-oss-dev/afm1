@@ -83,7 +83,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                             k = new File(f, name);
                         ff.add(new NativeFile(k, true, size, last));
                     }
-                } else if (perms.startsWith("listener")) {
+                } else if (perms.startsWith("l")) {
                     String[] ss = name.split("->");
                     name = ss[0].trim();
                     File t = new File(ss[1].trim());
@@ -124,8 +124,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     }
 
     public static long length(File f) {
-        Commands cmd = new Commands(MessageFormat.format("stat -c%s {0}", escape(f)));
-        cmd.stdout(true);
+        Commands cmd = new Commands(MessageFormat.format("stat -Lc%s {0}", escape(f))).stdout(true);
         Result r = su(cmd).must();
         return Long.valueOf(r.stdout.trim());
     }

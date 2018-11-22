@@ -7,31 +7,26 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.app.Storage;
 import com.github.axet.filemanager.widgets.HorizontalScrollView;
+import com.github.axet.filemanager.widgets.TextViewStream;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Scanner;
 
 public class MediaFragment extends Fragment {
     public static final String TAG = MediaFragment.class.getSimpleName();
 
     HorizontalScrollView scroll;
-    RecyclerView list;
+    TextViewStream text;
     boolean supported;
-    Adapter adapter;
 
     // https://stackoverflow.com/questions/898669/how-can-i-detect-if-a-file-is-binary-non-text-in-python
     public static class FileTxt {
@@ -92,97 +87,6 @@ public class MediaFragment extends Fragment {
         }
     }
 
-    public static class Holder extends RecyclerView.ViewHolder {
-        TextView text;
-
-        public Holder(View itemView) {
-            super(itemView);
-            text = (TextView) itemView.findViewById(R.id.text);
-        }
-
-        public Holder(ViewGroup parent) {
-            this(LayoutInflater.from(parent.getContext()).inflate(R.layout.media_item, parent, false));
-        }
-    }
-
-    public class Adapter extends RecyclerView.Adapter<Holder> {
-        Storage storage;
-        Uri uri;
-        InputStream is;
-        Scanner scanner;
-        ArrayList<String> ll = new ArrayList<>();
-        boolean mono = true;
-
-        public Adapter() {
-            create();
-        }
-
-        public void create() {
-            storage = new Storage(getContext());
-            uri = getArguments().getParcelable("uri");
-            try {
-                is = storage.open(uri);
-                scanner = new Scanner(is);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        public void close() {
-            if (is != null) {
-                try {
-                    is.close();
-                    is = null;
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-
-        @Override
-        public Holder onCreateViewHolder(ViewGroup parent, int viewType) {
-            return new Holder(parent);
-        }
-
-        void load() {
-            for (int i = 0; i < 50; i++)
-                next();
-        }
-
-        boolean next() {
-            if (scanner == null)
-                return false;
-            if (scanner.hasNextLine())
-                ll.add(scanner.nextLine());
-            else
-                scanner = null;
-            notifyDataSetChanged();
-            return true;
-        }
-
-        @Override
-        public void onBindViewHolder(Holder holder, int position) {
-            if (position >= ll.size() - 1 - list.getChildCount()) { // load screen + keep second screen
-                list.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        next();
-                    }
-                });
-            }
-            if (mono)
-                holder.text.setTypeface(Typeface.MONOSPACE, Typeface.NORMAL);
-            else
-                holder.text.setTypeface(Typeface.DEFAULT, Typeface.NORMAL);
-            holder.text.setText(ll.get(position));
-        }
-
-        @Override
-        public int getItemCount() {
-            return ll.size();
-        }
-    }
-
     public MediaFragment() {
     }
 
@@ -203,9 +107,9 @@ public class MediaFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (adapter != null) {
-            adapter.close();
-            adapter = null;
+        if (text != null) {
+            text.close();
+            text = null;
         }
     }
 
@@ -213,6 +117,12 @@ public class MediaFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         Storage storage = new Storage(getContext());
         Uri uri = getArguments().getParcelable("uri");
+        try {
+            if (storage.getLength(uri) == 0)
+                return HexFragment.error(getContext(), getContext().getString(R.string.empty_list));
+        } catch (Exception e) {
+            return HexFragment.error(getContext(), e.getMessage());
+        }
         InputStream is = null;
         try {
             is = storage.open(uri);
@@ -245,26 +155,22 @@ public class MediaFragment extends Fragment {
                 View v = inflater.inflate(R.layout.media_text, container, false);
                 View wrap = v.findViewById(R.id.wrap);
                 View mono = v.findViewById(R.id.mono);
-                adapter = new Adapter();
-                adapter.load();
                 wrap.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         scroll.setFillViewport(!scroll.isFillViewport());
-                        adapter.notifyDataSetChanged();
+                        text.notifyDataSetChanged();
                     }
                 });
                 mono.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        adapter.mono = !adapter.mono;
-                        adapter.notifyDataSetChanged();
+                        text.setTypeface(text.getTypeface() == Typeface.DEFAULT ? Typeface.MONOSPACE : Typeface.DEFAULT);
                     }
                 });
                 scroll = (HorizontalScrollView) v.findViewById(R.id.scroll);
-                list = (RecyclerView) v.findViewById(R.id.list);
-                list.setLayoutManager(new LinearLayoutManager(getContext()));
-                list.setAdapter(adapter);
+                text = (TextViewStream) v.findViewById(R.id.list);
+                text.setText(storage.open(uri));
                 supported = true;
                 return v;
             }

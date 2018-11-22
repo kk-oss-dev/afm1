@@ -130,9 +130,8 @@ public class HexFragment extends Fragment {
         ArrayList<byte[]> ll = new ArrayList<>();
         float sp;
 
-        public void create() {
+        public void create(Uri uri) {
             storage = new Storage(getContext());
-            uri = getArguments().getParcelable("uri");
             try {
                 is = storage.open(uri);
             } catch (IOException e) {
@@ -174,14 +173,23 @@ public class HexFragment extends Fragment {
                 byte[] buf = new byte[max];
                 try {
                     int len = is.read(buf);
-                    if (len < buf.length)
-                        buf = Arrays.copyOf(buf, len);
-                    ll.add(buf);
+                    if (len > 0) {
+                        if (len < buf.length)
+                            buf = Arrays.copyOf(buf, len);
+                        ll.add(buf);
+                    } else {
+                        break;
+                    }
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             }
-            holder.format(position * max, ll.get(position), max);
+            byte[] buf;
+            if (position >= ll.size())
+                buf = new byte[]{};
+            else
+                buf = ll.get(position);
+            holder.format(position * max, buf, max);
         }
 
         @Override
@@ -224,9 +232,13 @@ public class HexFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        adapter = new Adapter();
+        Storage storage = new Storage(getContext());
+        Uri uri = getArguments().getParcelable("uri");
         try {
-            adapter.create();
+            if (storage.getLength(uri) == 0)
+                return HexFragment.error(getContext(), getContext().getString(R.string.empty_list));
+            adapter = new Adapter();
+            adapter.create(uri);
         } catch (RuntimeException e) {
             return error(getContext(), e.getMessage());
         }
