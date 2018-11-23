@@ -91,6 +91,7 @@ public class FilesFragment extends Fragment {
     FilesApplication app;
     Uri uri;
     Adapter adapter;
+    RecyclerView list;
     Storage storage;
 
     PasteBuilder delete;
@@ -120,6 +121,12 @@ public class FilesFragment extends Fragment {
 
     public static List<String> splitPath(String s) {
         return new ArrayList<>(Arrays.asList(s.split("[//\\\\]")));
+    }
+
+    public static String stripRight(String s, String right) {
+        if (s.endsWith(right))
+            s = s.substring(0, s.length() - right.length());
+        return s;
     }
 
     public static class PendingOperation implements Runnable {
@@ -300,8 +307,8 @@ public class FilesFragment extends Fragment {
             } else {
                 String str = storage.getDisplayName(calcUri) + "{";
                 for (Uri u : calcsStart)
-                    str += Storage.getDocumentName(u) + ",";
-                str = Storage.stripRight(str, ",");
+                    str += Storage.getName(context, u) + ",";
+                str = stripRight(str, ",");
                 str += "}";
                 return str;
             }
@@ -607,7 +614,7 @@ public class FilesFragment extends Fragment {
         };
         path.setUri(uri);
 
-        RecyclerView list = (RecyclerView) rootView.findViewById(R.id.list);
+        list = (RecyclerView) rootView.findViewById(R.id.list);
         list.setLayoutManager(new LinearLayoutManager(getContext()));
         list.setAdapter(adapter);
 
@@ -687,6 +694,7 @@ public class FilesFragment extends Fragment {
             reload();
             MainActivity main = (MainActivity) getActivity();
             main.update();
+            list.scrollToPosition(0);
         }
     }
 

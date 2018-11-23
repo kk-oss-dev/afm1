@@ -153,9 +153,9 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         public CharSequence getPageTitle(int position) {
             switch (position) {
                 case 0:
-                    return storage.getDisplayName(left.getUri());
+                    return storage.getDisplayName(left.getUri()) + " "; // prevent PathMax eat last slash
                 case 1:
-                    return storage.getDisplayName(right.getUri());
+                    return storage.getDisplayName(right.getUri()) + " "; // prevent PathMax eat last slash
             }
             return null;
         }
@@ -254,8 +254,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                         }
                         uri = f.getUri();
                         Storage storage = new Storage(MainActivity.this);
-                        uri = storage.child(uri, s);
-                        storage.touch(uri);
+                        storage.touch(uri, s);
                         f.reload();
 
                     }

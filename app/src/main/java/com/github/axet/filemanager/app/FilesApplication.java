@@ -8,6 +8,7 @@ import android.preference.PreferenceManager;
 
 import com.github.axet.androidlibrary.app.MainApplication;
 
+import java.io.File;
 import java.util.ArrayList;
 
 public class FilesApplication extends MainApplication {
@@ -50,9 +51,17 @@ public class FilesApplication extends MainApplication {
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(FilesApplication.this);
             int count = shared.getInt(PREF_BOOKMARK_COUNT, -1);
             if (count == -1) {
-                add(Uri.fromFile(Environment.getExternalStorageDirectory()));
-                add(Uri.fromFile(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)));
-                add(Uri.fromFile(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)));
+                File[] ff = new File[]{
+                        Environment.getExternalStorageDirectory(),
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM),
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                };
+                for (File f : ff) {
+                    if (f.exists())
+                        add(Uri.fromFile(f));
+                }
             }
             for (int i = 0; i < count; i++) {
                 Uri uri = Uri.parse(shared.getString(PREF_BOOKMARK_PREFIX + i, ""));
