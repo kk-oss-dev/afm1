@@ -65,12 +65,10 @@ import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.List;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -123,8 +121,8 @@ public class FilesFragment extends Fragment {
         }
     };
 
-    public static List<String> splitPath(String s) {
-        return new ArrayList<>(Arrays.asList(s.split("[//\\\\]")));
+    public static String[] splitPath(String s) {
+        return s.split("[//\\\\]");
     }
 
     public static String stripRight(String s, String right) {
@@ -456,7 +454,12 @@ public class FilesFragment extends Fragment {
             int c = Boolean.valueOf(o1.dir).compareTo(o2.dir);
             if (c != 0)
                 return c;
-            return Integer.valueOf(splitPath(o2.name).size()).compareTo(splitPath(o1.name).size());
+            String[] cc2 = splitPath(o2.name);
+            String[] cc1 = splitPath(o1.name);
+            c = Integer.valueOf(cc2.length).compareTo(cc1.length);
+            if (c != 0)
+                return c;
+            return cc1[cc1.length - 1].compareTo(cc2[cc2.length - 1]);
         }
     }
 
