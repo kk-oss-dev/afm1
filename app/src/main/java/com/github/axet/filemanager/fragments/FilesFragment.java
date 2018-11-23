@@ -191,9 +191,7 @@ public class FilesFragment extends Fragment {
             ArrayList<Storage.Node> nn = storage.walk(calcUri, uri);
             for (Storage.Node n : nn) {
                 if (n.dir) {
-                    if (n instanceof Storage.SymlinkNode) {
-                        files.add(n); // do not follow symlinks as directories
-                    } else if (n.uri.equals(uri)) // walk return current dirs, do not follow it
+                    if (n.uri.equals(uri)) // walk return current dirs, do not follow it
                         files.add(n);
                     else
                         calcs.add(n.uri);
