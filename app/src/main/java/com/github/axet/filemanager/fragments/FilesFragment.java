@@ -191,7 +191,9 @@ public class FilesFragment extends Fragment {
             ArrayList<Storage.Node> nn = storage.walk(calcUri, uri);
             for (Storage.Node n : nn) {
                 if (n.dir) {
-                    if (n.uri.equals(uri)) // walk return current dirs, do not follow it
+                    if (n instanceof Storage.SymlinkNode) {
+                        files.add(n); // do not follow symlinks as directories
+                    } else if (n.uri.equals(uri)) // walk return current dirs, do not follow it
                         files.add(n);
                     else
                         calcs.add(n.uri);
@@ -1107,6 +1109,15 @@ public class FilesFragment extends Fragment {
                         Storage.Node f = files.get(filesIndex);
                         try {
                             if (f.dir) {
+                                if (f instanceof Storage.SymlinkNode) {
+                                    if (!storage.symlink((Storage.SymlinkNode) f, uri)) // if fails, do not create / copy whole symlink dir
+                                        Log.d(TAG, "ignoring symlink directory " + f.uri);
+                                    filesIndex++;
+                                    if (app.cut != null)
+                                        storage.delete(f.uri);
+                                    post();
+                                    return;
+                                }
                                 if (storage.mkdir(uri, f.name) == null)
                                     throw new RuntimeException("unable create dir: " + f.name);
                                 filesIndex++;
@@ -1145,6 +1156,13 @@ public class FilesFragment extends Fragment {
                                             storage.delete(t.uri);
                                             break;
                                     }
+                                }
+                                if (f instanceof Storage.SymlinkNode && storage.symlink((Storage.SymlinkNode) f, uri)) { // if fails, continue with content copy
+                                    filesIndex++;
+                                    if (app.cut != null)
+                                        storage.delete(f.uri);
+                                    post();
+                                    return;
                                 }
                                 open(f, uri);
                                 info.start(current);
@@ -1227,7 +1245,16 @@ public class FilesFragment extends Fragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setCancelable(false);
         builder.setTitle("Error");
-        builder.setMessage(e.getMessage());
+        String msg = e.getMessage();
+        if (msg == null || msg.isEmpty()) {
+            Throwable p = null;
+            while (e != null) {
+                p = e;
+                e = e.getCause();
+            }
+            msg = p.getClass().getCanonicalName();
+        }
+        builder.setMessage(msg);
         builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {

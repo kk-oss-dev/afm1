@@ -15,11 +15,17 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     public static final SimpleDateFormat TOUCHDATE = new SimpleDateFormat("yyyyMMddHHmm.ss");
     public static final SimpleDateFormat LSDATE = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
+    public static final String BIN_READLINK = which("readlink");
+    public static final String BIN_LN = which("ln");
+
     public static final String TOUCH = BIN_TOUCH + " -mct {0} {1}";
     public static final String DELETE = BIN_RM + " -r {0}";
     public static final String LSA = BIN_LS + " -AlH {0}";
     public static final String LSa = BIN_LS + " -alH {0}";
     public static final String MKDIR = BIN_MKDIR + " {0}";
+    public static final String READLINK = BIN_READLINK + " {0}";
+    public static final String LNS = BIN_LN + " -s {0} {1}";
+    public static final String RENAME = BIN_MV + " {0} {1}";
 
     public static final File DOT = new File(".");
     public static final File DOTDOT = new File("..");
@@ -48,6 +54,60 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         @Override
         public long lastModified() {
             return last;
+        }
+    }
+
+    public static class Directory extends File {
+        long last;
+
+        public Directory(File f, long last) {
+            super(f.getPath());
+            this.last = last;
+        }
+
+        @Override
+        public boolean isDirectory() {
+            return true;
+        }
+
+        @Override
+        public long length() {
+            return 0;
+        }
+
+        @Override
+        public long lastModified() {
+            return last;
+        }
+    }
+
+    public static class SymLink extends File {
+        long last;
+        File target;
+
+        public SymLink(File f, long last, File target) {
+            super(f.getPath());
+            this.last = last;
+            this.target = target;
+        }
+
+        @Override
+        public boolean isDirectory() {
+            return false;
+        }
+
+        @Override
+        public long length() {
+            return 0;
+        }
+
+        @Override
+        public long lastModified() {
+            return last;
+        }
+
+        public File getTarget() {
+            return target;
         }
     }
 
@@ -81,10 +141,10 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                             k = f;
                         else
                             k = new File(f, name);
-                        ff.add(new NativeFile(k, true, size, last));
+                        ff.add(new Directory(k, last));
                     }
                 } else if (perms.startsWith("l")) {
-                    String[] ss = name.split("->");
+                    String[] ss = name.split("->", 2);
                     name = ss[0].trim();
                     File t = new File(ss[1].trim());
                     File k = new File(name);
@@ -93,7 +153,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                             k = f;
                         else
                             k = new File(f, name);
-                        ff.add(new NativeFile(k, t.isDirectory(), size, last));
+                        ff.add(new SymLink(k, size, new File(ss[1].trim())));
                     }
                 } else {
                     File k = new File(name);
@@ -124,8 +184,24 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     }
 
     public static long length(File f) {
-        Commands cmd = new Commands(MessageFormat.format("stat -Lc%s {0}", escape(f))).stdout(true);
-        Result r = su(cmd).must();
+        Result r = su(new Commands(MessageFormat.format("stat -Lc%s {0}", escape(f))).stdout(true)).must();
         return Long.valueOf(r.stdout.trim());
+    }
+
+    public static Result readlink(File f) {
+        return su(READLINK, escape(f));
+    }
+
+    public static Result ln(File target, File file) {
+        return su(LNS, escape(target), escape(file));
+    }
+
+    public static boolean rename(File f, File t) {
+        return su(RENAME, escape(f), escape(t)).ok();
+    }
+
+    public static boolean isDirectory(File f) {
+        Result r = su(new Commands(MessageFormat.format("[ -d {0} ] && echo 0 || echo 1", escape(f))).stdout(true)).must();
+        return Integer.valueOf(r.stdout.trim()) == 0;
     }
 }

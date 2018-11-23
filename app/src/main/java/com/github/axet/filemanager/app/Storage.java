@@ -16,6 +16,24 @@ import java.util.ArrayList;
 
 public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
+    public static class SymlinkNode extends com.github.axet.androidlibrary.app.Storage.Node {
+        public File symlink;
+
+        public SymlinkNode(Uri uri, String name, long last, File target) {
+            this.uri = uri;
+            this.name = name;
+            this.last = last;
+            this.symlink = target;
+            dir = SuperUser.isDirectory(symlink);
+        }
+
+        public SymlinkNode(SuperUser.SymLink f) {
+            super(f);
+            symlink = f.getTarget();
+            dir = SuperUser.isDirectory(symlink);
+        }
+    }
+
     public Storage(Context context) {
         super(context);
     }
@@ -94,6 +112,19 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     }
 
     @Override
+    public Uri rename(Uri f, String t) {
+        if (f.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
+            File k = getFile(f);
+            File p = k.getParentFile();
+            File m = new File(p, t);
+            if (!SuperUser.rename(k, m))
+                return null;
+            return Uri.fromFile(m);
+        }
+        return super.rename(f, t);
+    }
+
+    @Override
     public long getLength(Uri uri) {
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             return SuperUser.length(Storage.getFile(uri));
@@ -102,29 +133,50 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     }
 
     @Override
-    public ArrayList<Node> list(Uri uri) {
+    public ArrayList<com.github.axet.androidlibrary.app.Storage.Node> list(Uri uri) {
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
-            ArrayList<Node> files = new ArrayList<>();
+            ArrayList<com.github.axet.androidlibrary.app.Storage.Node> files = new ArrayList<>();
             ArrayList<File> ff = SuperUser.ls(SuperUser.LSA, Storage.getFile(uri));
-            for (File f : ff)
-                files.add(new Storage.Node(f));
+            for (File f : ff) {
+                if (f instanceof SuperUser.SymLink)
+                    files.add(new SymlinkNode((SuperUser.SymLink) f));
+                else
+                    files.add(new Node(f));
+            }
             return files;
         }
         return super.list(uri);
     }
 
     @Override
-    public ArrayList<Node> walk(Uri root, Uri uri) {
+    public ArrayList<com.github.axet.androidlibrary.app.Storage.Node> walk(Uri root, Uri uri) {
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             int r = Storage.getFile(root).getPath().length();
-            ArrayList<Node> files = new ArrayList<>();
+            ArrayList<com.github.axet.androidlibrary.app.Storage.Node> files = new ArrayList<>();
             ArrayList<File> ff = SuperUser.ls(SuperUser.LSa, Storage.getFile(uri));
             for (File f : ff) {
-                Storage.Node k = new Storage.Node(Uri.fromFile(f), f.getPath().substring(r), f.isDirectory(), f.length(), f.lastModified());
-                files.add(k);
+                if (f instanceof SuperUser.SymLink)
+                    files.add(new SymlinkNode(Uri.fromFile(f), f.getPath().substring(r), f.lastModified(), ((SuperUser.SymLink) f).getTarget()));
+                else
+                    files.add(new Node(Uri.fromFile(f), f.getPath().substring(r), f.isDirectory(), f.length(), f.lastModified()));
             }
             return files;
         }
         return super.walk(root, uri);
+    }
+
+    public boolean symlink(SymlinkNode f, Uri uri) {
+        String s = uri.getScheme();
+        if (s.equals(ContentResolver.SCHEME_FILE)) {
+            if (!getRoot())
+                return false; // users not allowed to create symlinks
+            File k = getFile(uri);
+            File m = new File(k, f.name);
+            return SuperUser.ln(f.symlink, m).ok();
+        } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+            return false;
+        } else {
+            throw new UnknownUri();
+        }
     }
 }
