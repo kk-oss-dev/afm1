@@ -77,9 +77,9 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             }
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
             DocumentFile f = DocumentFile.fromSingleUri(context, t);
-            if (!f.exists()) // SAF bugged when fast delete, return false on success
-                return true;
-            return f.delete();
+            if (!f.delete())
+                return !f.exists(); // SAF bugged when fast delete, returns 'false' on success
+            return true;
         } else {
             throw new UnknownUri();
         }
