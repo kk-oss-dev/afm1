@@ -69,7 +69,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FilesFragment extends Fragment {
@@ -92,6 +94,7 @@ public class FilesFragment extends Fragment {
     Uri uri;
     Adapter adapter;
     RecyclerView list;
+    LinearLayoutManager layout;
     Storage storage;
 
     PasteBuilder delete;
@@ -106,6 +109,7 @@ public class FilesFragment extends Fragment {
     MenuItem rename;
     SelectView select;
     ArrayList<Uri> selected = new ArrayList<>();
+    HashMap<Uri, Pos> offsets = new HashMap<>();
     BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -127,6 +131,11 @@ public class FilesFragment extends Fragment {
         if (s.endsWith(right))
             s = s.substring(0, s.length() - right.length());
         return s;
+    }
+
+    public static class Pos {
+        public int pos;
+        public int off;
     }
 
     public static class PendingOperation implements Runnable {
@@ -614,8 +623,10 @@ public class FilesFragment extends Fragment {
         };
         path.setUri(uri);
 
+        layout = new LinearLayoutManager(getContext());
+
         list = (RecyclerView) rootView.findViewById(R.id.list);
-        list.setLayoutManager(new LinearLayoutManager(getContext()));
+        list.setLayoutManager(layout);
         list.setAdapter(adapter);
 
         error = (TextView) rootView.findViewById(R.id.error);
@@ -684,17 +695,39 @@ public class FilesFragment extends Fragment {
         return uri;
     }
 
+    Pos findFirstVisibleItem() {
+        TreeMap<Integer, Pos> map = new TreeMap<>();
+        for (int i = 0; i < list.getChildCount(); i++) {
+            View child = list.getChildAt(i);
+            if (child.getParent() != null && child.getVisibility() == View.VISIBLE) {
+                RecyclerView.ViewHolder h = list.findContainingViewHolder(child);
+                Pos p = new Pos();
+                p.pos = h.getAdapterPosition();
+                p.off = child.getTop();
+                map.put(child.getTop(), p);
+            }
+        }
+        if (map.size() > 0)
+            return map.get(map.firstKey());
+        return null;
+    }
+
     public void load(Uri u) {
         if (uri == null) {
             getArguments().putParcelable("uri", u);
         } else {
+            offsets.put(uri, findFirstVisibleItem());
             uri = u;
             updateButton();
             path.setUri(uri);
             reload();
             MainActivity main = (MainActivity) getActivity();
             main.update();
-            list.scrollToPosition(0);
+            Pos p = offsets.get(uri);
+            if (p != null)
+                layout.scrollToPositionWithOffset(p.pos, p.off);
+            else
+                layout.scrollToPositionWithOffset(0, 0);
         }
     }
 
