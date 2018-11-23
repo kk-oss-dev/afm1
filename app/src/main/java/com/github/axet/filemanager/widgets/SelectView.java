@@ -53,7 +53,7 @@ public class SelectView extends LinearLayoutCompat implements CollapsibleActionV
 
         for (int i = 0; i < menu.size(); i++) {
             final MenuItem item = menu.getItem(i);
-            AppCompatImageButton image = new AppCompatImageButton(getContext(), null, android.support.v7.appcompat.R.attr.toolbarNavigationButtonStyle);
+            AppCompatImageButton image = new AppCompatImageButton(getContext(), null, R.attr.toolbarNavigationButtonStyle);
             image.setImageDrawable(item.getIcon());
             image.setColorFilter(Color.WHITE);
             LayoutParams lp = generateDefaultLayoutParams();

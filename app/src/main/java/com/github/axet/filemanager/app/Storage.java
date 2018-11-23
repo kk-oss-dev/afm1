@@ -57,12 +57,12 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         }
     }
 
-    public boolean touch(Uri uri) {
+    public boolean touch(Uri uri, String name) {
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             File k = Storage.getFile(uri);
             return SuperUser.touch(k).ok();
         }
-        return super.touch(uri);
+        return super.touch(uri, name);
     }
 
     @Override
