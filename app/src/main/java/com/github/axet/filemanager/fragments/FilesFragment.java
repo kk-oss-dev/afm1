@@ -1222,6 +1222,7 @@ public class FilesFragment extends Fragment {
     public void pasteError(final PasteBuilder paste, final PendingOperation op, Throwable e) {
         Log.e(TAG, "paste", e);
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setCancelable(false);
         builder.setTitle("Error");
         builder.setMessage(e.getMessage());
         builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
