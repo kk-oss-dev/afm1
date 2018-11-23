@@ -55,6 +55,7 @@ import com.github.axet.filemanager.app.FilesApplication;
 import com.github.axet.filemanager.app.Storage;
 import com.github.axet.filemanager.fragments.FilesFragment;
 import com.github.axet.filemanager.fragments.HexDialogFragment;
+import com.github.axet.filemanager.services.StorageProvider;
 
 import net.i2p.android.ext.floatingactionbutton.FloatingActionButton;
 import net.i2p.android.ext.floatingactionbutton.FloatingActionsMenu;
@@ -356,6 +357,9 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             return;
         if (a.equals(Intent.ACTION_VIEW)) {
             Uri u = intent.getData();
+            String s = u.getScheme();
+            if (s.equals(StorageProvider.SCHEME_FOLDER))
+                u = u.buildUpon().scheme(ContentResolver.SCHEME_FILE).build();
             if (u != null)
                 open(u);
         }
