@@ -1109,15 +1109,6 @@ public class FilesFragment extends Fragment {
                         Storage.Node f = files.get(filesIndex);
                         try {
                             if (f.dir) {
-                                if (f instanceof Storage.SymlinkNode) {
-                                    if (!storage.symlink((Storage.SymlinkNode) f, uri)) // if fails, do not create / copy whole symlink dir
-                                        Log.d(TAG, "ignoring symlink directory " + f.uri);
-                                    filesIndex++;
-                                    if (app.cut != null)
-                                        storage.delete(f.uri);
-                                    post();
-                                    return;
-                                }
                                 if (storage.mkdir(uri, f.name) == null)
                                     throw new RuntimeException("unable create dir: " + f.name);
                                 filesIndex++;
@@ -1157,7 +1148,7 @@ public class FilesFragment extends Fragment {
                                             break;
                                     }
                                 }
-                                if (f instanceof Storage.SymlinkNode && storage.symlink((Storage.SymlinkNode) f, uri)) { // if fails, continue with content copy
+                                if (f instanceof Storage.SymlinkNode && (storage.symlink((Storage.SymlinkNode) f, uri) || ((Storage.SymlinkNode) f).dir)) { // if fails, continue with content copy
                                     filesIndex++;
                                     if (app.cut != null)
                                         storage.delete(f.uri);
