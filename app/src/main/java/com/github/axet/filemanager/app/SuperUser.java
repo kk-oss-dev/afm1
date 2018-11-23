@@ -33,17 +33,16 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     public static class NativeFile extends File {
         long size;
         long last;
-        boolean d;
 
-        public NativeFile(File f, boolean d, long size, long last) {
+        public NativeFile(File f, long size, long last) {
             super(f.getPath());
             this.size = size;
-            this.d = d;
+            this.last = last;
         }
 
         @Override
         public boolean isDirectory() {
-            return d;
+            return false;
         }
 
         @Override
@@ -162,7 +161,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                             k = f;
                         if (!f.equals(k)) // ls file return full path, ls dir return relative path
                             k = new File(f, name);
-                        ff.add(new NativeFile(k, false, size, last));
+                        ff.add(new NativeFile(k, size, last));
                     }
                 }
             }

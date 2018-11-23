@@ -1123,7 +1123,7 @@ public class FilesFragment extends Fragment {
                                     if (m.exists())
                                         t = new Storage.Node(m);
                                 } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-                                    Uri doc = DocumentsContract.buildDocumentUriUsingTree(uri, f.name);
+                                    Uri doc = storage.child(uri, f.name);
                                     DocumentFile k = DocumentFile.fromSingleUri(context, doc);
                                     if (k.exists())
                                         t = new Storage.Node(k);

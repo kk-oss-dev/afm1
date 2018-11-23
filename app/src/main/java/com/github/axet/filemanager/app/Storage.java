@@ -25,7 +25,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             this.name = name;
             this.last = last;
             this.symlink = target;
-            symdir = SuperUser.isDirectory(symlink);
+            this.symdir = SuperUser.isDirectory(symlink);
         }
 
         public SymlinkNode(SuperUser.SymLink f) {
