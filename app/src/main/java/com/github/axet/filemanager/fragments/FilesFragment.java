@@ -1093,7 +1093,7 @@ public class FilesFragment extends Fragment {
                             else
                                 e = "∞";
                             paste.copy.setGravity(Gravity.CENTER);
-                            paste.copy.setText(n + " " + FilesApplication.formatSize(context, a) + "/s" + ", " + e);
+                            paste.copy.setText(n + " " + FilesApplication.formatSize(context, a) + getString(R.string.per_second) + ", " + e);
                             paste.update(this, old, f);
                             paste.from.setText(getString(R.string.copy_from) + " " + storage.getDisplayName(f.uri));
                             paste.to.setText(getString(R.string.copy_to) + " " + storage.getDisplayName(oldt));
@@ -1109,7 +1109,7 @@ public class FilesFragment extends Fragment {
                                 filesIndex++;
                                 if (app.cut != null) {
                                     delete.add(f);
-                                    deleteIndex = delete.size() - 1;
+                                    deleteIndex = delete.size() - 1; // reverse index
                                 }
                             } else {
                                 String s = uri.getScheme();
