@@ -18,19 +18,20 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     public static class SymlinkNode extends com.github.axet.androidlibrary.app.Storage.Node {
         public File symlink;
+        public boolean symdir; // symlink points to dir
 
         public SymlinkNode(Uri uri, String name, long last, File target) {
             this.uri = uri;
             this.name = name;
             this.last = last;
             this.symlink = target;
-            dir = SuperUser.isDirectory(symlink);
+            this.symdir = SuperUser.isDirectory(symlink);
         }
 
         public SymlinkNode(SuperUser.SymLink f) {
             super(f);
             symlink = f.getTarget();
-            dir = SuperUser.isDirectory(symlink);
+            symdir = SuperUser.isDirectory(symlink);
         }
     }
 
