@@ -6,8 +6,8 @@ android {
         applicationId "com.github.axet.filemanager"
         minSdkVersion 9
         targetSdkVersion 26
-        versionCode 22
-        versionName "0.0.21"
+        versionCode 23
+        versionName "0.0.22"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
@@ -35,7 +35,8 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.github.axet:android-library:1.27.39' // implementation project(':android-library')
+    implementation 'com.github.axet:android-library:1.27.40'
+    // implementation project(':android-library')
     implementation 'com.android.support:design:25.3.1'
     implementation 'com.android.support.constraint:constraint-layout:1.1.3'
     implementation('net.i2p.android.ext:floatingactionbutton:1.10.1') {

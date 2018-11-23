@@ -54,4 +54,5 @@
     <string name="button_skip_all">Skip all</string>
     <string name="button_permissions">Get Permissions</string>
     <string name="button_new_file">New File</string>
+    <string name="per_second">/s</string>
 </resources>
