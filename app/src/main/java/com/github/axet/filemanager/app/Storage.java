@@ -17,21 +17,29 @@ import java.util.ArrayList;
 public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     public static class SymlinkNode extends com.github.axet.androidlibrary.app.Storage.Node {
-        public File symlink;
-        public boolean symdir; // symlink points to dir
+        File symlink;
+        Boolean symdir = null;
 
         public SymlinkNode(Uri uri, String name, long last, File target) {
             this.uri = uri;
             this.name = name;
             this.last = last;
             this.symlink = target;
-            this.symdir = SuperUser.isDirectory(symlink);
         }
 
         public SymlinkNode(SuperUser.SymLink f) {
             super(f);
             symlink = f.getTarget();
-            symdir = SuperUser.isDirectory(symlink);
+        }
+
+        public boolean isSymDir() {
+            if (symdir == null)
+                symdir = SuperUser.isDirectory(symlink);
+            return symdir;
+        }
+
+        public File getTarget() {
+            return symlink;
         }
     }
 
@@ -195,7 +203,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 return false; // users not allowed to create symlinks
             File k = getFile(uri);
             File m = new File(k, f.name);
-            return SuperUser.ln(f.symlink, m).ok();
+            return SuperUser.ln(f.getTarget(), m).ok();
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
             return false;
         } else {

@@ -1160,7 +1160,7 @@ public class FilesFragment extends Fragment {
                                             break;
                                     }
                                 }
-                                if (f instanceof Storage.SymlinkNode && (storage.symlink((Storage.SymlinkNode) f, uri) || ((Storage.SymlinkNode) f).symdir)) { // if fails, continue with content copy
+                                if (f instanceof Storage.SymlinkNode && (storage.symlink((Storage.SymlinkNode) f, uri) || ((Storage.SymlinkNode) f).isSymDir())) { // if fails, continue with content copy
                                     filesIndex++;
                                     if (app.cut != null)
                                         storage.delete(f.uri);
