@@ -102,7 +102,7 @@ public class FilesFragment extends Fragment {
     PasteBuilder paste;
 
     HashMap<Uri, Integer> portables = new HashMap<>();
-    Specials specials = new Specials();
+    Specials specials;
     PathView path;
     View button;
     TextView error;
@@ -142,18 +142,34 @@ public class FilesFragment extends Fragment {
     }
 
     public static class Specials extends HashMap<Uri, Integer> {
-        public Specials() {
-            add(Environment.getExternalStorageDirectory(), R.drawable.ic_sd_card_black_24dp);
+        public Specials(Context context) {
+            File e = Environment.getExternalStorageDirectory();
+            add(e, R.drawable.ic_sd_card_black_24dp);
             add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), R.drawable.ic_camera_alt_black_24dp);
             add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), R.drawable.ic_library_books_black_24dp);
             add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), R.drawable.ic_cloud_download_black_24dp);
-            add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), R.drawable.ic_image_black_24dp);
+            add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), R.drawable.ic_photo_library_black_24dp);
             add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_ALARMS), R.drawable.ic_music_video_black_24dp);
-            add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), R.drawable.ic_music_video_black_24dp);
+            add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), R.drawable.ic_video_library_black_24dp);
             add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_NOTIFICATIONS), R.drawable.ic_music_video_black_24dp);
             add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC), R.drawable.ic_music_video_black_24dp);
             add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PODCASTS), R.drawable.ic_music_video_black_24dp);
             add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_RINGTONES), R.drawable.ic_music_video_black_24dp);
+
+            File f = context.getExternalFilesDir(null);
+            if (f != null) {
+                File k = Storage.relative(e, f);
+                if (k != f) {
+                    File p = f;
+                    File old = p;
+                    while (!e.equals(p)) {
+                        old = p;
+                        p = p.getParentFile();
+                    }
+                    File n = new File(e, old.getName()); // ok it is 'Android'!
+                    add(n, R.drawable.ic_settings_black_24dp);
+                }
+            }
         }
 
         public void add(File f, int id) {
@@ -612,13 +628,13 @@ public class FilesFragment extends Fragment {
         }
 
         public Integer getSpecialIcon(Storage.Node f) {
+            Integer id = portables.get(f.uri);
+            if (id != null)
+                return id;
             if (f instanceof Storage.SymlinkNode)
                 return R.drawable.ic_link_black_24dp;
             if (f.name.startsWith("."))
                 return R.drawable.ic_visibility_off_black_24dp;
-            Integer id = portables.get(f.uri);
-            if (id != null)
-                return id;
             return specials.get(f.uri);
         }
 
@@ -651,6 +667,7 @@ public class FilesFragment extends Fragment {
         uri = getUri();
         storage = new Storage(getContext());
         adapter = new Adapter();
+        specials = new Specials(getContext());
     }
 
     @Override
@@ -800,14 +817,14 @@ public class FilesFragment extends Fragment {
         String e = System.getenv(EXTERNAL_STORAGE);
         if (e != null && !e.isEmpty())
             portables.put(Uri.fromFile(new File(e)), R.drawable.ic_sd_card_black_24dp);
-        for (Uri k : specials.keySet()) {
-            File f = Storage.getFile(k);
-            File m = Environment.getExternalStorageDirectory();
-            File r = Storage.relative(m, f);
-            for (Uri p : new TreeSet<>(portables.keySet())) {
-                File z = Storage.getFile(p);
+        for (Uri p : new TreeSet<>(portables.keySet())) {
+            File z = Storage.getFile(p);
+            for (Uri k : specials.keySet()) {
+                File f = Storage.getFile(k);
+                File m = Environment.getExternalStorageDirectory();
+                File r = Storage.relative(m, f);
                 File n = new File(z, r.getPath());
-                portables.put(Uri.fromFile(n), portables.get(p));
+                portables.put(Uri.fromFile(n), specials.get(k));
             }
         }
     }
