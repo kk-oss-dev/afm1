@@ -1242,12 +1242,17 @@ public class FilesFragment extends Fragment {
                                             break;
                                     }
                                 }
-                                if (f instanceof Storage.SymlinkNode && (storage.symlink((Storage.SymlinkNode) f, uri) || ((Storage.SymlinkNode) f).isSymDir())) { // if fails, continue with content copy
-                                    filesIndex++;
-                                    if (app.cut != null)
-                                        storage.delete(f.uri);
-                                    post();
-                                    return;
+                                if (f instanceof Storage.SymlinkNode) {
+                                    Storage.SymlinkNode l = (Storage.SymlinkNode) f;
+                                    if (storage.symlink(l, uri) || l.isSymDir()) { // if fails, continue with content copy
+                                        filesIndex++;
+                                        if (app.cut != null)
+                                            storage.delete(f.uri);
+                                        post();
+                                        return;
+                                    } else { // we about to copy symlinks as files, update total!!!
+                                        total += SuperUser.length(l.getTarget());
+                                    }
                                 }
                                 open(f, uri);
                                 info.start(current);
