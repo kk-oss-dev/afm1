@@ -16,7 +16,7 @@ import java.util.ArrayList;
 
 public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
-    public static class SymlinkNode extends com.github.axet.androidlibrary.app.Storage.Node {
+    public static class SymlinkNode extends Node {
         File symlink;
         Boolean symdir = null;
 
@@ -168,9 +168,9 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     }
 
     @Override
-    public ArrayList<com.github.axet.androidlibrary.app.Storage.Node> list(Uri uri) {
+    public ArrayList<Node> list(Uri uri) {
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
-            ArrayList<com.github.axet.androidlibrary.app.Storage.Node> files = new ArrayList<>();
+            ArrayList<Node> files = new ArrayList<>();
             ArrayList<File> ff = SuperUser.ls(SuperUser.LSA, Storage.getFile(uri));
             for (File f : ff) {
                 if (f instanceof SuperUser.SymLink)
@@ -184,10 +184,10 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     }
 
     @Override
-    public ArrayList<com.github.axet.androidlibrary.app.Storage.Node> walk(Uri root, Uri uri) {
+    public ArrayList<Node> walk(Uri root, Uri uri) {
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             int r = Storage.getFile(root).getPath().length();
-            ArrayList<com.github.axet.androidlibrary.app.Storage.Node> files = new ArrayList<>();
+            ArrayList<Node> files = new ArrayList<>();
             ArrayList<File> ff = SuperUser.ls(SuperUser.LSa, Storage.getFile(uri));
             for (File f : ff) {
                 if (f instanceof SuperUser.SymLink)

@@ -111,7 +111,7 @@ public class FilesFragment extends Fragment {
     MenuItem pasteCancel;
     MenuItem rename;
     SelectView select;
-    ArrayList<Uri> selected = new ArrayList<>();
+    ArrayList<Storage.Node> selected = new ArrayList<>();
     HashMap<Uri, Pos> offsets = new HashMap<>();
     BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -188,8 +188,8 @@ public class FilesFragment extends Fragment {
         Throwable delayed;
 
         int calcIndex;
-        ArrayList<Uri> calcs;
-        ArrayList<Uri> calcsStart; // initial calcs dir for UI
+        ArrayList<Storage.Node> calcs;
+        ArrayList<Storage.Node> calcsStart; // initial calcs dir for UI
         Uri calcUri;
 
         int filesIndex;
@@ -219,7 +219,7 @@ public class FilesFragment extends Fragment {
             this.shared = PreferenceManager.getDefaultSharedPreferences(context);
         }
 
-        public PendingOperation(Context context, Uri root, ArrayList<Uri> ff) {
+        public PendingOperation(Context context, Uri root, ArrayList<Storage.Node> ff) {
             this(context);
             calcIndex = 0;
             calcs = new ArrayList<>(ff);
@@ -228,18 +228,23 @@ public class FilesFragment extends Fragment {
         }
 
         public boolean calc() {
-            Uri uri = calcs.get(calcIndex);
-            ArrayList<Storage.Node> nn = storage.walk(calcUri, uri);
-            for (Storage.Node n : nn) {
-                if (n.dir) {
-                    if (n.uri.equals(uri)) // walk return current dirs, do not follow it
+            Storage.Node c = calcs.get(calcIndex);
+            if (c.dir) {
+                ArrayList<Storage.Node> nn = storage.walk(calcUri, c.uri);
+                for (Storage.Node n : nn) {
+                    if (n.dir) {
+                        if (n.uri.equals(c.uri)) // walk return current dirs, do not follow it
+                            files.add(n);
+                        else
+                            calcs.add(n);
+                    } else {
                         files.add(n);
-                    else
-                        calcs.add(n.uri);
-                } else {
-                    files.add(n);
-                    total += n.size;
+                        total += n.size;
+                    }
                 }
+            } else {
+                files.add(c);
+                total += c.size;
             }
             calcIndex++;
             return calcIndex < calcs.size();
@@ -351,11 +356,11 @@ public class FilesFragment extends Fragment {
 
         public String formatStart() {
             if (calcsStart.size() == 1) {
-                return storage.getDisplayName(calcsStart.get(0));
+                return storage.getDisplayName(calcsStart.get(0).uri);
             } else {
                 String str = storage.getDisplayName(calcUri) + "{";
-                for (Uri u : calcsStart)
-                    str += Storage.getName(context, u) + ",";
+                for (Storage.Node u : calcsStart)
+                    str += Storage.getName(context, u.uri) + ",";
                 str = stripRight(str, ",");
                 str += "}";
                 return str;
@@ -550,10 +555,10 @@ public class FilesFragment extends Fragment {
                 @Override
                 public void onClick(View v) {
                     if (MenuItemCompat.isActionViewExpanded(toolbar)) {
-                        if (selected.contains(f.uri))
-                            selected.remove(f.uri);
+                        if (selected.contains(f))
+                            selected.remove(f);
                         else
-                            selected.add(f.uri);
+                            selected.add(f);
                         updateSelection();
                         return;
                     }
@@ -580,10 +585,10 @@ public class FilesFragment extends Fragment {
             h.itemView.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
-                    if (selected.contains(f.uri))
-                        selected.remove(f.uri);
+                    if (selected.contains(f))
+                        selected.remove(f);
                     else
-                        selected.add(f.uri);
+                        selected.add(f);
                     openSelection();
                     return true;
                 }
@@ -591,17 +596,17 @@ public class FilesFragment extends Fragment {
             h.circleFrame.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (selected.contains(f.uri))
-                        selected.remove(f.uri);
+                    if (selected.contains(f))
+                        selected.remove(f);
                     else
-                        selected.add(f.uri);
+                        selected.add(f);
                     openSelection();
                 }
             });
             ViewCompat.setAlpha(h.selected, 1f);
             if (toolbar != null && MenuItemCompat.isActionViewExpanded(toolbar)) {
                 h.circle.setVisibility(View.INVISIBLE);
-                if (selected.contains(f.uri)) {
+                if (selected.contains(f)) {
                     h.unselected.setVisibility(View.INVISIBLE);
                     h.selected.setVisibility(View.VISIBLE);
                 } else {
@@ -609,7 +614,7 @@ public class FilesFragment extends Fragment {
                     h.selected.setVisibility(View.INVISIBLE);
                 }
             } else {
-                if (pending(f.uri)) {
+                if (pending(f)) {
                     h.circle.setVisibility(View.INVISIBLE);
                     h.selected.setVisibility(View.VISIBLE);
                     ViewCompat.setAlpha(h.selected, 0.3f);
@@ -640,8 +645,8 @@ public class FilesFragment extends Fragment {
             return specials.get(f.uri);
         }
 
-        public boolean pending(Uri u) {
-            return app.copy != null && app.copy.contains(u) || app.cut != null && app.cut.contains(u);
+        public boolean pending(Storage.Node n) {
+            return app.copy != null && app.copy.contains(n) || app.cut != null && app.cut.contains(n);
         }
 
         @Override
@@ -1052,7 +1057,7 @@ public class FilesFragment extends Fragment {
             return true;
         }
         if (id == R.id.action_rename && item.isEnabled()) {
-            final Uri f = selected.get(0);
+            final Uri f = selected.get(0).uri;
             final OpenFileDialog.EditTextDialog dialog = new OpenFileDialog.EditTextDialog(getContext());
             dialog.setTitle(R.string.files_rename);
             dialog.setText(storage.getName(f));
@@ -1107,7 +1112,7 @@ public class FilesFragment extends Fragment {
             return;
         if (app.uri.equals(uri)) // prevent paste to the original 'tab'
             return;
-        ArrayList<Uri> ff = null;
+        ArrayList<Storage.Node> ff = null;
         if (app.copy != null)
             ff = app.copy;
         if (app.cut != null)
