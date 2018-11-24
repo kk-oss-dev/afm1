@@ -305,4 +305,17 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     public static boolean exists(File f) {
         return su("[ -e {0} ]", escape(f)).ok();
     }
+
+    public static ArrayList<File> isDirectory(ArrayList<File> ff) {
+        Commands cmd = new Commands();
+        for (File f : ff)
+            cmd.add("[ -d " + escape(f) + " ] && echo " + escape(f));
+        Result r = su(cmd.stdout(true));
+        ArrayList<File> a = new ArrayList<>();
+        Scanner s = new Scanner(r.stdout);
+        while (s.hasNextLine())
+            a.add(new File(s.nextLine()));
+        s.close();
+        return a;
+    }
 }

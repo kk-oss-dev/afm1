@@ -19,7 +19,6 @@ import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.provider.DocumentFile;
@@ -532,34 +531,6 @@ public class FilesFragment extends Fragment {
 
     public class Adapter extends RecyclerView.Adapter<Holder> {
         ArrayList<Storage.Node> files = new ArrayList<>();
-        int calcsIndex;
-        ArrayList<Storage.Node> calcs = new ArrayList<>(); // we have to read symlink stats
-        Runnable calcsRun = new Runnable() {
-            Snackbar old;
-
-            @Override
-            public void run() {
-                if (calcsIndex < calcs.size()) {
-                    Storage.SymlinkNode n = (Storage.SymlinkNode) calcs.get(calcsIndex);
-                    n.isSymDir();
-                    calcsIndex++;
-                    if (old == null)
-                        old = Snackbar.make(getActivity().findViewById(android.R.id.content), "", Snackbar.LENGTH_LONG);
-                    old.setText(calcsIndex + "/" + calcs.size() + " " + storage.getDisplayName(n.uri));
-                    old.show();
-                    handler.post(calcsRun);
-                } else {
-                    calcs.clear();
-                    Collections.sort(adapter.files, new SortByName());
-                    adapter.notifyDataSetChanged();
-                    Pos p = offsets.get(uri);
-                    if (p != null)
-                        layout.scrollToPositionWithOffset(p.pos, p.off);
-                    else
-                        layout.scrollToPositionWithOffset(0, 0);
-                }
-            }
-        };
 
         @Override
         public Holder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -675,8 +646,6 @@ public class FilesFragment extends Fragment {
 
         @Override
         public int getItemCount() {
-            if (!calcs.isEmpty())
-                return 0;
             return files.size();
         }
     }
@@ -707,7 +676,6 @@ public class FilesFragment extends Fragment {
     public void onDestroy() {
         super.onDestroy();
         getContext().unregisterReceiver(receiver);
-        handler.removeCallbacks(adapter.calcsRun);
     }
 
     @Override
@@ -816,21 +784,24 @@ public class FilesFragment extends Fragment {
         if (uri == null) {
             getArguments().putParcelable("uri", u);
         } else {
-            if (adapter.calcs.isEmpty())
-                offsets.put(uri, findFirstVisibleItem());
+            offsets.put(uri, findFirstVisibleItem());
             uri = u;
             updateButton();
             path.setUri(uri);
             reload();
             MainActivity main = (MainActivity) getActivity();
             main.update();
+            Pos p = offsets.get(uri);
+            if (p != null)
+                layout.scrollToPositionWithOffset(p.pos, p.off);
+            else
+                layout.scrollToPositionWithOffset(0, 0);
         }
     }
 
     public void reload() {
         error.setVisibility(View.GONE);
 
-        handler.removeCallbacks(adapter.calcsRun);
         adapter.files.clear();
         try {
             adapter.files.addAll(storage.list(uri));
@@ -839,13 +810,25 @@ public class FilesFragment extends Fragment {
             error.setText(e.getMessage());
             error.setVisibility(View.VISIBLE);
         }
-        adapter.calcsIndex = 0;
-        adapter.calcs.clear();
+
+        ArrayList<Storage.SymlinkNode> calcs = new ArrayList<>();
+        ArrayList<File> a = new ArrayList<>();
         for (Storage.Node n : adapter.files) {
-            if (n instanceof Storage.SymlinkNode)
-                adapter.calcs.add(n);
+            if (n instanceof Storage.SymlinkNode) {
+                calcs.add((Storage.SymlinkNode) n);
+                a.add(Storage.getFile(n.uri));
+            }
         }
-        adapter.calcsRun.run();
+        if (calcs.size() > 0) {
+            a = SuperUser.isDirectory(a);
+            for (Storage.SymlinkNode n : calcs) {
+                File k = Storage.getFile(n.uri);
+                n.setSymDir(a.contains(k));
+            }
+            calcs.clear();
+        }
+        Collections.sort(adapter.files, new SortByName());
+        adapter.notifyDataSetChanged();
 
         portables.clear();
         File[] ff = OpenFileDialog.getPortableList();

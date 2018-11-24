@@ -38,6 +38,10 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             return symdir;
         }
 
+        public void setSymDir(boolean b) {
+            symdir = b;
+        }
+
         public File getTarget() {
             return symlink;
         }
