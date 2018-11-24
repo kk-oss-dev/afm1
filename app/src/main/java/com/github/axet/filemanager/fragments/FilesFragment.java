@@ -482,7 +482,9 @@ public class FilesFragment extends Fragment {
     public static class SortByName implements Comparator<Storage.Node> { // by name files first
         @Override
         public int compare(Storage.Node o1, Storage.Node o2) {
-            int c = Boolean.valueOf(o2.dir).compareTo(o1.dir);
+            Boolean d1 = o1.dir || (o1 instanceof Storage.SymlinkNode && ((Storage.SymlinkNode) o1).isSymDir());
+            Boolean d2 = o2.dir || (o2 instanceof Storage.SymlinkNode && ((Storage.SymlinkNode) o2).isSymDir());
+            int c = d2.compareTo(d1);
             if (c != 0)
                 return c;
             return o1.name.compareTo(o2.name);
