@@ -213,9 +213,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
 
     public static ArrayList<File> ls(String opt, File f) {
         ArrayList<File> ff = new ArrayList<>();
-        Commands cmd = new Commands(MessageFormat.format(opt, escape(f)));
-        cmd.stdout(true);
-        Result r = su(cmd).must();
+        Result r = su(new Commands(MessageFormat.format(opt, escape(f))).stdout(true).exit(true)).must();
         Scanner scanner = new Scanner(r.stdout);
         Pattern p = Pattern.compile("^([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+\\s+[^\\s]+)\\s(.*?)$");
         while (scanner.hasNextLine()) {
@@ -284,7 +282,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     }
 
     public static long length(File f) {
-        Result r = su(new Commands(MessageFormat.format("stat -Lc%s {0}", escape(f))).stdout(true)).must();
+        Result r = su(new Commands(MessageFormat.format("stat -Lc%s {0}", escape(f))).stdout(true).exit(true)).must();
         return Long.valueOf(r.stdout.trim());
     }
 
@@ -301,12 +299,10 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     }
 
     public static boolean isDirectory(File f) {
-        Result r = su(new Commands(MessageFormat.format("[ -d {0} ] && echo 0 || echo 1", escape(f))).stdout(true)).must();
-        return Integer.valueOf(r.stdout.trim()) == 0;
+        return su("[ -d {0} ]", escape(f)).ok();
     }
 
     public static boolean exists(File f) {
-        Result r = su(new Commands(MessageFormat.format("[ -e {0} ] && echo 0 || echo 1", escape(f))).stdout(true)).must();
-        return Integer.valueOf(r.stdout.trim()) == 0;
+        return su("[ -e {0} ]", escape(f)).ok();
     }
 }

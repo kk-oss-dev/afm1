@@ -2,13 +2,11 @@ package com.github.axet.filemanager.activitites;
 
 import android.annotation.TargetApi;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
@@ -91,10 +89,12 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity {
                 @Override
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
                     if ((boolean) newValue) {
-                        SuperUser.Result r = SuperUser.su(SuperUser.BIN_TRUE);
+                        SuperUser.Result r = SuperUser.rootTest();
                         if (!r.ok()) {
                             Toast.makeText(getContext(), r.message(), Toast.LENGTH_LONG).show();
                             return false;
+                        } else {
+                            SuperUser.exitTest(); // second su invoke
                         }
                     }
                     return true;
