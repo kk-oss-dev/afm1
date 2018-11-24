@@ -14,6 +14,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
@@ -69,6 +70,7 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FilesFragment extends Fragment {
@@ -81,6 +83,8 @@ public class FilesFragment extends Fragment {
 
     public static final SimpleDateFormat SIMPLE = new SimpleDateFormat("yyyy-MM-dd HH.mm.ss");
     public static final SimpleDateFormat ISO8601 = new SimpleDateFormat("yyyyMMdd\'T\'HHmmss");
+
+    public static final String EXTERNAL_STORAGE = "EXTERNAL_STORAGE";
 
     public static final NumberFormat BYTES = new DecimalFormat("###,###,###,###,###.#", new DecimalFormatSymbols() {{
         setGroupingSeparator(' ');
@@ -97,6 +101,8 @@ public class FilesFragment extends Fragment {
     PasteBuilder delete;
     PasteBuilder paste;
 
+    HashMap<Uri, Integer> portables = new HashMap<>();
+    Specials specials = new Specials();
     PathView path;
     View button;
     TextView error;
@@ -133,6 +139,26 @@ public class FilesFragment extends Fragment {
     public static class Pos {
         public int pos;
         public int off;
+    }
+
+    public static class Specials extends HashMap<Uri, Integer> {
+        public Specials() {
+            add(Environment.getExternalStorageDirectory(), R.drawable.ic_sd_card_black_24dp);
+            add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), R.drawable.ic_camera_alt_black_24dp);
+            add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), R.drawable.ic_library_books_black_24dp);
+            add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), R.drawable.ic_cloud_download_black_24dp);
+            add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), R.drawable.ic_image_black_24dp);
+            add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_ALARMS), R.drawable.ic_music_video_black_24dp);
+            add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), R.drawable.ic_music_video_black_24dp);
+            add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_NOTIFICATIONS), R.drawable.ic_music_video_black_24dp);
+            add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC), R.drawable.ic_music_video_black_24dp);
+            add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PODCASTS), R.drawable.ic_music_video_black_24dp);
+            add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_RINGTONES), R.drawable.ic_music_video_black_24dp);
+        }
+
+        public void add(File f, int id) {
+            put(Uri.fromFile(f), id);
+        }
     }
 
     public static class PendingOperation implements Runnable {
@@ -464,6 +490,7 @@ public class FilesFragment extends Fragment {
 
     public class Holder extends RecyclerView.ViewHolder {
         public ImageView icon;
+        public ImageView iconSmall;
         public TextView name;
         public View circleFrame;
         public View circle;
@@ -475,6 +502,7 @@ public class FilesFragment extends Fragment {
             int accent = ThemeUtils.getThemeColor(getContext(), R.attr.colorAccent);
             icon = (ImageView) itemView.findViewById(R.id.icon);
             icon.setColorFilter(accent);
+            iconSmall = (ImageView) itemView.findViewById(R.id.icon_small);
             name = (TextView) itemView.findViewById(R.id.name);
             circleFrame = itemView.findViewById(R.id.circle_frame);
             circle = itemView.findViewById(R.id.circle);
@@ -494,8 +522,9 @@ public class FilesFragment extends Fragment {
         @Override
         public void onBindViewHolder(final Holder h, final int position) {
             final Storage.Node f = files.get(position);
-            if (f.dir)
-                h.icon.setImageResource(R.drawable.ic_folder_open_black_24dp);
+            final boolean dir = f.dir || (f instanceof Storage.SymlinkNode && ((Storage.SymlinkNode) f).isSymDir());
+            if (dir)
+                h.icon.setImageResource(R.drawable.ic_folder_black_24dp);
             else
                 h.icon.setImageResource(R.drawable.ic_file);
             h.name.setText(f.name);
@@ -510,7 +539,7 @@ public class FilesFragment extends Fragment {
                         updateSelection();
                         return;
                     }
-                    if (f.dir) {
+                    if (dir) {
                         load(f.uri);
                     } else {
                         PopupMenu menu = new PopupMenu(getContext(), v);
@@ -573,6 +602,24 @@ public class FilesFragment extends Fragment {
                     h.unselected.setVisibility(View.INVISIBLE);
                 }
             }
+            Integer id = getSpecialIcon(f);
+            if (id != null) {
+                h.iconSmall.setImageResource(id);
+                h.iconSmall.setVisibility(View.VISIBLE);
+            } else {
+                h.iconSmall.setVisibility(View.GONE);
+            }
+        }
+
+        public Integer getSpecialIcon(Storage.Node f) {
+            if (f instanceof Storage.SymlinkNode)
+                return R.drawable.ic_link_black_24dp;
+            if (f.name.startsWith("."))
+                return R.drawable.ic_visibility_off_black_24dp;
+            Integer id = portables.get(f.uri);
+            if (id != null)
+                return id;
+            return specials.get(f.uri);
         }
 
         public boolean pending(Uri u) {
@@ -745,6 +792,24 @@ public class FilesFragment extends Fragment {
         }
         Collections.sort(adapter.files, new SortByName());
         adapter.notifyDataSetChanged();
+
+        portables.clear();
+        File[] ff = OpenFileDialog.getPortableList();
+        for (File f : ff)
+            portables.put(Uri.fromFile(f), R.drawable.ic_sd_card_black_24dp);
+        String e = System.getenv(EXTERNAL_STORAGE);
+        if (e != null && !e.isEmpty())
+            portables.put(Uri.fromFile(new File(e)), R.drawable.ic_sd_card_black_24dp);
+        for (Uri k : specials.keySet()) {
+            File f = Storage.getFile(k);
+            File m = Environment.getExternalStorageDirectory();
+            File r = Storage.relative(m, f);
+            for (Uri p : new TreeSet<>(portables.keySet())) {
+                File z = Storage.getFile(p);
+                File n = new File(z, r.getPath());
+                portables.put(Uri.fromFile(n), portables.get(p));
+            }
+        }
     }
 
     @Override
