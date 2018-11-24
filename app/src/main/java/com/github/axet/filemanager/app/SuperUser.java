@@ -64,6 +64,16 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         public long lastModified() {
             return last;
         }
+
+        @Override
+        public boolean delete() {
+            return SuperUser.delete(this).ok();
+        }
+
+        @Override
+        public boolean renameTo(File dest) {
+            return SuperUser.rename(this, dest).ok();
+        }
     }
 
     public static class Directory extends File {
@@ -97,6 +107,16 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         @Override
         public long lastModified() {
             return last;
+        }
+
+        @Override
+        public boolean delete() {
+            return SuperUser.delete(this).ok();
+        }
+
+        @Override
+        public boolean renameTo(File dest) {
+            return SuperUser.rename(this, dest).ok();
         }
     }
 
@@ -137,6 +157,16 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
 
         public File getTarget() {
             return target;
+        }
+
+        @Override
+        public boolean delete() {
+            return SuperUser.delete(this).ok();
+        }
+
+        @Override
+        public boolean renameTo(File dest) {
+            return SuperUser.rename(this, dest).ok();
         }
     }
 
@@ -225,8 +255,8 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         return su(LNS, escape(target), escape(file));
     }
 
-    public static boolean rename(File f, File t) {
-        return su(RENAME, escape(f), escape(t)).ok();
+    public static Result rename(File f, File t) {
+        return su(RENAME, escape(f), escape(t));
     }
 
     public static boolean isDirectory(File f) {

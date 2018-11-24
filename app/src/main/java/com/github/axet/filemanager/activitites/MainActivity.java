@@ -63,6 +63,7 @@ import net.i2p.android.ext.floatingactionbutton.FloatingActionsMenu;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatThemeActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -171,6 +172,76 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             TabLayout.Tab right = tabLayout.getTabAt(1);
             rightTab = new FilesTabView(MainActivity.this, tabLayout);
             rightTab.updateLayout(right);
+        }
+    }
+
+    public static class RootFile extends File {
+        boolean exists = true;
+
+        public RootFile(File f) {
+            super(f.getPath());
+        }
+
+        public RootFile(File f, String name) {
+            this(new File(f, name));
+            exists = SuperUser.exists(this);
+        }
+
+        @Override
+        public File getParentFile() {
+            String p = getParent();
+            if (p == null)
+                return null;
+            return new RootFile(new File(p));
+        }
+
+        @Override
+        public File[] listFiles() {
+            return listFiles((FileFilter) null);
+        }
+
+        @Override
+        public boolean exists() {
+            return exists;
+        }
+
+        @Override
+        public File[] listFiles(final FilenameFilter filter) {
+            return listFiles(filter == null ? null : new FileFilter() {
+                @Override
+                public boolean accept(File pathname) {
+                    return filter.accept(pathname.getParentFile(), pathname.getName());
+                }
+            });
+        }
+
+        @Override
+        public File[] listFiles(FileFilter filter) {
+            ArrayList<File> all = SuperUser.ls(SuperUser.LSA, this);
+            if (filter != null) {
+                ArrayList<File> ff = new ArrayList<>();
+                for (File f : all) {
+                    if (filter.accept(f))
+                        ff.add(f);
+                }
+                all = ff;
+            }
+            return all.toArray(new File[]{});
+        }
+
+        @Override
+        public boolean delete() {
+            return SuperUser.delete(this).ok();
+        }
+
+        @Override
+        public boolean mkdirs() {
+            return SuperUser.mkdirs(this).ok();
+        }
+
+        @Override
+        public boolean canWrite() {
+            return true;
         }
     }
 
@@ -412,65 +483,17 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                 @Override
                 public OpenFileDialog fileDialogBuild() {
                     OpenFileDialog d = super.fileDialogBuild();
-                    d.setAdapter(new OpenFileDialog.FileAdapter(context) {
-                        ArrayList<File> pending;
-
+                    d.setAdapter(new OpenFileDialog.FileAdapter(context, d.getCurrentPath()) {
                         @Override
-                        public void scan(File dir) {
-                            if (storage.getRoot()) {
-                                pending = SuperUser.ls(SuperUser.LSa, dir);
-                                dir = pending.get(0);
-                            }
-                            super.scan(dir);
-                        }
-
-                        @Override
-                        protected File[] listFiles(File path, final FileFilter filter) {
-                            if (storage.getRoot()) {
-                                ArrayList<File> all;
-                                if (pending != null && pending.get(0).equals(path)) {
-                                    all = pending;
-                                    pending = null;
-                                    all.remove(0);
-                                } else {
-                                    all = SuperUser.ls(SuperUser.LSA, path);
-                                }
-                                ArrayList<File> ff = new ArrayList<>();
-                                if (filter != null) {
-                                    for (File f : all) {
-                                        if (filter.accept(f))
-                                            ff.add(f);
-                                    }
-                                    all = ff;
-                                }
-                                return all.toArray(new File[]{});
-                            } else {
-                                return super.listFiles(path, filter);
-                            }
-                        }
-
-                        @Override
-                        protected boolean canWrite(File p) {
+                        public void scan() {
                             if (storage.getRoot())
-                                return true;
-                            else
-                                return super.canWrite(p);
+                                currentPath = new RootFile(currentPath);
+                            super.scan();
                         }
 
                         @Override
-                        protected boolean delete(File f) {
-                            if (storage.getRoot())
-                                return storage.delete(Uri.fromFile(f));
-                            else
-                                return super.delete(f);
-                        }
-
-                        @Override
-                        protected boolean mkdirs(File f) {
-                            if (storage.getRoot())
-                                return SuperUser.mkdirs(f).ok();
-                            else
-                                return super.mkdirs(f);
+                        public File open(String name) {
+                            return new RootFile(currentPath, name);
                         }
                     });
                     return d;
