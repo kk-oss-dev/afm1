@@ -104,12 +104,34 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     public Uri mkdir(Uri to, String name) {
         if (to.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
-            File k = Storage.getFile(to);
+            File k = getFile(to);
             File m = new File(k, name);
             if (SuperUser.mkdir(m).ok())
                 return Uri.fromFile(m);
         }
         return super.mkdir(to, name);
+    }
+
+    public Uri mkdirs(Uri to, String name) {
+        String s = to.getScheme();
+        if (s.equals(ContentResolver.SCHEME_FILE)) {
+            if (getRoot()) {
+                File k = getFile(to);
+                File m = new File(k, name);
+                if (SuperUser.mkdirs(m).ok())
+                    return Uri.fromFile(m);
+            } else {
+                File k = getFile(to);
+                File m = new File(k, name);
+                if (m.exists() || m.mkdirs())
+                    return Uri.fromFile(m);
+            }
+        } else if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
+            return createFolder(to, name);
+        } else {
+            throw new UnknownUri();
+        }
+        return null;
     }
 
     @Override

@@ -41,8 +41,18 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         }
 
         @Override
+        public boolean exists() {
+            return true;
+        }
+
+        @Override
         public boolean isDirectory() {
             return false;
+        }
+
+        @Override
+        public boolean canWrite() {
+            return true;
         }
 
         @Override
@@ -65,7 +75,17 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         }
 
         @Override
+        public boolean exists() {
+            return true;
+        }
+
+        @Override
         public boolean isDirectory() {
+            return true;
+        }
+
+        @Override
+        public boolean canWrite() {
             return true;
         }
 
@@ -93,6 +113,16 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         @Override
         public boolean isDirectory() {
             return false;
+        }
+
+        @Override
+        public boolean canWrite() {
+            return true;
+        }
+
+        @Override
+        public boolean exists() { // symlink, not target
+            return true;
         }
 
         @Override
@@ -201,6 +231,11 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
 
     public static boolean isDirectory(File f) {
         Result r = su(new Commands(MessageFormat.format("[ -d {0} ] && echo 0 || echo 1", escape(f))).stdout(true)).must();
+        return Integer.valueOf(r.stdout.trim()) == 0;
+    }
+
+    public static boolean exists(File f) {
+        Result r = su(new Commands(MessageFormat.format("[ -e {0} ] && echo 0 || echo 1", escape(f))).stdout(true)).must();
         return Integer.valueOf(r.stdout.trim()) == 0;
     }
 }
