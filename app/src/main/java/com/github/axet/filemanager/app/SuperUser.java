@@ -1,6 +1,8 @@
 package com.github.axet.filemanager.app;
 
 import java.io.File;
+import java.io.FileFilter;
+import java.io.FilenameFilter;
 import java.text.MessageFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -115,66 +117,103 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         }
 
         @Override
+        public boolean mkdir() {
+            return SuperUser.mkdir(this).ok();
+        }
+
+        @Override
+        public boolean mkdirs() {
+            return SuperUser.mkdirs(this).ok();
+        }
+
+        @Override
         public boolean renameTo(File dest) {
             return SuperUser.rename(this, dest).ok();
         }
+
+        @Override
+        public File[] listFiles() {
+            return listFiles((FileFilter) null);
+        }
+
+        @Override
+        public File[] listFiles(final FilenameFilter filter) {
+            return listFiles(filter == null ? null : new FileFilter() {
+                @Override
+                public boolean accept(File pathname) {
+                    return filter.accept(pathname.getParentFile(), pathname.getName());
+                }
+            });
+        }
+
+        @Override
+        public File[] listFiles(FileFilter filter) {
+            ArrayList<File> all = SuperUser.ls(SuperUser.LSA, this);
+            if (filter != null) {
+                ArrayList<File> ff = new ArrayList<>();
+                for (File f : all) {
+                    if (filter.accept(f))
+                        ff.add(f);
+                }
+                all = ff;
+            }
+            return all.toArray(new File[]{});
+        }
     }
 
-    public static class SymLink extends File {
-        long last;
+    public static class SymLink extends Directory {
         File target;
 
         public SymLink(File f, long last, File target) {
-            super(f.getPath());
-            this.last = last;
+            super(f, last);
             this.target = target;
         }
 
         @Override
         public boolean isDirectory() {
-            return false;
+            return false; // false, but target may be
         }
 
         @Override
-        public boolean canWrite() {
-            return true;
-        }
-
-        @Override
-        public boolean exists() { // symlink, not target
-            return true;
-        }
-
-        @Override
-        public long length() {
-            return 0;
-        }
-
-        @Override
-        public long lastModified() {
-            return last;
+        public boolean exists() {
+            return true; // symlink exists, but target may not
         }
 
         public File getTarget() {
             return target;
         }
+    }
 
-        @Override
-        public boolean delete() {
-            return SuperUser.delete(this).ok();
+    public static class VirtualFile extends SuperUser.Directory { // has no information about attrs (size, last, exists)
+        boolean exists;
+
+        public VirtualFile(File f) {
+            super(f, 0);
+            exists = true;
+        }
+
+        public VirtualFile(File f, String name) {
+            this(new File(f, name));
+            exists = SuperUser.exists(this);
         }
 
         @Override
-        public boolean renameTo(File dest) {
-            return SuperUser.rename(this, dest).ok();
+        public File getParentFile() {
+            String p = getParent();
+            if (p == null)
+                return null;
+            return new VirtualFile(new File(p));
+        }
+
+        @Override
+        public boolean exists() {
+            return exists;
         }
     }
 
     public static ArrayList<File> ls(String opt, File f) {
         ArrayList<File> ff = new ArrayList<>();
-        Commands cmd = new Commands(MessageFormat.format(opt, escape(f)));
-        cmd.stdout(true);
-        Result r = su(cmd).must();
+        Result r = su(new Commands(MessageFormat.format(opt, escape(f))).stdout(true).exit(true)).must();
         Scanner scanner = new Scanner(r.stdout);
         Pattern p = Pattern.compile("^([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+\\s+[^\\s]+)\\s(.*?)$");
         while (scanner.hasNextLine()) {
@@ -243,7 +282,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     }
 
     public static long length(File f) {
-        Result r = su(new Commands(MessageFormat.format("stat -Lc%s {0}", escape(f))).stdout(true)).must();
+        Result r = su(new Commands(MessageFormat.format("stat -Lc%s {0}", escape(f))).stdout(true).exit(true)).must();
         return Long.valueOf(r.stdout.trim());
     }
 
@@ -260,12 +299,10 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     }
 
     public static boolean isDirectory(File f) {
-        Result r = su(new Commands(MessageFormat.format("[ -d {0} ] && echo 0 || echo 1", escape(f))).stdout(true)).must();
-        return Integer.valueOf(r.stdout.trim()) == 0;
+        return su("[ -d {0} ]", escape(f)).ok();
     }
 
     public static boolean exists(File f) {
-        Result r = su(new Commands(MessageFormat.format("[ -e {0} ] && echo 0 || echo 1", escape(f))).stdout(true)).must();
-        return Integer.valueOf(r.stdout.trim()) == 0;
+        return su("[ -e {0} ]", escape(f)).ok();
     }
 }

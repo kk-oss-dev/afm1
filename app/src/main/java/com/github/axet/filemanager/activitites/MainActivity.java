@@ -62,9 +62,6 @@ import net.i2p.android.ext.floatingactionbutton.FloatingActionButton;
 import net.i2p.android.ext.floatingactionbutton.FloatingActionsMenu;
 
 import java.io.File;
-import java.io.FileFilter;
-import java.io.FilenameFilter;
-import java.util.ArrayList;
 
 public class MainActivity extends AppCompatThemeActivity implements NavigationView.OnNavigationItemSelectedListener {
     public static final int RESULT_ADDBOOKMARK = 1;
@@ -175,76 +172,6 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         }
     }
 
-    public static class RootFile extends File {
-        boolean exists = true;
-
-        public RootFile(File f) {
-            super(f.getPath());
-        }
-
-        public RootFile(File f, String name) {
-            this(new File(f, name));
-            exists = SuperUser.exists(this);
-        }
-
-        @Override
-        public File getParentFile() {
-            String p = getParent();
-            if (p == null)
-                return null;
-            return new RootFile(new File(p));
-        }
-
-        @Override
-        public File[] listFiles() {
-            return listFiles((FileFilter) null);
-        }
-
-        @Override
-        public boolean exists() {
-            return exists;
-        }
-
-        @Override
-        public File[] listFiles(final FilenameFilter filter) {
-            return listFiles(filter == null ? null : new FileFilter() {
-                @Override
-                public boolean accept(File pathname) {
-                    return filter.accept(pathname.getParentFile(), pathname.getName());
-                }
-            });
-        }
-
-        @Override
-        public File[] listFiles(FileFilter filter) {
-            ArrayList<File> all = SuperUser.ls(SuperUser.LSA, this);
-            if (filter != null) {
-                ArrayList<File> ff = new ArrayList<>();
-                for (File f : all) {
-                    if (filter.accept(f))
-                        ff.add(f);
-                }
-                all = ff;
-            }
-            return all.toArray(new File[]{});
-        }
-
-        @Override
-        public boolean delete() {
-            return SuperUser.delete(this).ok();
-        }
-
-        @Override
-        public boolean mkdirs() {
-            return SuperUser.mkdirs(this).ok();
-        }
-
-        @Override
-        public boolean canWrite() {
-            return true;
-        }
-    }
-
     @Override
     public int getAppTheme() {
         return FilesApplication.getTheme(this, FilesApplication.PREF_THEME, R.style.AppThemeLight_NoActionBar, R.style.AppThemeDark_NoActionBar, getString(R.string.Theme_Dark));
@@ -343,6 +270,9 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         app = FilesApplication.from(this);
 
         storage = new Storage(this);
+
+        if (storage.getRoot())
+            SuperUser.exitTest(); // run once per app, only when user already enabled root
 
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
 
@@ -487,13 +417,13 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                         @Override
                         public void scan() {
                             if (storage.getRoot())
-                                currentPath = new RootFile(currentPath);
+                                currentPath = new SuperUser.VirtualFile(currentPath);
                             super.scan();
                         }
 
                         @Override
                         public File open(String name) {
-                            return new RootFile(currentPath, name);
+                            return new SuperUser.VirtualFile(currentPath, name);
                         }
                     });
                     return d;
