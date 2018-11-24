@@ -7,6 +7,7 @@ import android.os.Environment;
 import android.preference.PreferenceManager;
 
 import com.github.axet.androidlibrary.app.MainApplication;
+import com.github.axet.androidlibrary.app.Storage;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -23,8 +24,8 @@ public class FilesApplication extends MainApplication {
     public static final String PREF_ROOT = "root";
 
     public Bookmarks bookmarks;
-    public ArrayList<Uri> copy; // selected files
-    public ArrayList<Uri> cut; // selected files
+    public ArrayList<Storage.Node> copy; // selected files
+    public ArrayList<Storage.Node> cut; // selected files
     public Uri uri; // selected root
 
     public static FilesApplication from(Context context) {
