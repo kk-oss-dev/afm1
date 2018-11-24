@@ -672,9 +672,14 @@ public class FilesFragment extends Fragment {
                 old.show();
                 handler.post(calcsRun);
             } else {
+                calcs.clear();
                 Collections.sort(adapter.files, new SortByName());
                 adapter.notifyDataSetChanged();
-                calcs.clear();
+                Pos p = offsets.get(uri);
+                if (p != null)
+                    layout.scrollToPositionWithOffset(p.pos, p.off);
+                else
+                    layout.scrollToPositionWithOffset(0, 0);
             }
         }
     }
@@ -821,11 +826,6 @@ public class FilesFragment extends Fragment {
             reload();
             MainActivity main = (MainActivity) getActivity();
             main.update();
-            Pos p = offsets.get(uri);
-            if (p != null)
-                layout.scrollToPositionWithOffset(p.pos, p.off);
-            else
-                layout.scrollToPositionWithOffset(0, 0);
         }
     }
 
