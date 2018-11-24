@@ -140,7 +140,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             File k = getFile(f);
             File p = k.getParentFile();
             File m = new File(p, t);
-            if (!SuperUser.rename(k, m))
+            if (!SuperUser.rename(k, m).ok())
                 return null;
             return Uri.fromFile(m);
         }
