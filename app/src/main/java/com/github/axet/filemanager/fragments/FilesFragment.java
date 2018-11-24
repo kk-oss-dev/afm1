@@ -16,7 +16,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.provider.DocumentsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -1107,7 +1106,22 @@ public class FilesFragment extends Fragment {
                         Storage.Node f = files.get(filesIndex);
                         try {
                             if (f.dir) {
-                                if (storage.mkdir(uri, f.name) == null)
+                                Storage.Node t = null;
+                                String s = uri.getScheme();
+                                if (s.equals(ContentResolver.SCHEME_FILE)) {
+                                    File k = Storage.getFile(uri);
+                                    File m = new File(k, f.name);
+                                    if (m.exists() && m.isDirectory())
+                                        t = new Storage.Node(m);
+                                } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
+                                    Uri doc = storage.child(uri, f.name);
+                                    DocumentFile k = DocumentFile.fromSingleUri(context, doc);
+                                    if (k.exists() && k.isDirectory())
+                                        t = new Storage.Node(k);
+                                } else {
+                                    throw new Storage.UnknownUri();
+                                }
+                                if (t == null && storage.mkdir(uri, f.name) == null)
                                     throw new RuntimeException("unable create dir: " + f.name);
                                 filesIndex++;
                                 if (app.cut != null) {
@@ -1115,17 +1129,17 @@ public class FilesFragment extends Fragment {
                                     deleteIndex = delete.size() - 1; // reverse index
                                 }
                             } else {
-                                String s = uri.getScheme();
                                 Storage.Node t = null;
+                                String s = uri.getScheme();
                                 if (s.equals(ContentResolver.SCHEME_FILE)) {
                                     File k = Storage.getFile(uri);
                                     File m = new File(k, f.name);
-                                    if (m.exists())
+                                    if (m.exists() && m.isFile())
                                         t = new Storage.Node(m);
                                 } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
                                     Uri doc = storage.child(uri, f.name);
                                     DocumentFile k = DocumentFile.fromSingleUri(context, doc);
-                                    if (k.exists())
+                                    if (k.exists() && k.isFile())
                                         t = new Storage.Node(k);
                                 } else {
                                     throw new Storage.UnknownUri();

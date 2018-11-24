@@ -53,6 +53,7 @@ import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.app.FilesApplication;
 import com.github.axet.filemanager.app.Storage;
+import com.github.axet.filemanager.app.SuperUser;
 import com.github.axet.filemanager.fragments.FilesFragment;
 import com.github.axet.filemanager.fragments.HexDialogFragment;
 import com.github.axet.filemanager.services.StorageProvider;
@@ -61,6 +62,8 @@ import net.i2p.android.ext.floatingactionbutton.FloatingActionButton;
 import net.i2p.android.ext.floatingactionbutton.FloatingActionsMenu;
 
 import java.io.File;
+import java.io.FileFilter;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatThemeActivity implements NavigationView.OnNavigationItemSelectedListener {
     public static final int RESULT_ADDBOOKMARK = 1;
@@ -224,7 +227,8 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                                 break;
                         }
                         uri = f.getUri();
-                        storage.mkdir(uri, s);
+                        if (storage.mkdir(uri, s) == null)
+                            throw new RuntimeException("unable to create " + s);
                         f.reload();
 
                     }
@@ -406,12 +410,90 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                 }
 
                 @Override
+                public OpenFileDialog fileDialogBuild() {
+                    OpenFileDialog d = super.fileDialogBuild();
+                    d.setAdapter(new OpenFileDialog.FileAdapter(context) {
+                        ArrayList<File> pending;
+
+                        @Override
+                        public void scan(File dir) {
+                            if (storage.getRoot()) {
+                                pending = SuperUser.ls(SuperUser.LSa, dir);
+                                dir = pending.get(0);
+                            }
+                            super.scan(dir);
+                        }
+
+                        @Override
+                        protected File[] listFiles(File path, final FileFilter filter) {
+                            if (storage.getRoot()) {
+                                ArrayList<File> all;
+                                if (pending != null && pending.get(0).equals(path)) {
+                                    all = pending;
+                                    pending = null;
+                                    all.remove(0);
+                                } else {
+                                    all = SuperUser.ls(SuperUser.LSA, path);
+                                }
+                                ArrayList<File> ff = new ArrayList<>();
+                                if (filter != null) {
+                                    for (File f : all) {
+                                        if (filter.accept(f))
+                                            ff.add(f);
+                                    }
+                                    all = ff;
+                                }
+                                return all.toArray(new File[]{});
+                            } else {
+                                return super.listFiles(path, filter);
+                            }
+                        }
+
+                        @Override
+                        protected boolean canWrite(File p) {
+                            if (storage.getRoot())
+                                return true;
+                            else
+                                return super.canWrite(p);
+                        }
+
+                        @Override
+                        protected boolean delete(File f) {
+                            if (storage.getRoot())
+                                return storage.delete(Uri.fromFile(f));
+                            else
+                                return super.delete(f);
+                        }
+
+                        @Override
+                        protected boolean mkdirs(File f) {
+                            if (storage.getRoot())
+                                return SuperUser.mkdirs(f).ok();
+                            else
+                                return super.mkdirs(f);
+                        }
+                    });
+                    return d;
+                }
+
+                @Override
                 public void onRequestPermissionsFailed(String[] permissions) {
                     Toast.makeText(context, R.string.not_permitted, Toast.LENGTH_SHORT).show();
                 }
             };
             choicer.setPermissionsDialog(this, Storage.PERMISSIONS_RW, RESULT_ADDBOOKMARK);
-            choicer.show(null);
+            Uri old = null;
+            switch (mViewPager.getCurrentItem()) {
+                case 0:
+                    old = mSectionsPagerAdapter.left.getUri();
+                    break;
+                case 1:
+                    old = mSectionsPagerAdapter.right.getUri();
+                    break;
+            }
+            if (!old.getScheme().equals(ContentResolver.SCHEME_FILE))
+                old = null;
+            choicer.show(old);
             return true;
         }
 
