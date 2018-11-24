@@ -532,15 +532,34 @@ public class FilesFragment extends Fragment {
 
     public class Adapter extends RecyclerView.Adapter<Holder> {
         ArrayList<Storage.Node> files = new ArrayList<>();
-        ArrayList<Storage.Node> calcs = new ArrayList<>(); // we have to read symlink stats
         int calcsIndex;
+        ArrayList<Storage.Node> calcs = new ArrayList<>(); // we have to read symlink stats
         Runnable calcsRun = new Runnable() {
+            Snackbar old;
+
             @Override
             public void run() {
-                calc();
+                if (calcsIndex < calcs.size()) {
+                    Storage.SymlinkNode n = (Storage.SymlinkNode) calcs.get(calcsIndex);
+                    n.isSymDir();
+                    calcsIndex++;
+                    if (old == null)
+                        old = Snackbar.make(getActivity().findViewById(android.R.id.content), "", Snackbar.LENGTH_LONG);
+                    old.setText(calcsIndex + "/" + calcs.size() + " " + storage.getDisplayName(n.uri));
+                    old.show();
+                    handler.post(calcsRun);
+                } else {
+                    calcs.clear();
+                    Collections.sort(adapter.files, new SortByName());
+                    adapter.notifyDataSetChanged();
+                    Pos p = offsets.get(uri);
+                    if (p != null)
+                        layout.scrollToPositionWithOffset(p.pos, p.off);
+                    else
+                        layout.scrollToPositionWithOffset(0, 0);
+                }
             }
         };
-        Snackbar old;
 
         @Override
         public Holder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -659,23 +678,6 @@ public class FilesFragment extends Fragment {
             if (!calcs.isEmpty())
                 return 0;
             return files.size();
-        }
-
-        public void calc() {
-            if (calcsIndex < calcs.size()) {
-                Storage.SymlinkNode n = (Storage.SymlinkNode) calcs.get(calcsIndex);
-                n.isSymDir();
-                calcsIndex++;
-                if (old == null)
-                    old = Snackbar.make(getActivity().findViewById(android.R.id.content), "", Snackbar.LENGTH_LONG);
-                old.setText(calcsIndex + "/" + calcs.size() + " " + storage.getDisplayName(n.uri));
-                old.show();
-                handler.post(calcsRun);
-            } else {
-                Collections.sort(adapter.files, new SortByName());
-                adapter.notifyDataSetChanged();
-                calcs.clear();
-            }
         }
     }
 
@@ -814,18 +816,14 @@ public class FilesFragment extends Fragment {
         if (uri == null) {
             getArguments().putParcelable("uri", u);
         } else {
-            offsets.put(uri, findFirstVisibleItem());
+            if (adapter.calcs.isEmpty())
+                offsets.put(uri, findFirstVisibleItem());
             uri = u;
             updateButton();
             path.setUri(uri);
             reload();
             MainActivity main = (MainActivity) getActivity();
             main.update();
-            Pos p = offsets.get(uri);
-            if (p != null)
-                layout.scrollToPositionWithOffset(p.pos, p.off);
-            else
-                layout.scrollToPositionWithOffset(0, 0);
         }
     }
 
@@ -847,7 +845,7 @@ public class FilesFragment extends Fragment {
             if (n instanceof Storage.SymlinkNode)
                 adapter.calcs.add(n);
         }
-        adapter.calc();
+        adapter.calcsRun.run();
 
         portables.clear();
         File[] ff = OpenFileDialog.getPortableList();
