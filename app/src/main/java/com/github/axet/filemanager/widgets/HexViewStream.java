@@ -1,16 +1,17 @@
 package com.github.axet.filemanager.widgets;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.AppCompatTextView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
-import android.view.LayoutInflater;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.TextView;
-
-import com.github.axet.filemanager.R;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,8 +36,7 @@ public class HexViewStream extends RecyclerView {
         return String.valueOf((char) b);
     }
 
-    public static int measureMax(RecyclerView list, int widthSpec) {
-        Holder h = new Holder(list);
+    public static int measureMax(RecyclerView list, Holder h, int widthSpec) {
         int w = View.MeasureSpec.getSize(widthSpec) - list.getPaddingLeft() - list.getPaddingRight();
         int old = 0;
         for (int i = 1; i < 10; i++) {
@@ -69,11 +69,9 @@ public class HexViewStream extends RecyclerView {
 
         public Holder(View itemView) {
             super(itemView);
-            text = (TextView) itemView.findViewById(R.id.text);
-        }
-
-        public Holder(ViewGroup parent) {
-            this(LayoutInflater.from(parent.getContext()).inflate(R.layout.hex_item, parent, false));
+            text = (TextView) itemView.findViewById(android.R.id.text1);
+            text.setTextSize(10);
+            text.setTypeface(Typeface.MONOSPACE);
         }
 
         public void format(long addr, byte[] buf, int max) {
@@ -111,7 +109,8 @@ public class HexViewStream extends RecyclerView {
         }
 
         public void open(int widthSpec) {
-            c = measureMax(HexViewStream.this, widthSpec);
+            Holder m = onCreateViewHolder(HexViewStream.this, 0);
+            c = measureMax(HexViewStream.this, m, widthSpec);
             max = c * 4;
             count = (int) (size / max);
             if (size % max > 0)
@@ -131,7 +130,12 @@ public class HexViewStream extends RecyclerView {
 
         @Override
         public Holder onCreateViewHolder(ViewGroup parent, int viewType) {
-            return new Holder(parent);
+            FrameLayout f = new FrameLayout(getContext());
+            f.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            AppCompatTextView t = new AppCompatTextView(getContext());
+            t.setId(android.R.id.text1);
+            f.addView(t, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+            return new Holder(f);
         }
 
         @Override
@@ -172,7 +176,7 @@ public class HexViewStream extends RecyclerView {
             if (ll.size() == 0)
                 open(widthSpec);
 
-            Holder m = new Holder(HexViewStream.this);
+            Holder m = onCreateViewHolder(HexViewStream.this, 0);
             sp = measureFont(HexViewStream.this, m, widthSpec, c);
             m.text.setText(formatSize(c));
             m.itemView.measure(0, 0);
