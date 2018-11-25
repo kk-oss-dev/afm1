@@ -146,7 +146,8 @@ public class FilesFragment extends Fragment {
             File e = Environment.getExternalStorageDirectory();
             add(e, R.drawable.ic_sd_card_black_24dp);
             add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), R.drawable.ic_camera_alt_black_24dp);
-            add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), R.drawable.ic_library_books_black_24dp);
+            if (Build.VERSION.SDK_INT >= 19)
+                add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), R.drawable.ic_library_books_black_24dp);
             add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), R.drawable.ic_cloud_download_black_24dp);
             add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), R.drawable.ic_photo_library_black_24dp);
             add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_ALARMS), R.drawable.ic_music_video_black_24dp);
@@ -838,8 +839,10 @@ public class FilesFragment extends Fragment {
 
         portables.clear();
         File[] ff = OpenFileDialog.getPortableList();
-        for (File f : ff)
-            portables.put(Uri.fromFile(f), R.drawable.ic_sd_card_black_24dp);
+        if (ff != null) {
+            for (File f : ff)
+                portables.put(Uri.fromFile(f), R.drawable.ic_sd_card_black_24dp);
+        }
         String e = System.getenv(EXTERNAL_STORAGE);
         if (e != null && !e.isEmpty())
             portables.put(Uri.fromFile(new File(e)), R.drawable.ic_sd_card_black_24dp);

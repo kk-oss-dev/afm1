@@ -3,6 +3,7 @@ package com.github.axet.filemanager.app;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 
@@ -11,6 +12,7 @@ import com.github.axet.androidlibrary.app.Storage;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class FilesApplication extends MainApplication {
     public static final String PREF_LEFT = "left";
@@ -64,13 +66,12 @@ public class FilesApplication extends MainApplication {
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(FilesApplication.this);
             int count = shared.getInt(PREF_BOOKMARK_COUNT, -1);
             if (count == -1) {
-                File[] ff = new File[]{
-                        Environment.getExternalStorageDirectory(),
+                ArrayList<File> ff = new ArrayList<>(Arrays.asList(Environment.getExternalStorageDirectory(),
                         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM),
-                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
                         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
-                };
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)));
+                if (Build.VERSION.SDK_INT >= 19)
+                    ff.add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS));
                 for (File f : ff) {
                     if (f.exists())
                         add(Uri.fromFile(f));

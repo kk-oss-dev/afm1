@@ -5,6 +5,7 @@ import android.content.Context;
 import android.net.Uri;
 import android.support.annotation.Nullable;
 import android.support.v4.view.ViewCompat;
+import android.support.v7.widget.LinearLayoutCompat;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.HorizontalScrollView;
@@ -16,9 +17,9 @@ import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 
 public class PathView extends HorizontalScrollView {
-    LinearLayout ll;
-    public Listener listener;
     Uri uri;
+    LinearLayoutCompat ll;
+    public Listener listener;
 
     public interface Listener {
         void onUriSelected(Uri u);
@@ -47,7 +48,7 @@ public class PathView extends HorizontalScrollView {
     }
 
     void create() {
-        ll = new LinearLayout(getContext());
+        ll = new LinearLayoutCompat(getContext());
         ll.setOrientation(LinearLayout.HORIZONTAL);
         addView(ll);
     }
@@ -55,7 +56,6 @@ public class PathView extends HorizontalScrollView {
     public void setUri(Uri u) {
         uri = u;
         ll.removeAllViews();
-        String s = u.getScheme();
         add(u);
         post(new Runnable() {
             @Override

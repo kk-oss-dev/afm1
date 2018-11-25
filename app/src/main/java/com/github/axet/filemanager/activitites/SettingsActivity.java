@@ -102,6 +102,7 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity {
             });
             if (!SuperUser.isRooted())
                 root.setVisible(false);
+            bindPreferenceSummaryToValue(findPreference(FilesApplication.PREF_THEME));
         }
 
         @Override
