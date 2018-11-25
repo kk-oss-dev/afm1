@@ -581,8 +581,9 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             File f = Storage.getFile(u);
             if (f.equals(Environment.getExternalStorageDirectory()))
                 return f.getPath();
-            else
-                return ".../" + f.getName();
+            if (f.equals(FilesApplication.getLocalTmp()))
+                return f.getPath();
+            return ".../" + f.getName();
         } else {
             return storage.getDisplayName(u);
         }

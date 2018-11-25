@@ -28,6 +28,18 @@ public class FilesApplication extends MainApplication {
     public ArrayList<Storage.Node> cut; // selected files
     public Uri uri; // selected root
 
+    public static File getLocalTmp() {
+        String s = System.getenv("TMPDIR");
+        if (s == null || s.isEmpty()) {
+            s = System.getenv("ANDROID_DATA");
+            if (s == null || s.isEmpty())
+                s = "/data";
+            File f = new File(s, "local/tmp");
+            return f;
+        }
+        return new File(s);
+    }
+
     public static FilesApplication from(Context context) {
         return (FilesApplication) MainApplication.from(context);
     }
@@ -63,6 +75,9 @@ public class FilesApplication extends MainApplication {
                     if (f.exists())
                         add(Uri.fromFile(f));
                 }
+                File f = getLocalTmp();
+                if (f.exists())
+                    add(Uri.fromFile(f));
             }
             for (int i = 0; i < count; i++) {
                 Uri uri = Uri.parse(shared.getString(PREF_BOOKMARK_PREFIX + i, ""));
