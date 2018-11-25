@@ -5,8 +5,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,63 +15,12 @@ import android.widget.TextView;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.app.Storage;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
+import com.github.axet.filemanager.widgets.HexViewStream;
 
 public class HexFragment extends Fragment {
     public static final String TAG = HexFragment.class.getSimpleName();
 
-    Adapter adapter;
-    RecyclerView list;
-
-    public static String formatSize(int c) {
-        String str = "00000000  ";
-        for (int i = 0; i < c; i++)
-            str += "00 00 00 00  ";
-        for (int i = 0; i < c; i++)
-            str += "####";
-        return str;
-    }
-
-    public static String toChar(byte b) {
-        if (b < ' ')
-            return ".";
-        return String.valueOf((char) b);
-    }
-
-    public static int measureMax(RecyclerView list, int widthSpec) {
-        Holder h = new Holder(list);
-        int w = View.MeasureSpec.getSize(widthSpec) - list.getPaddingLeft() - list.getPaddingRight();
-        int old = 0;
-        for (int i = 1; i < 10; i++) {
-            String s = formatSize(i);
-            h.text.setText(s);
-            h.itemView.measure(0, 0);
-            if (h.itemView.getMeasuredWidth() > w)
-                return old;
-            old = i;
-        }
-        return old;
-    }
-
-    public static float measureFont(RecyclerView list, int widthSpec, int max) {
-        Holder h = new Holder(list);
-        String s = formatSize(max);
-        h.text.setText(s);
-        int w = View.MeasureSpec.getSize(widthSpec) - list.getPaddingLeft() - list.getPaddingRight();
-        float old = 0;
-        for (float f = 10; f < 20; f += 0.1) {
-            h.text.setTextSize(f);
-            h.itemView.measure(0, 0);
-            if (h.itemView.getMeasuredWidth() > w)
-                return old;
-            old = f;
-        }
-        return old;
-    }
+    HexViewStream text;
 
     public static View error(Context context, String msg) {
         FrameLayout f = new FrameLayout(context);
@@ -85,127 +32,6 @@ public class HexFragment extends Fragment {
         rootView.setText(msg);
         f.addView(rootView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
         return f;
-    }
-
-    public static class Holder extends RecyclerView.ViewHolder {
-        TextView text;
-
-        public Holder(View itemView) {
-            super(itemView);
-            text = (TextView) itemView.findViewById(R.id.text);
-        }
-
-        public Holder(ViewGroup parent) {
-            this(LayoutInflater.from(parent.getContext()).inflate(R.layout.hex_item, parent, false));
-        }
-
-        public void format(long addr, byte[] buf, int max) {
-            String str = String.format("%08x  ", addr);
-            String chars = "";
-            int i;
-            for (i = 0; i < buf.length; i++) {
-                str += String.format("%02x ", buf[i]);
-                chars += toChar(buf[i]);
-                if ((i + 1) % 4 == 0)
-                    str += " ";
-            }
-            for (; i < max; i++) {
-                str += "   ";
-                if ((i + 1) % 4 == 0)
-                    str += " ";
-            }
-            text.setText(str + chars);
-        }
-    }
-
-    public class Adapter extends RecyclerView.Adapter<Holder> {
-        Storage storage;
-        Uri uri;
-        InputStream is;
-        long size;
-        int c;
-        int max; // row bytes length
-        int count; // number of rows
-        ArrayList<byte[]> ll = new ArrayList<>();
-        float sp;
-
-        public void create(Uri uri) {
-            storage = new Storage(getContext());
-            size = storage.getLength(uri);
-            try {
-                is = storage.open(uri);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        public void open(int widthSpec) {
-            c = measureMax(list, widthSpec);
-            max = c * 4;
-            count = (int) (size / max);
-            if (size % max > 0)
-                count += 1;
-        }
-
-        public void close() {
-            if (is != null) {
-                try {
-                    is.close();
-                    is = null;
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-
-        @Override
-        public Holder onCreateViewHolder(ViewGroup parent, int viewType) {
-            return new Holder(parent);
-        }
-
-        @Override
-        public void onBindViewHolder(Holder h, int position) {
-            while (position >= ll.size()) {
-                byte[] buf = new byte[max];
-                try {
-                    int len = is.read(buf);
-                    if (len > 0) {
-                        if (len < buf.length)
-                            buf = Arrays.copyOf(buf, len);
-                        ll.add(buf);
-                    } else {
-                        break;
-                    }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            byte[] buf;
-            if (position >= ll.size())
-                buf = new byte[]{};
-            else
-                buf = ll.get(position);
-            h.text.setTextSize(sp);
-            h.format(position * max, buf, max);
-
-            Holder m = new Holder(list);
-            m.text.setTextSize(sp);
-            m.text.setText(formatSize(c));
-            m.itemView.measure(0, 0);
-            h.text.setMinimumWidth(m.itemView.getMeasuredWidth());
-        }
-
-        @Override
-        public int getItemCount() {
-            return count;
-        }
-
-        public void onMeasure(int widthSpec, int heightSpec) {
-            if (ll.size() == 0)
-                open(widthSpec);
-            sp = measureFont(list, widthSpec, c);
-            notifyDataSetChanged();
-        }
     }
 
     public HexFragment() {
@@ -228,14 +54,8 @@ public class HexFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (list != null) {
-            list.setAdapter(null);
-            list = null;
-        }
-        if (adapter != null) {
-            adapter.close();
-            adapter = null;
-        }
+        if (text != null)
+            text.close();
     }
 
     @Override
@@ -243,44 +63,16 @@ public class HexFragment extends Fragment {
         Storage storage = new Storage(getContext());
         Uri uri = getArguments().getParcelable("uri");
         try {
-            if (storage.getLength(uri) == 0)
+            long size = storage.getLength(uri);
+            if (size == 0)
                 return HexFragment.error(getContext(), getContext().getString(R.string.empty_list));
-            adapter = new Adapter();
-            adapter.create(uri);
-        } catch (RuntimeException e) {
+            View rootView = inflater.inflate(R.layout.fragment_hex, container, false);
+            text = (HexViewStream) rootView.findViewById(R.id.list);
+            text.setText(storage.open(uri), size);
+            return rootView;
+        } catch (Exception e) {
             return error(getContext(), e.getMessage());
         }
-        View rootView = inflater.inflate(R.layout.fragment_hex, container, false);
-        list = (RecyclerView) rootView.findViewById(R.id.list);
-        list.setLayoutManager(new LinearLayoutManager(getContext()) {
-            @Override
-            public void onLayoutCompleted(RecyclerView.State state) {
-                super.onLayoutCompleted(state);
-            }
-
-            @Override
-            public void onMeasure(RecyclerView.Recycler recycler, RecyclerView.State state, int widthSpec, int heightSpec) {
-                adapter.onMeasure(widthSpec, heightSpec);
-                super.onMeasure(recycler, state, widthSpec, heightSpec);
-            }
-
-            @Override
-            public void requestLayout() {
-                super.requestLayout();
-            }
-
-            @Override
-            public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
-                super.onLayoutChildren(recycler, state);
-            }
-
-            @Override
-            public void onItemsChanged(RecyclerView recyclerView) {
-                super.onItemsChanged(recyclerView);
-            }
-        });
-        list.setAdapter(adapter);
-        return rootView;
     }
 
     @Override

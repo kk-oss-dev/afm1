@@ -43,6 +43,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
+import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.androidlibrary.widgets.Toast;
 import com.github.axet.filemanager.R;
@@ -895,7 +896,10 @@ public class FilesFragment extends Fragment {
         if (id == R.id.action_open) {
             Intent intent = item.getIntent();
             Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
-            startActivity(open);
+            if (OptimizationPreferenceCompat.isCallable(getContext(), open))
+                startActivity(open);
+            else
+                Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
             return true;
         }
         if (id == R.id.action_view) {
@@ -910,21 +914,30 @@ public class FilesFragment extends Fragment {
             Intent intent = item.getIntent();
             Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
             open.setDataAndType(open.getData(), "text/*");
-            startActivity(open);
+            if (OptimizationPreferenceCompat.isCallable(getContext(), open))
+                startActivity(open);
+            else
+                Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
             return true;
         }
         if (id == R.id.action_openasimage) {
             Intent intent = item.getIntent();
             Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
             open.setDataAndType(open.getData(), "image/*");
-            startActivity(open);
+            if (OptimizationPreferenceCompat.isCallable(getContext(), open))
+                startActivity(open);
+            else
+                Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
             return true;
         }
         if (id == R.id.action_openasaudio) {
             Intent intent = item.getIntent();
             Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
             open.setDataAndType(open.getData(), "audio/*");
-            startActivity(open);
+            if (OptimizationPreferenceCompat.isCallable(getContext(), open))
+                startActivity(open);
+            else
+                Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
             return true;
         }
         if (id == R.id.action_share) {
