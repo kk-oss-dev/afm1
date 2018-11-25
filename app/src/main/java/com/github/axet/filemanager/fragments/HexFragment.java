@@ -123,6 +123,7 @@ public class HexFragment extends Fragment {
         Uri uri;
         InputStream is;
         long size;
+        int c;
         int max; // row bytes length
         int count; // number of rows
         ArrayList<byte[]> ll = new ArrayList<>();
@@ -139,8 +140,7 @@ public class HexFragment extends Fragment {
         }
 
         public void open(int widthSpec) {
-            int c = measureMax(list, widthSpec);
-            sp = measureFont(list, widthSpec, c);
+            c = measureMax(list, widthSpec);
             max = c * 4;
             count = (int) (size / max);
             if (size % max > 0)
@@ -160,13 +160,11 @@ public class HexFragment extends Fragment {
 
         @Override
         public Holder onCreateViewHolder(ViewGroup parent, int viewType) {
-            Holder h = new Holder(parent);
-            h.text.setTextSize(sp);
-            return h;
+            return new Holder(parent);
         }
 
         @Override
-        public void onBindViewHolder(Holder holder, int position) {
+        public void onBindViewHolder(Holder h, int position) {
             while (position >= ll.size()) {
                 byte[] buf = new byte[max];
                 try {
@@ -187,7 +185,14 @@ public class HexFragment extends Fragment {
                 buf = new byte[]{};
             else
                 buf = ll.get(position);
-            holder.format(position * max, buf, max);
+            h.text.setTextSize(sp);
+            h.format(position * max, buf, max);
+
+            Holder m = new Holder(list);
+            m.text.setTextSize(sp);
+            m.text.setText(formatSize(c));
+            m.itemView.measure(0, 0);
+            h.text.setMinimumWidth(m.itemView.getMeasuredWidth());
         }
 
         @Override
@@ -196,8 +201,10 @@ public class HexFragment extends Fragment {
         }
 
         public void onMeasure(int widthSpec, int heightSpec) {
-            if (max == 0)
+            if (ll.size() == 0)
                 open(widthSpec);
+            sp = measureFont(list, widthSpec, c);
+            notifyDataSetChanged();
         }
     }
 
