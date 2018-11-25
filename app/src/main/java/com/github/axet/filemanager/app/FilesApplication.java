@@ -75,9 +75,6 @@ public class FilesApplication extends MainApplication {
                     if (f.exists())
                         add(Uri.fromFile(f));
                 }
-                File f = getLocalTmp();
-                if (f.exists())
-                    add(Uri.fromFile(f));
             }
             for (int i = 0; i < count; i++) {
                 Uri uri = Uri.parse(shared.getString(PREF_BOOKMARK_PREFIX + i, ""));
