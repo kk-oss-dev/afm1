@@ -55,4 +55,7 @@
     <string name="button_permissions">Get Permissions</string>
     <string name="button_new_file">New File</string>
     <string name="per_second">/s</string>
+    <string name="pref_theme_title">Theme</string>
+    <string name="pref_root_title">Root Browser</string>
+    <string name="pref_root_summary">Browse file using root</string>
 </resources>
