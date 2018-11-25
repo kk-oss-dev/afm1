@@ -2,8 +2,8 @@
     <SwitchPreferenceCompat
         android:defaultValue="false"
         android:key="root"
-        android:summary="Browse file using root"
-        android:title="Root Browser" />
+        android:summary="@string/pref_root_summary"
+        android:title="@string/pref_root_title" />
 
     <ListPreference
         android:defaultValue="@string/Theme_Light"
@@ -12,6 +12,6 @@
         android:key="theme"
         android:negativeButtonText="@null"
         android:positiveButtonText="@null"
-        android:summary="Application Theme"
-        android:title="Theme" />
+        android:summary=""
+        android:title="@string/pref_theme_title" />
 </PreferenceScreen>

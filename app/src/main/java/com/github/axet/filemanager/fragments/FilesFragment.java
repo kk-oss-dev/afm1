@@ -46,7 +46,7 @@ import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.androidlibrary.widgets.Toast;
 import com.github.axet.filemanager.R;
-import com.github.axet.filemanager.activitites.MainActivity;
+import com.github.axet.filemanager.activities.MainActivity;
 import com.github.axet.filemanager.app.FilesApplication;
 import com.github.axet.filemanager.app.Storage;
 import com.github.axet.filemanager.app.SuperUser;
@@ -146,7 +146,8 @@ public class FilesFragment extends Fragment {
             File e = Environment.getExternalStorageDirectory();
             add(e, R.drawable.ic_sd_card_black_24dp);
             add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), R.drawable.ic_camera_alt_black_24dp);
-            add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), R.drawable.ic_library_books_black_24dp);
+            if (Build.VERSION.SDK_INT >= 19)
+                add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), R.drawable.ic_library_books_black_24dp);
             add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), R.drawable.ic_cloud_download_black_24dp);
             add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), R.drawable.ic_photo_library_black_24dp);
             add(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_ALARMS), R.drawable.ic_music_video_black_24dp);
@@ -258,7 +259,7 @@ public class FilesFragment extends Fragment {
                 File k = Storage.getFile(to);
                 final File m = new File(k, f.name);
                 if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
-                    os = SuperUser.write(Uri.fromFile(m));
+                    os = SuperUser.open(Uri.fromFile(m));
                 } else {
                     os = new FileOutputStream(m);
                 }
@@ -741,8 +742,9 @@ public class FilesFragment extends Fragment {
         button.setVisibility(View.VISIBLE);
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
+            File f = Storage.getFile(uri);
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
-            if (shared.getBoolean(FilesApplication.PREF_ROOT, false) || Storage.permitted(getContext(), Storage.PERMISSIONS_RW))
+            if (f.canRead() || shared.getBoolean(FilesApplication.PREF_ROOT, false) || Storage.permitted(getContext(), Storage.PERMISSIONS_RW))
                 button.setVisibility(View.GONE);
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
             button.setVisibility(View.GONE);
@@ -837,8 +839,10 @@ public class FilesFragment extends Fragment {
 
         portables.clear();
         File[] ff = OpenFileDialog.getPortableList();
-        for (File f : ff)
-            portables.put(Uri.fromFile(f), R.drawable.ic_sd_card_black_24dp);
+        if (ff != null) {
+            for (File f : ff)
+                portables.put(Uri.fromFile(f), R.drawable.ic_sd_card_black_24dp);
+        }
         String e = System.getenv(EXTERNAL_STORAGE);
         if (e != null && !e.isEmpty())
             portables.put(Uri.fromFile(new File(e)), R.drawable.ic_sd_card_black_24dp);
