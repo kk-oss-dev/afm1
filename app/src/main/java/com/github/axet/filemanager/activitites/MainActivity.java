@@ -30,6 +30,7 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SubMenu;
@@ -228,8 +229,13 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                                 break;
                         }
                         uri = f.getUri();
-                        if (storage.mkdir(uri, s) == null)
-                            throw new RuntimeException("unable to create " + s);
+                        try {
+                            if (storage.mkdir(uri, s) == null)
+                                throw new RuntimeException("unable to create " + s);
+                        } catch (RuntimeException e) {
+                            Log.d(TAG, "create folder", e);
+                            Toast.makeText(MainActivity.this, R.string.not_permitted, Toast.LENGTH_SHORT).show();
+                        }
                         f.reload();
 
                     }
@@ -259,8 +265,14 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                                 break;
                         }
                         uri = f.getUri();
-                        Storage storage = new Storage(MainActivity.this);
-                        storage.touch(uri, s);
+                        try {
+                            Storage storage = new Storage(MainActivity.this);
+                            if (!storage.touch(uri, s))
+                                throw new RuntimeException("unable to create file");
+                        } catch (RuntimeException e) {
+                            Log.d(TAG, "create file", e);
+                            Toast.makeText(MainActivity.this, R.string.not_permitted, Toast.LENGTH_SHORT).show();
+                        }
                         f.reload();
 
                     }
