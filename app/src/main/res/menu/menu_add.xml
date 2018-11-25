@@ -1,7 +1,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.github.axet.filemanager.activitites.MainActivity">
+    tools:context="com.github.axet.filemanager.activities.MainActivity">
     <item
         android:orderInCategory="000"
         android:id="@+id/action_addstorage"

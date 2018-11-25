@@ -46,7 +46,7 @@ import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.androidlibrary.widgets.Toast;
 import com.github.axet.filemanager.R;
-import com.github.axet.filemanager.activitites.MainActivity;
+import com.github.axet.filemanager.activities.MainActivity;
 import com.github.axet.filemanager.app.FilesApplication;
 import com.github.axet.filemanager.app.Storage;
 import com.github.axet.filemanager.app.SuperUser;
@@ -259,7 +259,7 @@ public class FilesFragment extends Fragment {
                 File k = Storage.getFile(to);
                 final File m = new File(k, f.name);
                 if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
-                    os = SuperUser.write(Uri.fromFile(m));
+                    os = SuperUser.open(Uri.fromFile(m));
                 } else {
                     os = new FileOutputStream(m);
                 }

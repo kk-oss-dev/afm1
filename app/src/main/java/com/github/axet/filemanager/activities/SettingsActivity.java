@@ -1,4 +1,4 @@
-package com.github.axet.filemanager.activitites;
+package com.github.axet.filemanager.activities;
 
 import android.annotation.TargetApi;
 import android.content.Context;

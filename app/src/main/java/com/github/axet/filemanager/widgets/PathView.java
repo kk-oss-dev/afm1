@@ -5,6 +5,7 @@ import android.content.Context;
 import android.net.Uri;
 import android.support.annotation.Nullable;
 import android.support.v4.view.ViewCompat;
+import android.support.v7.widget.AppCompatTextView;
 import android.support.v7.widget.LinearLayoutCompat;
 import android.util.AttributeSet;
 import android.view.View;
@@ -67,7 +68,7 @@ public class PathView extends HorizontalScrollView {
 
     void add(Uri uri) {
         while (uri != null) {
-            TextView b = new TextView(getContext());
+            AppCompatTextView b = new AppCompatTextView(getContext());
             int p15 = ThemeUtils.dp2px(getContext(), 15);
             int p10 = ThemeUtils.dp2px(getContext(), 10);
             b.setPadding(p10, p15, p10, p15);
@@ -85,7 +86,7 @@ public class PathView extends HorizontalScrollView {
             ll.addView(b, 0);
             uri = Storage.getParent(getContext(), uri);
             if (uri != null) {
-                TextView p = new TextView(getContext());
+                AppCompatTextView p = new AppCompatTextView(getContext());
                 p.setText(">");
                 ViewCompat.setAlpha(p, 0.3f);
                 ll.addView(p, 0);

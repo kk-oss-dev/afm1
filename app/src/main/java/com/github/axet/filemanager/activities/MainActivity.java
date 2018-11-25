@@ -1,4 +1,4 @@
-package com.github.axet.filemanager.activitites;
+package com.github.axet.filemanager.activities;
 
 import android.annotation.SuppressLint;
 import android.content.ContentResolver;
@@ -28,6 +28,7 @@ import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.AppCompatImageButton;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -40,7 +41,6 @@ import android.view.ViewParent;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.Animation;
 import android.view.animation.Transformation;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -182,6 +182,11 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     }
 
     @Override
+    public int getAppThemePopup() {
+        return FilesApplication.getTheme(this, FilesApplication.PREF_THEME, R.style.AppThemeLight_PopupOverlay, R.style.AppThemeDark_PopupOverlay, getString(R.string.Theme_Dark));
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -218,7 +223,6 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         String s = edit.getText();
-                        Uri uri;
                         FilesFragment f = null;
                         switch (mViewPager.getCurrentItem()) {
                             case 0:
@@ -228,9 +232,8 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                                 f = mSectionsPagerAdapter.right;
                                 break;
                         }
-                        uri = f.getUri();
                         try {
-                            if (storage.mkdir(uri, s) == null)
+                            if (storage.mkdir(f.getUri(), s) == null)
                                 throw new RuntimeException("unable to create " + s);
                         } catch (RuntimeException e) {
                             Log.d(TAG, "create folder", e);
@@ -254,7 +257,6 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         String s = edit.getText();
-                        Uri uri;
                         FilesFragment f = null;
                         switch (mViewPager.getCurrentItem()) {
                             case 0:
@@ -264,10 +266,9 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                                 f = mSectionsPagerAdapter.right;
                                 break;
                         }
-                        uri = f.getUri();
                         try {
                             Storage storage = new Storage(MainActivity.this);
-                            if (!storage.touch(uri, s))
+                            if (!storage.touch(f.getUri(), s))
                                 throw new RuntimeException("unable to create file");
                         } catch (RuntimeException e) {
                             Log.d(TAG, "create file", e);
@@ -287,7 +288,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         storage = new Storage(this);
 
         if (storage.getRoot())
-            SuperUser.exitTest(); // run once per app, only when user already enabled root
+            SuperUser.exitTest(); // run once per app restart, only when user already enabled root
 
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
 
@@ -428,7 +429,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                 @Override
                 public OpenFileDialog fileDialogBuild() {
                     OpenFileDialog d = super.fileDialogBuild();
-                    d.setAdapter(new OpenFileDialog.FileAdapter(context, d.getCurrentPath()) {
+                    d.setAdapter(new OpenFileDialog.FileAdapter(d.getContext(), d.getCurrentPath()) {
                         @Override
                         public void scan() {
                             if (storage.getRoot())
@@ -604,7 +605,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             intent.setData(u);
             m.setIntent(intent);
             m.setIcon(R.drawable.ic_storage_black_24dp);
-            ImageButton b = new ImageButton(this);
+            AppCompatImageButton b = new AppCompatImageButton(this);
             b.setColorFilter(accent);
             b.setImageResource(R.drawable.ic_delete_black_24dp);
             final Uri uri = u;
