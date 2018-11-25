@@ -91,6 +91,13 @@ public class HexViewStream extends RecyclerView {
             }
             return old;
         }
+
+        public int measureMin(float sp, int c) {
+            text.setText(formatSize(c));
+            text.setTextSize(sp);
+            itemView.measure(0, 0);
+            return itemView.getMeasuredWidth();
+        }
     }
 
     public class Adapter extends RecyclerView.Adapter<Holder> {
@@ -106,15 +113,6 @@ public class HexViewStream extends RecyclerView {
         public Adapter(InputStream is, long size) {
             this.is = is;
             this.size = size;
-        }
-
-        public void open(HexViewStream list, int widthSpec) {
-            Holder m = onCreateViewHolder(list, 0);
-            c = m.measureMax(list, widthSpec);
-            max = c * 4;
-            count = (int) (size / max);
-            if (size % max > 0)
-                count += 1;
         }
 
         public void close() {
@@ -173,15 +171,18 @@ public class HexViewStream extends RecyclerView {
         }
 
         public void onMeasure(HexViewStream list, int widthSpec, int heightSpec) {
-            if (ll.size() == 0)
-                open(list, widthSpec);
-
             Holder m = onCreateViewHolder(list, 0);
+
+            if (ll.size() == 0) {
+                c = m.measureMax(list, widthSpec);
+                max = c * 4;
+                count = (int) (size / max);
+                if (size % max > 0)
+                    count += 1;
+            }
+
             sp = m.measureFont(list, widthSpec, c);
-            m.text.setText(formatSize(c));
-            m.text.setTextSize(sp);
-            m.itemView.measure(0, 0);
-            min = m.itemView.getMeasuredWidth();
+            min = m.measureMin(sp, c);
 
             notifyDataSetChanged();
         }
