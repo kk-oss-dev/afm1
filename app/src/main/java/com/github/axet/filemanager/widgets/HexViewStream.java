@@ -36,34 +36,6 @@ public class HexViewStream extends RecyclerView {
         return String.valueOf((char) b);
     }
 
-    public static int measureMax(RecyclerView list, Holder h, int widthSpec) {
-        int w = View.MeasureSpec.getSize(widthSpec) - list.getPaddingLeft() - list.getPaddingRight();
-        int old = 0;
-        for (int i = 1; i < 10; i++) {
-            String s = formatSize(i);
-            h.text.setText(s);
-            h.itemView.measure(0, 0);
-            if (h.itemView.getMeasuredWidth() > w)
-                return old;
-            old = i;
-        }
-        return old;
-    }
-
-    public static float measureFont(RecyclerView list, Holder h, int widthSpec, int max) {
-        h.text.setText(formatSize(max));
-        int w = View.MeasureSpec.getSize(widthSpec) - list.getPaddingLeft() - list.getPaddingRight();
-        float old = 0;
-        for (float f = 10; f < 20; f += 0.1) {
-            h.text.setTextSize(f);
-            h.itemView.measure(0, 0);
-            if (h.itemView.getMeasuredWidth() > w)
-                return old;
-            old = f;
-        }
-        return old;
-    }
-
     public static class Holder extends RecyclerView.ViewHolder {
         TextView text;
 
@@ -91,6 +63,34 @@ public class HexViewStream extends RecyclerView {
             }
             text.setText(str + chars);
         }
+
+        public int measureMax(RecyclerView list, int widthSpec) {
+            int w = View.MeasureSpec.getSize(widthSpec) - list.getPaddingLeft() - list.getPaddingRight();
+            int old = 0;
+            for (int i = 1; i < 10; i++) {
+                String s = formatSize(i);
+                text.setText(s);
+                itemView.measure(0, 0);
+                if (itemView.getMeasuredWidth() > w)
+                    return old;
+                old = i;
+            }
+            return old;
+        }
+
+        public float measureFont(RecyclerView list, int widthSpec, int max) {
+            text.setText(formatSize(max));
+            int w = View.MeasureSpec.getSize(widthSpec) - list.getPaddingLeft() - list.getPaddingRight();
+            float old = 0;
+            for (float f = 10; f < 20; f += 0.1) {
+                text.setTextSize(f);
+                itemView.measure(0, 0);
+                if (itemView.getMeasuredWidth() > w)
+                    return old;
+                old = f;
+            }
+            return old;
+        }
     }
 
     public class Adapter extends RecyclerView.Adapter<Holder> {
@@ -108,9 +108,9 @@ public class HexViewStream extends RecyclerView {
             this.size = size;
         }
 
-        public void open(int widthSpec) {
-            Holder m = onCreateViewHolder(HexViewStream.this, 0);
-            c = measureMax(HexViewStream.this, m, widthSpec);
+        public void open(HexViewStream list, int widthSpec) {
+            Holder m = onCreateViewHolder(list, 0);
+            c = m.measureMax(HexViewStream.this, widthSpec);
             max = c * 4;
             count = (int) (size / max);
             if (size % max > 0)
@@ -172,13 +172,14 @@ public class HexViewStream extends RecyclerView {
             return count;
         }
 
-        public void onMeasure(int widthSpec, int heightSpec) {
+        public void onMeasure(HexViewStream list, int widthSpec, int heightSpec) {
             if (ll.size() == 0)
-                open(widthSpec);
+                open(list, widthSpec);
 
-            Holder m = onCreateViewHolder(HexViewStream.this, 0);
-            sp = measureFont(HexViewStream.this, m, widthSpec, c);
+            Holder m = onCreateViewHolder(list, 0);
+            sp = m.measureFont(list, widthSpec, c);
             m.text.setText(formatSize(c));
+            m.text.setTextSize(sp);
             m.itemView.measure(0, 0);
             min = m.itemView.getMeasuredWidth();
 
@@ -213,7 +214,7 @@ public class HexViewStream extends RecyclerView {
 
     @Override
     protected void onMeasure(int widthSpec, int heightSpec) {
-        adapter.onMeasure(widthSpec, heightSpec);
+        adapter.onMeasure(this, widthSpec, heightSpec);
         super.onMeasure(widthSpec, heightSpec);
     }
 
