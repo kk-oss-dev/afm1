@@ -110,7 +110,7 @@ public class HexViewStream extends RecyclerView {
 
         public void open(HexViewStream list, int widthSpec) {
             Holder m = onCreateViewHolder(list, 0);
-            c = m.measureMax(HexViewStream.this, widthSpec);
+            c = m.measureMax(list, widthSpec);
             max = c * 4;
             count = (int) (size / max);
             if (size % max > 0)
