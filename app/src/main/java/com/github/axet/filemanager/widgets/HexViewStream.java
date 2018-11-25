@@ -50,10 +50,8 @@ public class HexViewStream extends RecyclerView {
         return old;
     }
 
-    public static float measureFont(RecyclerView list, int widthSpec, int max) {
-        Holder h = new Holder(list);
-        String s = formatSize(max);
-        h.text.setText(s);
+    public static float measureFont(RecyclerView list, Holder h, int widthSpec, int max) {
+        h.text.setText(formatSize(max));
         int w = View.MeasureSpec.getSize(widthSpec) - list.getPaddingLeft() - list.getPaddingRight();
         float old = 0;
         for (float f = 10; f < 20; f += 0.1) {
@@ -174,10 +172,8 @@ public class HexViewStream extends RecyclerView {
             if (ll.size() == 0)
                 open(widthSpec);
 
-            sp = measureFont(HexViewStream.this, widthSpec, c);
-
             Holder m = new Holder(HexViewStream.this);
-            m.text.setTextSize(sp);
+            sp = measureFont(HexViewStream.this, m, widthSpec, c);
             m.text.setText(formatSize(c));
             m.itemView.measure(0, 0);
             min = m.itemView.getMeasuredWidth();
@@ -201,7 +197,7 @@ public class HexViewStream extends RecyclerView {
         create();
     }
 
-    void create(){
+    void create() {
         setLayoutManager(new LinearLayoutManager(getContext()));
     }
 

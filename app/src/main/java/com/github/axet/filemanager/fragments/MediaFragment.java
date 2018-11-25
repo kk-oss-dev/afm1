@@ -152,7 +152,7 @@ public class MediaFragment extends Fragment {
             if (len < buf.length && !f.done)
                 f.detected = true;
             if (f.detected) {
-                View v = inflater.inflate(R.layout.media_text, container, false);
+                View v = inflater.inflate(R.layout.fragment_media, container, false);
                 View wrap = v.findViewById(R.id.wrap);
                 View mono = v.findViewById(R.id.mono);
                 wrap.setOnClickListener(new View.OnClickListener() {
