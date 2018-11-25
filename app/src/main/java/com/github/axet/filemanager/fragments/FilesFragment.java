@@ -741,8 +741,9 @@ public class FilesFragment extends Fragment {
         button.setVisibility(View.VISIBLE);
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
+            File f = Storage.getFile(uri);
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
-            if (shared.getBoolean(FilesApplication.PREF_ROOT, false) || Storage.permitted(getContext(), Storage.PERMISSIONS_RW))
+            if (f.canRead() || shared.getBoolean(FilesApplication.PREF_ROOT, false) || Storage.permitted(getContext(), Storage.PERMISSIONS_RW))
                 button.setVisibility(View.GONE);
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
             button.setVisibility(View.GONE);

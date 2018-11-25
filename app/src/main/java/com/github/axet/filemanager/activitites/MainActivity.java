@@ -85,8 +85,11 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         context.startActivity(intent);
     }
 
-    public static String getDefault() {
-        return Uri.fromFile(Environment.getExternalStorageDirectory()).toString();
+    public static String getDefault(Context context) {
+        if (!Storage.permitted(context, Storage.PERMISSIONS_RO))
+            return Uri.fromFile(context.getFilesDir()).toString();
+        else
+            return Uri.fromFile(Environment.getExternalStorageDirectory()).toString();
     }
 
     public static class FilesTabView extends PathMax {
@@ -123,8 +126,8 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         public SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
-            left = FilesFragment.newInstance(Uri.parse(shared.getString(FilesApplication.PREF_LEFT, getDefault())));
-            right = FilesFragment.newInstance(Uri.parse(shared.getString(FilesApplication.PREF_RIGHT, getDefault())));
+            left = FilesFragment.newInstance(Uri.parse(shared.getString(FilesApplication.PREF_LEFT, getDefault(MainActivity.this))));
+            right = FilesFragment.newInstance(Uri.parse(shared.getString(FilesApplication.PREF_RIGHT, getDefault(MainActivity.this))));
         }
 
         public void save() {
