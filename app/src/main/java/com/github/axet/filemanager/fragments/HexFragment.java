@@ -31,12 +31,10 @@ public class HexFragment extends Fragment {
 
     public static String formatSize(int c) {
         String str = "00000000  ";
-        for (int i = 0; i < c; i++) {
+        for (int i = 0; i < c; i++)
             str += "00 00 00 00  ";
-        }
-        for (int i = 0; i < c; i++) {
+        for (int i = 0; i < c; i++)
             str += "####";
-        }
         return str;
     }
 
@@ -46,9 +44,9 @@ public class HexFragment extends Fragment {
         return String.valueOf((char) b);
     }
 
-    public static int measureMax(RecyclerView list) {
+    public static int measureMax(RecyclerView list, int widthSpec) {
         Holder h = new Holder(list);
-        int w = list.getWidth() - list.getPaddingLeft() - list.getPaddingRight();
+        int w = View.MeasureSpec.getSize(widthSpec) - list.getPaddingLeft() - list.getPaddingRight();
         int old = 0;
         for (int i = 1; i < 10; i++) {
             String s = formatSize(i);
@@ -61,11 +59,11 @@ public class HexFragment extends Fragment {
         return old;
     }
 
-    public static float measureFont(RecyclerView list, int max) {
+    public static float measureFont(RecyclerView list, int widthSpec, int max) {
         Holder h = new Holder(list);
         String s = formatSize(max);
         h.text.setText(s);
-        int w = list.getWidth() - list.getPaddingLeft() - list.getPaddingRight();
+        int w = View.MeasureSpec.getSize(widthSpec) - list.getPaddingLeft() - list.getPaddingRight();
         float old = 0;
         for (float f = 10; f < 20; f += 0.1) {
             h.text.setTextSize(f);
@@ -132,17 +130,17 @@ public class HexFragment extends Fragment {
 
         public void create(Uri uri) {
             storage = new Storage(getContext());
+            size = storage.getLength(uri);
             try {
                 is = storage.open(uri);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            size = storage.getLength(uri);
         }
 
-        public void open() {
-            int c = measureMax(list);
-            sp = measureFont(list, c);
+        public void open(int widthSpec) {
+            int c = measureMax(list, widthSpec);
+            sp = measureFont(list, widthSpec, c);
             max = c * 4;
             count = (int) (size / max);
             if (size % max > 0)
@@ -194,9 +192,12 @@ public class HexFragment extends Fragment {
 
         @Override
         public int getItemCount() {
-            if (max == 0)
-                open();
             return count;
+        }
+
+        public void onMeasure(int widthSpec, int heightSpec) {
+            if (max == 0)
+                open(widthSpec);
         }
     }
 
@@ -248,6 +249,12 @@ public class HexFragment extends Fragment {
             @Override
             public void onLayoutCompleted(RecyclerView.State state) {
                 super.onLayoutCompleted(state);
+            }
+
+            @Override
+            public void onMeasure(RecyclerView.Recycler recycler, RecyclerView.State state, int widthSpec, int heightSpec) {
+                adapter.onMeasure(widthSpec, heightSpec);
+                super.onMeasure(recycler, state, widthSpec, heightSpec);
             }
 
             @Override
