@@ -19,8 +19,8 @@ import java.io.FileNotFoundException;
 public class StorageProvider extends com.github.axet.androidlibrary.services.StorageProvider {
     public static String TAG = StorageProvider.class.getCanonicalName();
 
-    public static com.github.axet.androidlibrary.services.StorageProvider getProvider() {
-        return infos.get(StorageProvider.class);
+    public static StorageProvider getProvider() {
+        return (StorageProvider) infos.get(StorageProvider.class);
     }
 
     public ParcelFileDescriptor openRootFile(final File f, String mode) {

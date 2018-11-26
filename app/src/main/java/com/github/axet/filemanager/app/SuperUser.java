@@ -14,20 +14,11 @@ import java.util.regex.Pattern;
 public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     public static final String BIN_LS = which("ls");
 
-    public static final SimpleDateFormat TOUCHDATE = new SimpleDateFormat("yyyyMMddHHmm.ss");
     public static final SimpleDateFormat LSDATE = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
-    public static final String BIN_READLINK = which("readlink");
-    public static final String BIN_LN = which("ln");
-
-    public static final String TOUCH = BIN_TOUCH + " -mct {0} {1}";
     public static final String DELETE = BIN_RM + " -r {0}";
     public static final String LSA = BIN_LS + " -AlH {0}";
     public static final String LSa = BIN_LS + " -alH {0}";
-    public static final String MKDIR = BIN_MKDIR + " {0}";
-    public static final String READLINK = BIN_READLINK + " {0}";
-    public static final String LNS = BIN_LN + " -s {0} {1}";
-    public static final String RENAME = BIN_MV + " {0} {1}";
 
     public static final File DOT = new File(".");
     public static final File DOTDOT = new File("..");
@@ -269,41 +260,8 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         return ff;
     }
 
-    public static Result touch(File f, long last) {
-        return su(TOUCH, TOUCHDATE.format(last), escape(f));
-    }
-
     public static Result delete(File f) {
         return su(DELETE, escape(f));
-    }
-
-    public static Result mkdir(File f) {
-        return su(MKDIR, escape(f));
-    }
-
-    public static long length(File f) {
-        Result r = su(new Commands(MessageFormat.format("stat -Lc%s {0}", escape(f))).stdout(true).exit(true)).must();
-        return Long.valueOf(r.stdout.trim());
-    }
-
-    public static Result readlink(File f) {
-        return su(READLINK, escape(f));
-    }
-
-    public static Result ln(File target, File file) {
-        return su(LNS, escape(target), escape(file));
-    }
-
-    public static Result rename(File f, File t) {
-        return su(RENAME, escape(f), escape(t));
-    }
-
-    public static boolean isDirectory(File f) {
-        return su("[ -d {0} ]", escape(f)).ok();
-    }
-
-    public static boolean exists(File f) {
-        return su("[ -e {0} ]", escape(f)).ok();
     }
 
     public static ArrayList<File> isDirectory(ArrayList<File> ff) {
