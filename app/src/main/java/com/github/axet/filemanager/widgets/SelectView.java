@@ -49,7 +49,8 @@ public class SelectView extends LinearLayoutCompat implements CollapsibleActionV
         menu = new MenuBuilder(getContext());
 
         final Activity a = from(getContext());
-        a.getMenuInflater().inflate(R.menu.menu_select, menu);
+        a.getMenuInflater().inflate(R.menu.menu_select_toolbar, menu);
+
 
         for (int i = 0; i < menu.size(); i++) {
             final MenuItem item = menu.getItem(i);

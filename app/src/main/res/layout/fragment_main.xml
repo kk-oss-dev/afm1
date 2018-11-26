@@ -14,8 +14,10 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/path"
+        android:clipToPadding="false"
         android:paddingLeft="10dp"
-        android:paddingRight="10dp" />
+        android:paddingRight="10dp"
+        android:paddingBottom="76dp" />
 
     <Button
         android:id="@+id/permissions"

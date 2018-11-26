@@ -12,8 +12,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
-    public static final String BIN_LS = which("ls");
-
     public static final SimpleDateFormat LSDATE = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     public static final String DELETE = BIN_RM + " -r {0}";
@@ -235,7 +233,6 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                 } else if (perms.startsWith("l")) {
                     String[] ss = name.split("->", 2);
                     name = ss[0].trim();
-                    File t = new File(ss[1].trim());
                     File k = new File(name);
                     if (!k.equals(DOTDOT)) {
                         if (k.equals(DOT))

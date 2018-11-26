@@ -10,8 +10,10 @@ import android.support.v7.preference.PreferenceManager;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 
 public class Storage extends com.github.axet.androidlibrary.app.Storage {
@@ -67,6 +69,24 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             }
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
             return resolver.openInputStream(uri);
+        } else {
+            throw new UnknownUri();
+        }
+    }
+
+    public OutputStream open(Uri uri, String name) throws IOException {
+        String s = uri.getScheme();
+        if (s.equals(ContentResolver.SCHEME_FILE)) {
+            File k = getFile(uri);
+            File m = new File(k, name);
+            if (getRoot()) {
+                return SuperUser.open(m);
+            } else {
+                return new FileOutputStream(m);
+            }
+        } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+            Uri doc = createFile(uri, name);
+            return resolver.openOutputStream(doc, "rwt");
         } else {
             throw new UnknownUri();
         }

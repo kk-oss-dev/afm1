@@ -8,9 +8,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.graphics.Color;
-import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,7 +17,6 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.provider.DocumentFile;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewCompat;
@@ -56,6 +52,7 @@ import com.github.axet.filemanager.widgets.PathView;
 import com.github.axet.filemanager.widgets.SelectView;
 import com.github.axet.wget.SpeedInfo;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -73,6 +70,8 @@ import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class FilesFragment extends Fragment {
     public static final String TAG = FilesFragment.class.getSimpleName();
@@ -101,6 +100,7 @@ public class FilesFragment extends Fragment {
 
     PasteBuilder delete;
     PasteBuilder paste;
+    PasteBuilder archive;
 
     HashMap<Uri, Integer> portables = new HashMap<>();
     Specials specials;
@@ -110,7 +110,6 @@ public class FilesFragment extends Fragment {
     MenuItem toolbar;
     MenuItem pasteMenu;
     MenuItem pasteCancel;
-    MenuItem rename;
     SelectView select;
     ArrayList<Storage.Node> selected = new ArrayList<>();
     HashMap<Uri, Pos> offsets = new HashMap<>();
@@ -586,11 +585,23 @@ public class FilesFragment extends Fragment {
             h.itemView.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
-                    if (selected.contains(f))
-                        selected.remove(f);
-                    else
-                        selected.add(f);
+                    selected.clear();
+                    selected.add(f);
                     openSelection();
+                    PopupMenu menu = new PopupMenu(getContext(), v);
+                    menu.inflate(R.menu.menu_select);
+                    menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                        @Override
+                        public boolean onMenuItemClick(MenuItem item) {
+                            Intent intent = new Intent(Intent.ACTION_VIEW);
+                            String type = Storage.getTypeByName(f.name);
+                            intent.setDataAndType(f.uri, type);
+                            intent.putExtra("name", f.name);
+                            item.setIntent(intent);
+                            return onOptionsItemSelected(item);
+                        }
+                    });
+                    menu.show();
                     return true;
                 }
             });
@@ -874,7 +885,6 @@ public class FilesFragment extends Fragment {
         pasteCancel = menu.findItem(R.id.action_paste_cancel);
         updatePaste();
         select = (SelectView) MenuItemCompat.getActionView(toolbar);
-        rename = select.menu.findItem(R.id.action_rename);
         select.listener = new CollapsibleActionView() {
             @Override
             public void onActionViewExpanded() {
@@ -1091,6 +1101,179 @@ public class FilesFragment extends Fragment {
             dialog.show();
             return true;
         }
+        if (id == R.id.action_archive) {
+            if (archive != null)
+                return true;
+            archive = new PasteBuilder(getContext());
+            archive.setTitle("Archive");
+            final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
+                ZipOutputStream zip;
+                String name;
+
+                {
+                    String name;
+                    if (calcsStart.size() == 1)
+                        name = calcsStart.get(0).name;
+                    else
+                        name = "Archive";
+                    t = storage.getNextFile(uri, name, "zip");
+                    this.name = storage.getName(t);
+                }
+
+                @Override
+                public void run() {
+                    try {
+                        if (calcIndex < calcs.size()) {
+                            if (!calc()) {
+                                os = zip = new ZipOutputStream(new BufferedOutputStream(storage.open(uri, name)));
+                            }
+                            archive.copy.setGravity(Gravity.NO_GRAVITY);
+                            archive.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
+                            archive.update(this);
+                            archive.from.setText("Archiving" + ": " + formatStart());
+                            archive.to.setText("To: " + storage.getDisplayName(t));
+                            post();
+                            return;
+                        }
+                        synchronized (lock) {
+                            if (is != null) {
+                                int old = filesIndex;
+                                Uri oldt = t;
+                                final Storage.Node f = files.get(filesIndex);
+                                if (thread == null) {
+                                    interrupt.set(false);
+                                    thread = new Thread("Zip") {
+                                        @Override
+                                        public void run() {
+                                            byte[] buf = new byte[SuperUser.BUF_SIZE];
+                                            try {
+                                                int len;
+                                                while ((len = copy(buf)) > 0) {
+                                                    synchronized (lock) {
+                                                        current += len;
+                                                        processed += len;
+                                                        info.step(current);
+                                                    }
+                                                    if (Thread.currentThread().isInterrupted() || interrupt.get())
+                                                        return;
+                                                }
+                                                synchronized (lock) {
+                                                    is.close();
+                                                    is = null;
+                                                    filesIndex++;
+                                                    thread = null; // close thread
+                                                    post();
+                                                }
+                                            } catch (Exception e) {
+                                                synchronized (lock) {
+                                                    delayed = e; // thread != null
+                                                    post();
+                                                }
+                                            }
+                                        }
+                                    };
+                                    thread.start();
+                                } else {
+                                    if (delayed != null) {
+                                        Throwable d = delayed;
+                                        thread = null;
+                                        delayed = null;
+                                        throw new RuntimeException(d);
+                                    }
+                                }
+                                post(thread == null ? 0 : 1000);
+                                int a = info.getAverageSpeed();
+                                String e;
+                                long diff = 0;
+                                if (a > 0)
+                                    diff = (f.size - current) * 1000 / a;
+                                if (diff >= 1000)
+                                    e = FilesApplication.formatLeftExact(context, diff);
+                                else
+                                    e = "∞";
+                                archive.copy.setGravity(Gravity.CENTER);
+                                archive.copy.setText("Archiving" + " " + FilesApplication.formatSize(context, a) + getString(R.string.per_second) + ", " + e);
+                                archive.update(this, old, f);
+                                archive.from.setText(getString(R.string.copy_from) + " " + storage.getDisplayName(f.uri));
+                                archive.to.setText(getString(R.string.copy_to) + " " + storage.getDisplayName(oldt));
+                                return;
+                            }
+                        }
+                        if (filesIndex < files.size()) {
+                            int old = filesIndex;
+                            final Storage.Node f = files.get(filesIndex);
+
+                            if (f.dir) {
+                                ZipEntry entry = new ZipEntry(f.name + "/");
+                                zip.putNextEntry(entry);
+                            } else {
+                                ZipEntry entry = new ZipEntry(f.name);
+                                zip.putNextEntry(entry);
+                                is = storage.open(f.uri);
+                                current = 0;
+                                post();
+                                return;
+                            }
+
+                            filesIndex++;
+                            archive.copy.setText("Archiving" + ": " + formatStart());
+                            archive.update(this, old, f);
+                            archive.from.setText(storage.getDisplayName(f.uri));
+                            post();
+                            return;
+                        }
+                        zip.close();
+                        t = null;
+                        archive.dismiss();
+                        closeSelection();
+                        reload();
+                        Toast.makeText(getContext(), "Archived: " + files.size() + " files", Toast.LENGTH_SHORT).show();
+                    } catch (IOException | RuntimeException e) {
+                        pasteError(archive, this, e);
+                    }
+                }
+
+                public void post(long d) {
+                    handler.removeCallbacks(this);
+                    handler.postDelayed(this, d);
+                }
+
+                public void post() {
+                    post(0);
+                }
+            };
+            archive.neutral = new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    final View.OnClickListener neutral = this;
+                    op.pause();
+                    handler.removeCallbacks(op);
+                    final Button b = archive.d.getButton(DialogInterface.BUTTON_NEUTRAL);
+                    b.setText(R.string.copy_resume);
+                    archive.neutral = new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            op.run();
+                            b.setText(R.string.copy_pause);
+                            archive.neutral = neutral;
+                        }
+                    };
+                }
+            };
+            archive.dismiss = new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    archive.dismiss();
+                    archive = null;
+                    op.close();
+                    handler.removeCallbacks(op);
+                    reload();
+                }
+            };
+            archive.show();
+            op.run();
+            return true;
+        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -1103,21 +1286,6 @@ public class FilesFragment extends Fragment {
     }
 
     public void updateSelection() {
-        if (selected.size() == 1) {
-            rename.setEnabled(true);
-            Drawable d = DrawableCompat.wrap(rename.getIcon());
-            d.mutate();
-            //DrawableCompat.setTint(d, Color.WHITE);
-            d.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_ATOP);
-            rename.setIcon(d);
-        } else {
-            rename.setEnabled(false);
-            Drawable d = DrawableCompat.wrap(rename.getIcon());
-            d.mutate();
-            //DrawableCompat.setTint(d, Color.GRAY);
-            d.setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_ATOP);
-            rename.setIcon(d);
-        }
         adapter.notifyDataSetChanged();
     }
 
