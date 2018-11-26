@@ -1,16 +1,17 @@
 package com.github.axet.filemanager.widgets;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.AppCompatTextView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
-import android.view.LayoutInflater;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.TextView;
-
-import com.github.axet.filemanager.R;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,45 +36,14 @@ public class HexViewStream extends RecyclerView {
         return String.valueOf((char) b);
     }
 
-    public static int measureMax(RecyclerView list, int widthSpec) {
-        Holder h = new Holder(list);
-        int w = View.MeasureSpec.getSize(widthSpec) - list.getPaddingLeft() - list.getPaddingRight();
-        int old = 0;
-        for (int i = 1; i < 10; i++) {
-            String s = formatSize(i);
-            h.text.setText(s);
-            h.itemView.measure(0, 0);
-            if (h.itemView.getMeasuredWidth() > w)
-                return old;
-            old = i;
-        }
-        return old;
-    }
-
-    public static float measureFont(RecyclerView list, Holder h, int widthSpec, int max) {
-        h.text.setText(formatSize(max));
-        int w = View.MeasureSpec.getSize(widthSpec) - list.getPaddingLeft() - list.getPaddingRight();
-        float old = 0;
-        for (float f = 10; f < 20; f += 0.1) {
-            h.text.setTextSize(f);
-            h.itemView.measure(0, 0);
-            if (h.itemView.getMeasuredWidth() > w)
-                return old;
-            old = f;
-        }
-        return old;
-    }
-
     public static class Holder extends RecyclerView.ViewHolder {
         TextView text;
 
         public Holder(View itemView) {
             super(itemView);
-            text = (TextView) itemView.findViewById(R.id.text);
-        }
-
-        public Holder(ViewGroup parent) {
-            this(LayoutInflater.from(parent.getContext()).inflate(R.layout.hex_item, parent, false));
+            text = (TextView) itemView.findViewById(android.R.id.text1);
+            text.setTextSize(10);
+            text.setTypeface(Typeface.MONOSPACE);
         }
 
         public void format(long addr, byte[] buf, int max) {
@@ -93,6 +63,41 @@ public class HexViewStream extends RecyclerView {
             }
             text.setText(str + chars);
         }
+
+        public int measureMax(RecyclerView list, int widthSpec) {
+            int w = View.MeasureSpec.getSize(widthSpec) - list.getPaddingLeft() - list.getPaddingRight();
+            int old = 0;
+            for (int i = 1; i < 10; i++) {
+                String s = formatSize(i);
+                text.setText(s);
+                itemView.measure(0, 0);
+                if (itemView.getMeasuredWidth() > w)
+                    return old;
+                old = i;
+            }
+            return old;
+        }
+
+        public float measureFont(RecyclerView list, int widthSpec, int max) {
+            text.setText(formatSize(max));
+            int w = View.MeasureSpec.getSize(widthSpec) - list.getPaddingLeft() - list.getPaddingRight();
+            float old = 0;
+            for (float f = 10; f < 20; f += 0.1) {
+                text.setTextSize(f);
+                itemView.measure(0, 0);
+                if (itemView.getMeasuredWidth() > w)
+                    return old;
+                old = f;
+            }
+            return old;
+        }
+
+        public int measureMin(float sp, int c) {
+            text.setText(formatSize(c));
+            text.setTextSize(sp);
+            itemView.measure(0, 0);
+            return itemView.getMeasuredWidth();
+        }
     }
 
     public class Adapter extends RecyclerView.Adapter<Holder> {
@@ -110,14 +115,6 @@ public class HexViewStream extends RecyclerView {
             this.size = size;
         }
 
-        public void open(int widthSpec) {
-            c = measureMax(HexViewStream.this, widthSpec);
-            max = c * 4;
-            count = (int) (size / max);
-            if (size % max > 0)
-                count += 1;
-        }
-
         public void close() {
             if (is != null) {
                 try {
@@ -131,7 +128,12 @@ public class HexViewStream extends RecyclerView {
 
         @Override
         public Holder onCreateViewHolder(ViewGroup parent, int viewType) {
-            return new Holder(parent);
+            FrameLayout f = new FrameLayout(getContext());
+            f.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            AppCompatTextView t = new AppCompatTextView(getContext());
+            t.setId(android.R.id.text1);
+            f.addView(t, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+            return new Holder(f);
         }
 
         @Override
@@ -168,15 +170,19 @@ public class HexViewStream extends RecyclerView {
             return count;
         }
 
-        public void onMeasure(int widthSpec, int heightSpec) {
-            if (ll.size() == 0)
-                open(widthSpec);
+        public void onMeasure(HexViewStream list, int widthSpec, int heightSpec) {
+            Holder m = onCreateViewHolder(list, 0);
 
-            Holder m = new Holder(HexViewStream.this);
-            sp = measureFont(HexViewStream.this, m, widthSpec, c);
-            m.text.setText(formatSize(c));
-            m.itemView.measure(0, 0);
-            min = m.itemView.getMeasuredWidth();
+            if (ll.size() == 0) {
+                c = m.measureMax(list, widthSpec);
+                max = c * 4;
+                count = (int) (size / max);
+                if (size % max > 0)
+                    count += 1;
+            }
+
+            sp = m.measureFont(list, widthSpec, c);
+            min = m.measureMin(sp, c);
 
             notifyDataSetChanged();
         }
@@ -209,7 +215,7 @@ public class HexViewStream extends RecyclerView {
 
     @Override
     protected void onMeasure(int widthSpec, int heightSpec) {
-        adapter.onMeasure(widthSpec, heightSpec);
+        adapter.onMeasure(this, widthSpec, heightSpec);
         super.onMeasure(widthSpec, heightSpec);
     }
 
