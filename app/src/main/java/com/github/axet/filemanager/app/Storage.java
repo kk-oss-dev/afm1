@@ -59,10 +59,10 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     public InputStream open(Uri uri) throws IOException {
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
+            File k = getFile(uri);
             if (getRoot()) {
-                return SuperUser.cat(uri);
+                return SuperUser.cat(k);
             } else {
-                File k = getFile(uri);
                 return new FileInputStream(k);
             }
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {

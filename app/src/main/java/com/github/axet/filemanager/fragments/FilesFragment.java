@@ -259,11 +259,10 @@ public class FilesFragment extends Fragment {
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 File k = Storage.getFile(to);
                 final File m = new File(k, f.name);
-                if (shared.getBoolean(FilesApplication.PREF_ROOT, false)) {
-                    os = SuperUser.open(Uri.fromFile(m));
-                } else {
+                if (shared.getBoolean(FilesApplication.PREF_ROOT, false))
+                    os = SuperUser.open(m);
+                else
                     os = new FileOutputStream(m);
-                }
                 t = Uri.fromFile(m);
             } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
                 Uri doc = storage.createFile(to, f.name);
@@ -943,7 +942,10 @@ public class FilesFragment extends Fragment {
         if (id == R.id.action_share) {
             Intent intent = item.getIntent();
             Intent share = StorageProvider.getProvider().shareIntent(intent.getData(), intent.getType(), intent.getStringExtra("name"));
-            startActivity(share);
+            if (OptimizationPreferenceCompat.isCallable(getContext(), share))
+                startActivity(share);
+            else
+                Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
             return true;
         }
         if (id == R.id.action_refresh) {
