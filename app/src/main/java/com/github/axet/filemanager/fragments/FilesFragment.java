@@ -65,6 +65,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
@@ -312,33 +313,37 @@ public class FilesFragment extends Fragment {
         }
 
         public void cancel() {
-            try {
-                if (thread != null) {
-                    interrupt.set(true);
-                    thread.interrupt();
-                    try {
-                        thread.join();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                    thread = null;
+            if (thread != null) {
+                interrupt.set(true);
+                thread.interrupt();
+                try {
+                    thread.join();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
-                if (is != null) {
-                    is.close();
-                    is = null;
-                }
-                if (os != null) {
-                    os.close();
-                    os = null;
-                }
-                if (t != null) {
-                    storage.delete(t);
-                    t = null;
-                }
-                f = null;
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+                thread = null;
             }
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    Log.e(TAG, "close error", e);
+                }
+                is = null;
+            }
+            if (os != null) {
+                try {
+                    os.close();
+                } catch (IOException e) {
+                    Log.e(TAG, "close error", e);
+                }
+                os = null;
+            }
+            if (t != null) {
+                storage.delete(t);
+                t = null;
+            }
+            f = null;
         }
 
         public void close() {
@@ -362,6 +367,15 @@ public class FilesFragment extends Fragment {
             if (Build.VERSION.SDK_INT >= 21) {
                 if (e instanceof FileNotFoundException && c instanceof ErrnoException && ((ErrnoException) c).errno == OsConstants.EACCES)
                     return access;
+            } else {
+                try {
+                    final int EACCES = 13; // OsConstants.EACCES
+                    Class klass = Class.forName("libcore.io.ErrnoException");
+                    Field f = klass.getDeclaredField("errno");
+                    if (e instanceof FileNotFoundException && klass.isInstance(c) && f.getInt(c) == EACCES)
+                        return access;
+                } catch (Exception ignore) {
+                }
             }
             return EnumSet.of(OPERATION.NONE); // asking
         }

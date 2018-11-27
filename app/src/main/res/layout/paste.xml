@@ -14,7 +14,7 @@
         android:layout_marginRight="20dp"
         android:ellipsize="middle"
         android:gravity="center"
-        android:maxLines="1"
+        android:singleLine="true"
         android:text="Copy: 50 KB/sec, 2m" />
 
     <View
@@ -26,7 +26,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ellipsize="middle"
-        android:maxLines="1"
+        android:singleLine="true"
         android:text="From: c:/file.txt" />
 
     <View
@@ -38,7 +38,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ellipsize="middle"
-        android:maxLines="1"
+        android:singleLine="true"
         android:text="To: c:/file.txt" />
 
     <View
