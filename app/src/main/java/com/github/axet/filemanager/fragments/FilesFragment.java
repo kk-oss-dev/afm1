@@ -1105,7 +1105,7 @@ public class FilesFragment extends Fragment {
             if (archive != null)
                 return true;
             archive = new PasteBuilder(getContext());
-            archive.setTitle("Archive");
+            archive.setTitle(R.string.menu_archive);
             final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
                 ZipOutputStream zip;
                 String name;
@@ -1130,7 +1130,7 @@ public class FilesFragment extends Fragment {
                             archive.copy.setGravity(Gravity.NO_GRAVITY);
                             archive.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
                             archive.update(this);
-                            archive.from.setText("Archiving" + ": " + formatStart());
+                            archive.from.setText(getString(R.string.files_archiving) + ": " + formatStart());
                             archive.to.setText("To: " + storage.getDisplayName(t));
                             post();
                             return;
@@ -1192,7 +1192,7 @@ public class FilesFragment extends Fragment {
                                 else
                                     e = "∞";
                                 archive.copy.setGravity(Gravity.CENTER);
-                                archive.copy.setText("Archiving" + " " + FilesApplication.formatSize(context, a) + getString(R.string.per_second) + ", " + e);
+                                archive.copy.setText(getString(R.string.files_archiving) + " " + FilesApplication.formatSize(context, a) + getString(R.string.per_second) + ", " + e);
                                 archive.update(this, old, f);
                                 archive.from.setText(getString(R.string.copy_from) + " " + storage.getDisplayName(f.uri));
                                 archive.to.setText(getString(R.string.copy_to) + " " + storage.getDisplayName(oldt));
@@ -1216,18 +1216,17 @@ public class FilesFragment extends Fragment {
                             }
 
                             filesIndex++;
-                            archive.copy.setText("Archiving" + ": " + formatStart());
+                            archive.copy.setText(getString(R.string.files_archiving) + ": " + formatStart());
                             archive.update(this, old, f);
                             archive.from.setText(storage.getDisplayName(f.uri));
                             post();
                             return;
                         }
-                        zip.close();
+                        Toast.makeText(getContext(), getString(R.string.toast_files_archived, storage.getName(t), files.size()), Toast.LENGTH_LONG).show();
                         t = null;
                         archive.dismiss();
                         closeSelection();
                         reload();
-                        Toast.makeText(getContext(), "Archived: " + files.size() + " files", Toast.LENGTH_SHORT).show();
                     } catch (IOException | RuntimeException e) {
                         pasteError(archive, this, e);
                     }
