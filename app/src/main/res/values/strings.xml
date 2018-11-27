@@ -29,10 +29,12 @@
     <string name="toast_files_cut">Cut %1$d file(s)</string>
     <string name="files_delete">Delete</string>
     <string name="toast_files_deleted">Deleted %1$d file(s)</string>
+    <string name="toast_files_archived">Archived \'%1$s\' with %2$d file(s)</string>
     <string name="files_rename">Rename</string>
     <string name="files_deleting">Deleting</string>
     <string name="files_calculating">Calculating</string>
     <string name="files_copying">Copying</string>
+    <string name="files_archiving">Archiving</string>
     <string name="files_moving">Moving</string>
     <string name="files_conflict">Conflict</string>
     <string name="unsupported">Not supported format</string>
@@ -58,4 +60,10 @@
     <string name="pref_theme_title">Theme</string>
     <string name="pref_root_title">Root Browser</string>
     <string name="pref_root_summary">Browse file using root</string>
+    <string name="menu_rename">Rename</string>
+    <string name="menu_copy">Copy</string>
+    <string name="menu_cut">Cut</string>
+    <string name="menu_delete">Delete</string>
+    <string name="menu_archive">Archive</string>
+    <string name="save_to">Save archive to</string>
 </resources>

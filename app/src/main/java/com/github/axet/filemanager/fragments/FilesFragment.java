@@ -8,9 +8,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.graphics.Color;
-import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,7 +17,6 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.provider.DocumentFile;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewCompat;
@@ -29,6 +25,8 @@ import android.support.v7.view.CollapsibleActionView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
+import android.system.ErrnoException;
+import android.system.OsConstants;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -37,11 +35,15 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.github.axet.androidlibrary.widgets.OpenChoicer;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
@@ -56,11 +58,14 @@ import com.github.axet.filemanager.widgets.PathView;
 import com.github.axet.filemanager.widgets.SelectView;
 import com.github.axet.wget.SpeedInfo;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
@@ -73,11 +78,14 @@ import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class FilesFragment extends Fragment {
     public static final String TAG = FilesFragment.class.getSimpleName();
 
     public static final int RESULT_PERMS = 1;
+    public static final int RESULT_ARCHIVE = 2;
 
     public static final String PASTE_UPDATE = FilesFragment.class.getCanonicalName() + ".PASTE_UPDATE";
     public static final String MOVE_UPDATE = FilesFragment.class.getCanonicalName() + ".MOVE_UPDATE";
@@ -101,6 +109,9 @@ public class FilesFragment extends Fragment {
 
     PasteBuilder delete;
     PasteBuilder paste;
+    PasteBuilder archive;
+
+    OpenChoicer choicer;
 
     HashMap<Uri, Integer> portables = new HashMap<>();
     Specials specials;
@@ -110,9 +121,18 @@ public class FilesFragment extends Fragment {
     MenuItem toolbar;
     MenuItem pasteMenu;
     MenuItem pasteCancel;
-    MenuItem rename;
     SelectView select;
-    ArrayList<Storage.Node> selected = new ArrayList<>();
+    ArrayList<Storage.Node> selected = new ArrayList<Storage.Node>() { // we have to keep Storage.Node and not Uri to know node type (file or dir) before operation begins
+        @Override
+        public boolean contains(Object o) { // in case if adapter.files got reloaded
+            for (int i = 0; i < size(); i++) {
+                Storage.Node n = get(i);
+                if (n.uri.equals(((Storage.Node) o).uri))
+                    return true;
+            }
+            return false;
+        }
+    };
     HashMap<Uri, Pos> offsets = new HashMap<>();
     BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -126,6 +146,20 @@ public class FilesFragment extends Fragment {
                 reload();
         }
     };
+
+    public static String toMessage(Throwable e) {
+        String msg = e.getMessage();
+        if (msg == null || msg.isEmpty()) {
+            Throwable p = null;
+            Throwable a = e;
+            while (a != null) {
+                p = a;
+                a = a.getCause();
+            }
+            msg = p.getClass().getCanonicalName();
+        }
+        return msg;
+    }
 
     public static String[] splitPath(String s) {
         return s.split("[//\\\\]");
@@ -212,6 +246,8 @@ public class FilesFragment extends Fragment {
         EnumSet<OPERATION> newer = EnumSet.of(OPERATION.ASK); // overwrite same size file but newer date
         EnumSet<OPERATION> same = EnumSet.of(OPERATION.ASK); // same file size and date
 
+        EnumSet<OPERATION> access = EnumSet.of(OPERATION.ASK); // ErrnoException ACCESS
+
         enum OPERATION {NONE, ASK, SKIP, OVERWRITE}
 
         public PendingOperation(Context context) {
@@ -290,33 +326,42 @@ public class FilesFragment extends Fragment {
             f = null;
         }
 
-        public void close() {
-            try {
-                if (thread != null) {
-                    interrupt.set(true);
-                    thread.interrupt();
-                    try {
-                        thread.join();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                    thread = null;
+        public void cancel() {
+            if (thread != null) {
+                interrupt.set(true);
+                thread.interrupt();
+                try {
+                    thread.join();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
-                if (is != null) {
-                    is.close();
-                    is = null;
-                }
-                if (os != null) {
-                    os.close();
-                    os = null;
-                }
-                if (t != null) {
-                    storage.delete(t);
-                    t = null;
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+                thread = null;
             }
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    Log.e(TAG, "close error", e);
+                }
+                is = null;
+            }
+            if (os != null) {
+                try {
+                    os.close();
+                } catch (IOException e) {
+                    Log.e(TAG, "close error", e);
+                }
+                os = null;
+            }
+            if (t != null) {
+                storage.delete(t);
+                t = null;
+            }
+            f = null;
+        }
+
+        public void close() {
+            cancel();
         }
 
         public EnumSet<OPERATION> check(Storage.Node f, Storage.Node t) { // ask user for confirmations?
@@ -329,6 +374,24 @@ public class FilesFragment extends Fragment {
             if (t.size == f.size && t.last == f.last)
                 return same;
             return EnumSet.of(OPERATION.NONE); // not asking
+        }
+
+        public EnumSet<OPERATION> check(Throwable e) { // ask user for confirmations?
+            Throwable c = e.getCause();
+            if (Build.VERSION.SDK_INT >= 21) {
+                if (e instanceof FileNotFoundException && c instanceof ErrnoException && ((ErrnoException) c).errno == OsConstants.EACCES)
+                    return access;
+            } else {
+                try {
+                    final int EACCES = 13; // OsConstants.EACCES
+                    Class klass = Class.forName("libcore.io.ErrnoException");
+                    Field f = klass.getDeclaredField("errno");
+                    if (e instanceof FileNotFoundException && klass.isInstance(c) && f.getInt(c) == EACCES)
+                        return access;
+                } catch (Exception ignore) {
+                }
+            }
+            return EnumSet.of(OPERATION.NONE); // asking
         }
 
         public int copy(byte[] buf) throws IOException {
@@ -586,11 +649,23 @@ public class FilesFragment extends Fragment {
             h.itemView.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
-                    if (selected.contains(f))
-                        selected.remove(f);
-                    else
-                        selected.add(f);
+                    selected.clear();
+                    selected.add(f);
                     openSelection();
+                    PopupMenu menu = new PopupMenu(getContext(), v);
+                    menu.inflate(R.menu.menu_select);
+                    menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                        @Override
+                        public boolean onMenuItemClick(MenuItem item) {
+                            Intent intent = new Intent(Intent.ACTION_VIEW);
+                            String type = Storage.getTypeByName(f.name);
+                            intent.setDataAndType(f.uri, type);
+                            intent.putExtra("name", f.name);
+                            item.setIntent(intent);
+                            return onOptionsItemSelected(item);
+                        }
+                    });
+                    menu.show();
                     return true;
                 }
             });
@@ -761,6 +836,19 @@ public class FilesFragment extends Fragment {
                 reload();
                 updateButton();
                 break;
+            case RESULT_ARCHIVE:
+                choicer.onRequestPermissionsResult(permissions, grantResults);
+                break;
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode) {
+            case RESULT_ARCHIVE:
+                choicer.onActivityResult(resultCode, data);
+                break;
         }
     }
 
@@ -874,7 +962,6 @@ public class FilesFragment extends Fragment {
         pasteCancel = menu.findItem(R.id.action_paste_cancel);
         updatePaste();
         select = (SelectView) MenuItemCompat.getActionView(toolbar);
-        rename = select.menu.findItem(R.id.action_rename);
         select.listener = new CollapsibleActionView() {
             @Override
             public void onActionViewExpanded() {
@@ -1028,6 +1115,13 @@ public class FilesFragment extends Fragment {
                                 reload();
                                 Toast.makeText(getContext(), getString(R.string.toast_files_deleted, files.size()), Toast.LENGTH_SHORT).show();
                             } catch (RuntimeException e) {
+                                switch (check(e).iterator().next()) {
+                                    case SKIP:
+                                        Log.d(TAG, "skip", e);
+                                        filesIndex++;
+                                        post();
+                                        return;
+                                }
                                 pasteError(delete, this, e);
                             }
                         }
@@ -1091,7 +1185,235 @@ public class FilesFragment extends Fragment {
             dialog.show();
             return true;
         }
+        if (id == R.id.action_archive) {
+            if (archive != null)
+                return true;
+            final String name;
+            if (selected.size() == 1)
+                name = selected.get(0).name;
+            else
+                name = "Archive";
+            Uri to = storage.getNextFile(uri, name, "zip");
+            OutputStream os;
+            try {
+                os = storage.open(uri, storage.getName(to));
+            } catch (IOException e) {
+                Runnable run = new Runnable() {
+                    @Override
+                    public void run() {
+                        final Runnable run = this;
+                        choicer = new OpenChoicer(OpenFileDialog.DIALOG_TYPE.FOLDER_DIALOG, false) {
+                            @Override
+                            public void onResult(Uri uri) {
+                                Uri to = storage.getNextFile(uri, name, "zip");
+                                try {
+                                    OutputStream os = storage.open(uri, storage.getName(to));
+                                    archive(to, os);
+                                } catch (IOException e) {
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                                    builder.setTitle("Error");
+                                    builder.setMessage(toMessage(e));
+                                    builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                        }
+                                    });
+                                    builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            run.run();
+                                        }
+                                    });
+                                    builder.show();
+                                }
+                            }
+                        };
+                        choicer.setTitle(getString(R.string.save_to));
+                        choicer.setPermissionsDialog(FilesFragment.this, Storage.PERMISSIONS_RW, RESULT_ARCHIVE);
+                        if (Build.VERSION.SDK_INT >= 21)
+                            choicer.setStorageAccessFramework(FilesFragment.this, RESULT_ARCHIVE);
+                        choicer.show(uri);
+                    }
+                };
+                run.run();
+                return true;
+            }
+            archive(to, os);
+            return true;
+        }
         return super.onOptionsItemSelected(item);
+    }
+
+    void archive(final Uri to, final OutputStream fos) {
+        archive = new PasteBuilder(getContext());
+        archive.setTitle(R.string.menu_archive);
+        final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
+            ZipOutputStream zip;
+
+            {
+                t = to;
+            }
+
+            @Override
+            public void run() {
+                try {
+                    if (calcIndex < calcs.size()) {
+                        if (!calc()) {
+                            os = zip = new ZipOutputStream(new BufferedOutputStream(fos));
+                        }
+                        archive.copy.setGravity(Gravity.NO_GRAVITY);
+                        archive.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
+                        archive.update(this);
+                        archive.from.setText(getString(R.string.files_archiving) + ": " + formatStart());
+                        archive.to.setText("To: " + storage.getDisplayName(t));
+                        post();
+                        return;
+                    }
+                    synchronized (lock) {
+                        if (is != null) {
+                            int old = filesIndex;
+                            Uri oldt = t;
+                            final Storage.Node f = files.get(filesIndex);
+                            if (thread == null) {
+                                interrupt.set(false);
+                                thread = new Thread("Zip") {
+                                    @Override
+                                    public void run() {
+                                        byte[] buf = new byte[SuperUser.BUF_SIZE];
+                                        try {
+                                            int len;
+                                            while ((len = copy(buf)) > 0) {
+                                                synchronized (lock) {
+                                                    current += len;
+                                                    processed += len;
+                                                    info.step(current);
+                                                }
+                                                if (Thread.currentThread().isInterrupted() || interrupt.get())
+                                                    return;
+                                            }
+                                            synchronized (lock) {
+                                                is.close();
+                                                is = null;
+                                                filesIndex++;
+                                                thread = null; // close thread
+                                                post();
+                                            }
+                                        } catch (Exception e) {
+                                            synchronized (lock) {
+                                                delayed = e; // thread != null
+                                                post();
+                                            }
+                                        }
+                                    }
+                                };
+                                thread.start();
+                            } else {
+                                if (delayed != null) {
+                                    Throwable d = delayed;
+                                    thread = null;
+                                    delayed = null;
+                                    throw new RuntimeException(d);
+                                }
+                            }
+                            post(thread == null ? 0 : 1000);
+                            int a = info.getAverageSpeed();
+                            String e;
+                            long diff = 0;
+                            if (a > 0)
+                                diff = (f.size - current) * 1000 / a;
+                            if (diff >= 1000)
+                                e = FilesApplication.formatLeftExact(context, diff);
+                            else
+                                e = "∞";
+                            archive.copy.setGravity(Gravity.CENTER);
+                            archive.copy.setText(getString(R.string.files_archiving) + " " + FilesApplication.formatSize(context, a) + getString(R.string.per_second) + ", " + e);
+                            archive.update(this, old, f);
+                            archive.from.setText(getString(R.string.copy_from) + " " + storage.getDisplayName(f.uri));
+                            archive.to.setText(getString(R.string.copy_to) + " " + storage.getDisplayName(oldt));
+                            return;
+                        }
+                    }
+                    if (filesIndex < files.size()) {
+                        int old = filesIndex;
+                        final Storage.Node f = files.get(filesIndex);
+
+                        if (f.dir) {
+                            ZipEntry entry = new ZipEntry(f.name + "/");
+                            zip.putNextEntry(entry);
+                        } else {
+                            ZipEntry entry = new ZipEntry(f.name);
+                            zip.putNextEntry(entry);
+                            is = storage.open(f.uri);
+                            current = 0;
+                            post();
+                            return;
+                        }
+
+                        filesIndex++;
+                        archive.copy.setText(getString(R.string.files_archiving) + ": " + formatStart());
+                        archive.update(this, old, f);
+                        archive.from.setText(storage.getDisplayName(f.uri));
+                        post();
+                        return;
+                    }
+                    Uri to = t;
+                    t = null;
+                    archive.dismiss();
+                    closeSelection();
+                    reload();
+                    Toast.makeText(getContext(), getString(R.string.toast_files_archived, storage.getName(to), files.size()), Toast.LENGTH_LONG).show();
+                    select(to);
+                } catch (IOException | RuntimeException e) {
+                    switch (check(e).iterator().next()) {
+                        case SKIP:
+                            Log.d(TAG, "skip", e);
+                            filesIndex++;
+                            post();
+                            return;
+                    }
+                    pasteError(archive, this, e);
+                }
+            }
+
+            public void post(long d) {
+                handler.removeCallbacks(this);
+                handler.postDelayed(this, d);
+            }
+
+            public void post() {
+                post(0);
+            }
+        };
+        archive.neutral = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final View.OnClickListener neutral = this;
+                op.pause();
+                handler.removeCallbacks(op);
+                final Button b = archive.d.getButton(DialogInterface.BUTTON_NEUTRAL);
+                b.setText(R.string.copy_resume);
+                archive.neutral = new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        op.run();
+                        b.setText(R.string.copy_pause);
+                        archive.neutral = neutral;
+                    }
+                };
+            }
+        };
+        archive.dismiss = new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                archive.dismiss();
+                archive = null;
+                op.close();
+                handler.removeCallbacks(op);
+                reload();
+            }
+        };
+        archive.show();
+        op.run();
     }
 
     public void openSelection() {
@@ -1103,21 +1425,6 @@ public class FilesFragment extends Fragment {
     }
 
     public void updateSelection() {
-        if (selected.size() == 1) {
-            rename.setEnabled(true);
-            Drawable d = DrawableCompat.wrap(rename.getIcon());
-            d.mutate();
-            //DrawableCompat.setTint(d, Color.WHITE);
-            d.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_ATOP);
-            rename.setIcon(d);
-        } else {
-            rename.setEnabled(false);
-            Drawable d = DrawableCompat.wrap(rename.getIcon());
-            d.mutate();
-            //DrawableCompat.setTint(d, Color.GRAY);
-            d.setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_ATOP);
-            rename.setIcon(d);
-        }
         adapter.notifyDataSetChanged();
     }
 
@@ -1229,6 +1536,7 @@ public class FilesFragment extends Fragment {
                         }
                     }
                     if (filesIndex < files.size()) {
+                        cancel(); // cancel previous skped operation if existed
                         Storage.Node f = files.get(filesIndex);
                         try {
                             if (f.dir) {
@@ -1325,6 +1633,13 @@ public class FilesFragment extends Fragment {
                     }
                     paste.dismiss(); // all done!
                 } catch (RuntimeException e) {
+                    switch (check(e).iterator().next()) {
+                        case SKIP:
+                            Log.d(TAG, "skip", e);
+                            filesIndex++;
+                            post();
+                            return;
+                    }
                     pasteError(paste, this, e);
                 }
             }
@@ -1374,22 +1689,19 @@ public class FilesFragment extends Fragment {
         op.run();
     }
 
-    public void pasteError(final PasteBuilder paste, final PendingOperation op, Throwable e) {
+    public void pasteError(final PasteBuilder paste, final PendingOperation op, final Throwable e) {
         Log.e(TAG, "paste", e);
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setCancelable(false);
         builder.setTitle("Error");
-        String msg = e.getMessage();
-        if (msg == null || msg.isEmpty()) {
-            Throwable p = null;
-            while (e != null) {
-                p = e;
-                e = e.getCause();
-            }
-            msg = p.getClass().getCanonicalName();
-        }
-        builder.setMessage(msg);
-        builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+        View p = LayoutInflater.from(getContext()).inflate(R.layout.paste_error, null);
+        View sp = p.findViewById(R.id.skip_panel);
+        TextView t = (TextView) p.findViewById(R.id.text);
+        t.setText(toMessage(e));
+        final View ss = p.findViewById(R.id.skip);
+        View sa = p.findViewById(R.id.skipall);
+        builder.setView(p);
+        builder.setPositiveButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 op.close();
@@ -1403,7 +1715,37 @@ public class FilesFragment extends Fragment {
                 op.run();
             }
         });
-        builder.show();
+        EnumSet<PendingOperation.OPERATION> o = op.check(e);
+        if (o.contains(PendingOperation.OPERATION.NONE)) {
+            sp.setVisibility(View.GONE);
+            builder.setNegativeButton(R.string.button_skip, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    ss.performClick();
+                }
+            });
+        }
+        final AlertDialog d = builder.create();
+        ss.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                op.filesIndex++;
+                op.run();
+                d.dismiss();
+            }
+        });
+        sa.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EnumSet<PendingOperation.OPERATION> o = op.check(e);
+                o.clear();
+                o.add(PendingOperation.OPERATION.SKIP);
+                op.filesIndex++;
+                op.run();
+                d.dismiss();
+            }
+        });
+        d.show();
     }
 
     public void pasteConflict(final PendingOperation op, final PasteBuilder paste, final Storage.Node f, final Storage.Node t) {
@@ -1475,5 +1817,31 @@ public class FilesFragment extends Fragment {
         source.setText(getString(R.string.copy_overwrite_with) + " " + storage.getDisplayName(f.uri) + "\n\t\t" + BYTES.format(f.size) + " " + getString(R.string.size_bytes) + ", " + SIMPLE.format(f.last));
 
         d.show();
+    }
+
+    public void select(Uri uri) {
+        for (int i = 0; i < adapter.files.size(); i++) {
+            Storage.Node n = adapter.files.get(i);
+            if (n.uri.equals(uri)) {
+                layout.scrollToPositionWithOffset(i, 0);
+                final int p = i;
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        RecyclerView.ViewHolder h = list.findViewHolderForAdapterPosition(p);
+                        if (h == null) {
+                            handler.post(this);
+                            return;
+                        }
+                        AlphaAnimation anim = new AlphaAnimation(1.0f, 0.3f);
+                        anim.setInterpolator(new AccelerateDecelerateInterpolator());
+                        anim.setRepeatMode(Animation.REVERSE);
+                        anim.setRepeatCount(3);
+                        anim.setDuration(200);
+                        h.itemView.startAnimation(anim);
+                    }
+                });
+            }
+        }
     }
 }
