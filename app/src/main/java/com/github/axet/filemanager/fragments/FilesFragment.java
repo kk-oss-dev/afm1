@@ -1689,9 +1689,10 @@ public class FilesFragment extends Fragment {
             msg = p.getClass().getCanonicalName();
         }
         View p = LayoutInflater.from(getContext()).inflate(R.layout.paste_error, null);
+        View sp = p.findViewById(R.id.skip_panel);
         TextView t = (TextView) p.findViewById(R.id.text);
         t.setText(msg);
-        View ss = p.findViewById(R.id.skip);
+        final View ss = p.findViewById(R.id.skip);
         View sa = p.findViewById(R.id.skipall);
         builder.setView(p);
         builder.setPositiveButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -1708,6 +1709,16 @@ public class FilesFragment extends Fragment {
                 op.run();
             }
         });
+        EnumSet<PendingOperation.OPERATION> o = op.check(e);
+        if (o.contains(PendingOperation.OPERATION.NONE)) {
+            sp.setVisibility(View.GONE);
+            builder.setNegativeButton(R.string.button_skip, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    ss.performClick();
+                }
+            });
+        }
         final AlertDialog d = builder.create();
         ss.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1723,6 +1734,7 @@ public class FilesFragment extends Fragment {
                 EnumSet<PendingOperation.OPERATION> o = op.check(e);
                 o.clear();
                 o.add(PendingOperation.OPERATION.SKIP);
+                op.filesIndex++;
                 op.run();
                 d.dismiss();
             }
