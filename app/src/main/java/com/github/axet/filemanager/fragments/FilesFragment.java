@@ -33,6 +33,9 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -1222,11 +1225,13 @@ public class FilesFragment extends Fragment {
                             post();
                             return;
                         }
-                        Toast.makeText(getContext(), getString(R.string.toast_files_archived, storage.getName(t), files.size()), Toast.LENGTH_LONG).show();
+                        Uri to = t;
                         t = null;
                         archive.dismiss();
                         closeSelection();
                         reload();
+                        Toast.makeText(getContext(), getString(R.string.toast_files_archived, storage.getName(to), files.size()), Toast.LENGTH_LONG).show();
+                        select(to);
                     } catch (IOException | RuntimeException e) {
                         pasteError(archive, this, e);
                     }
@@ -1642,5 +1647,31 @@ public class FilesFragment extends Fragment {
         source.setText(getString(R.string.copy_overwrite_with) + " " + storage.getDisplayName(f.uri) + "\n\t\t" + BYTES.format(f.size) + " " + getString(R.string.size_bytes) + ", " + SIMPLE.format(f.last));
 
         d.show();
+    }
+
+    public void select(Uri uri) {
+        for (int i = 0; i < adapter.files.size(); i++) {
+            Storage.Node n = adapter.files.get(i);
+            if (n.uri.equals(uri)) {
+                layout.scrollToPositionWithOffset(i, 0);
+                final int p = i;
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        RecyclerView.ViewHolder h = list.findViewHolderForAdapterPosition(p);
+                        if (h == null) {
+                            handler.post(this);
+                            return;
+                        }
+                        AlphaAnimation anim = new AlphaAnimation(1.0f, 0.3f);
+                        anim.setInterpolator(new AccelerateDecelerateInterpolator());
+                        anim.setRepeatMode(Animation.REVERSE);
+                        anim.setRepeatCount(3);
+                        anim.setDuration(200);
+                        h.itemView.startAnimation(anim);
+                    }
+                });
+            }
+        }
     }
 }
