@@ -24,6 +24,7 @@
 
 -dontwarn com.github.axet.wget.**
 -dontwarn org.apache.commons.**
+-dontwarn de.innosystec.unrar.**
 
 -keep class com.github.axet.androidlibrary.widgets.SearchView {*;}
 -keep class com.github.axet.filemanager.widgets.SelectView {*;}

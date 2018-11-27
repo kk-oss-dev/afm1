@@ -989,8 +989,14 @@ public class FilesFragment extends Fragment {
             return true;
         }
         if (id == R.id.action_view) {
-            MainActivity main = (MainActivity) getActivity();
-            main.openHex(item.getIntent().getData());
+            Uri uri = item.getIntent().getData();
+            Storage.ArchiveReader r = storage.fromArchive(uri);
+            if (r != null && r.isDirectory()) {
+                load(uri);
+            } else {
+                MainActivity main = (MainActivity) getActivity();
+                main.openHex(uri);
+            }
             return true;
         }
         if (id == R.id.action_openas) {

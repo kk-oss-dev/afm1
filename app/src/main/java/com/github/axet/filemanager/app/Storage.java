@@ -5,8 +5,19 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
+import android.provider.DocumentsContract;
+import android.support.annotation.NonNull;
 import android.support.v4.provider.DocumentFile;
 import android.support.v7.preference.PreferenceManager;
+
+import com.github.axet.androidlibrary.app.FileTypeDetector;
+import com.github.axet.androidlibrary.app.ZipSAF;
+import com.github.axet.filemanager.fragments.FilesFragment;
+
+import net.lingala.zip4j.core.NativeStorage;
+import net.lingala.zip4j.core.ZipFile;
+import net.lingala.zip4j.io.ZipInputStream;
+import net.lingala.zip4j.model.FileHeader;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,8 +26,31 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Storage extends com.github.axet.androidlibrary.app.Storage {
+
+    public static final String CONTENTTYPE_ZIP = "application/zip";
+
+    public static Uri getParent(Context context, Uri uri) {
+        String p = uri.getQueryParameter("p");
+        if (p != null) {
+            p = new File(p).getParent();
+            Uri.Builder b = uri.buildUpon();
+            b.query("");
+            if (p != null)
+                b.appendQueryParameter("p", p);
+            return b.build();
+        }
+        return com.github.axet.androidlibrary.app.Storage.getParent(context, uri);
+    }
+
+    public static String getName(Context context, Uri uri) {
+        String p = uri.getQueryParameter("p");
+        if (p != null)
+            return new File(p).getName();
+        return com.github.axet.androidlibrary.app.Storage.getName(context, uri);
+    }
 
     public static class SymlinkNode extends Node {
         File symlink;
@@ -49,6 +83,150 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         }
     }
 
+    public static class ZipNode extends Node {
+        public ZipFile zip;
+        public FileHeader h;
+    }
+
+    public class ArchiveCache {
+        public Uri uri; // archive uri
+        public ArrayList<Node> all;
+    }
+
+    public class ArchiveReader extends ArchiveCache {
+        public String path; // inner path
+
+        public ArchiveReader(Uri u, String p) {
+            uri = u;
+            if (p == null)
+                p = "";
+            path = p;
+        }
+
+        public ArchiveReader(ArchiveCache c, ArchiveReader r) {
+            uri = c.uri;
+            all = c.all;
+            path = r.path;
+        }
+
+        public boolean isDirectory() {
+            if (all == null)
+                read();
+            Node n = find();
+            if (n != null)
+                return n.dir;
+            return true;
+        }
+
+        public InputStream open() {
+            if (all == null)
+                read();
+            final Node n = find();
+            if (n == null)
+                return null;
+            try {
+                return new InputStream() {
+                    ZipInputStream is = ((ZipNode) n).zip.getInputStream(((ZipNode) n).h);
+
+                    @Override
+                    public int read() throws IOException {
+                        return is.read();
+                    }
+
+                    @Override
+                    public int read(@NonNull byte[] b, int off, int len) throws IOException {
+                        return is.read(b, off, len);
+                    }
+
+                    @Override
+                    public void close() throws IOException {
+                        is.close(true);
+                    }
+                };
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public Node find() {
+            for (Node n : all) {
+                if (((ZipNode) n).h.getFileName().equals(path))
+                    return n;
+            }
+            return null;
+        }
+
+        public long length() {
+            if (all == null)
+                read();
+            Node n = find();
+            if (n == null)
+                return -1;
+            return n.size;
+        }
+
+        public void read() {
+            try {
+                ZipFile zip;
+                String s = uri.getScheme();
+                if (s.equals(ContentResolver.SCHEME_FILE)) {
+                    File f = Storage.getFile(uri);
+                    zip = new ZipFile(new NativeStorage(f));
+                } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+                    zip = new ZipFile(new ZipSAF(context, Storage.getDocumentTreeUri(uri), uri));
+                } else {
+                    throw new UnknownUri();
+                }
+                ArrayList<Node> aa = new ArrayList<>();
+                List list = zip.getFileHeaders();
+                for (Object o : list) {
+                    final FileHeader h = (FileHeader) o;
+                    ZipNode n = new ZipNode();
+                    if (s.equals(ContentResolver.SCHEME_FILE)) {
+                        n.uri = uri.buildUpon().appendPath(h.getFileName()).build();
+                    } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+                        n.uri = uri.buildUpon().appendQueryParameter("p", h.getFileName()).build();
+                    } else {
+                        throw new UnknownUri();
+                    }
+                    n.name = new File(h.getFileName()).getName();
+                    n.size = h.getUncompressedSize();
+                    n.last = h.getLastModFileTime();
+                    n.dir = h.isDirectory();
+                    n.zip = zip;
+                    n.h = h;
+                    aa.add(n);
+                }
+                all = aa;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public ArrayList<Node> list() {
+            if (all == null)
+                read();
+            ArrayList<Node> nn = new ArrayList<>();
+            for (Node n : all) {
+                if (list(n))
+                    nn.add(n);
+            }
+            return nn;
+        }
+
+        public boolean list(Node n) {
+            String p = ((ZipNode) n).h.getFileName();
+            String r = relative(path, p);
+            if (r != null && !r.isEmpty() && FilesFragment.splitPath(r).length == 1)
+                return true;
+            return false;
+        }
+
+        public ArrayList<Node> walk(Uri root) {
+            return null;
+        }
+    }
+
     public Storage(Context context) {
         super(context);
     }
@@ -58,7 +236,74 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         return shared.getBoolean(FilesApplication.PREF_ROOT, false);
     }
 
+    public ArchiveReader fromArchive(Uri uri) {
+        String s = uri.getScheme();
+        if (s.equals(ContentResolver.SCHEME_FILE)) {
+            File k = getFile(uri);
+            byte[] buf = new byte[1024];
+            FileTypeDetector.FileRar rar = new FileTypeDetector.FileRar();
+            FileTypeDetector.FileZip zip = new FileTypeDetector.FileZip();
+            if (getRoot()) {
+                File p = k;
+                while (p != null && !p.exists())
+                    p = p.getParentFile();
+                if (p == null || SuperUser.isDirectory(p))
+                    return null;
+                try {
+                    InputStream is = SuperUser.cat(k);
+                    int len = is.read(buf);
+                    if (len > 0) {
+                        rar.write(buf, 0, len);
+                        zip.write(buf, 0, len);
+                    }
+                    is.close();
+                    if (rar.done && rar.detected || zip.done && zip.detected)
+                        return cache(new ArchiveReader(Uri.fromFile(p), relative(p.getPath(), k.getPath())));
+                } catch (IOException e) {
+                    return null;
+                }
+            } else {
+                File p = k;
+                while (p != null && !p.exists())
+                    p = p.getParentFile();
+                if (p == null || p.isDirectory())
+                    return null;
+                try {
+                    FileInputStream is = new FileInputStream(p);
+                    int len = is.read(buf);
+                    if (len > 0) {
+                        rar.write(buf, 0, len);
+                        zip.write(buf, 0, len);
+                    }
+                    is.close();
+                    if (rar.done && rar.detected || zip.done && zip.detected)
+                        return cache(new ArchiveReader(Uri.fromFile(p), relative(p.getPath(), k.getPath())));
+                } catch (IOException e) {
+                    return null;
+                }
+            }
+        } else if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
+            if (!DocumentsContract.isDocumentUri(context, uri))
+                return null;
+            Uri u = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getDocumentId(uri));
+            DocumentFile f = DocumentFile.fromSingleUri(context, u);
+            if (f.isDirectory())
+                return null;
+            String t = f.getType();
+            if (t.equals(CONTENTTYPE_RAR) || t.equals(CONTENTTYPE_ZIP))
+                return cache(new ArchiveReader(u, uri.getQueryParameter("p")));
+        }
+        return null;
+    }
+
+    public ArchiveReader cache(ArchiveReader r) {
+        return r;
+    }
+
     public InputStream open(Uri uri) throws IOException {
+        ArchiveReader r = fromArchive(uri);
+        if (r != null && !r.path.isEmpty())
+            return r.open();
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             File k = getFile(uri);
@@ -181,6 +426,9 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     @Override
     public long getLength(Uri uri) {
+        ArchiveReader r = fromArchive(uri);
+        if (r != null)
+            return r.length();
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             return SuperUser.length(Storage.getFile(uri));
         }
@@ -189,6 +437,9 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     @Override
     public ArrayList<Node> list(Uri uri) {
+        ArchiveReader r = fromArchive(uri);
+        if (r != null)
+            return r.list();
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             ArrayList<Node> files = new ArrayList<>();
             ArrayList<File> ff = SuperUser.ls(SuperUser.LSA, Storage.getFile(uri));
@@ -205,6 +456,9 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     @Override
     public ArrayList<Node> walk(Uri root, Uri uri) {
+        ArchiveReader a = fromArchive(uri);
+        if (a != null)
+            return a.walk(root);
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             int r = Storage.getFile(root).getPath().length();
             ArrayList<Node> files = new ArrayList<>();
@@ -233,5 +487,14 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         } else {
             throw new UnknownUri();
         }
+    }
+
+    @Override
+    public String getDisplayName(Uri uri) {
+        String d = super.getDisplayName(uri);
+        String p = uri.getQueryParameter("p");
+        if (p != null)
+            d += "/" + p;
+        return d;
     }
 }

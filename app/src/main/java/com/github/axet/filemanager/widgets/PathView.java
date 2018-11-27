@@ -13,9 +13,9 @@ import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.github.axet.androidlibrary.app.Storage;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
+import com.github.axet.filemanager.app.Storage;
 
 public class PathView extends HorizontalScrollView {
     Uri uri;
