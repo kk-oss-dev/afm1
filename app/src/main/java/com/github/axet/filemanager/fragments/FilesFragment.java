@@ -147,6 +147,20 @@ public class FilesFragment extends Fragment {
         }
     };
 
+    public static String toMessage(Throwable e) {
+        String msg = e.getMessage();
+        if (msg == null || msg.isEmpty()) {
+            Throwable p = null;
+            Throwable a = e;
+            while (a != null) {
+                p = a;
+                a = a.getCause();
+            }
+            msg = p.getClass().getCanonicalName();
+        }
+        return msg;
+    }
+
     public static String[] splitPath(String s) {
         return s.split("[//\\\\]");
     }
@@ -1197,6 +1211,8 @@ public class FilesFragment extends Fragment {
                                     archive(to, os);
                                 } catch (IOException e) {
                                     AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                                    builder.setTitle("Error");
+                                    builder.setMessage(toMessage(e));
                                     builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                                         @Override
                                         public void onClick(DialogInterface dialog, int which) {
@@ -1212,7 +1228,7 @@ public class FilesFragment extends Fragment {
                                 }
                             }
                         };
-                        choicer.setTitle("Save archive to");
+                        choicer.setTitle(getString(R.string.save_to));
                         choicer.setPermissionsDialog(FilesFragment.this, Storage.PERMISSIONS_RW, RESULT_ARCHIVE);
                         if (Build.VERSION.SDK_INT >= 21)
                             choicer.setStorageAccessFramework(FilesFragment.this, RESULT_ARCHIVE);
@@ -1678,20 +1694,10 @@ public class FilesFragment extends Fragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setCancelable(false);
         builder.setTitle("Error");
-        String msg = e.getMessage();
-        if (msg == null || msg.isEmpty()) {
-            Throwable p = null;
-            Throwable a = e;
-            while (a != null) {
-                p = a;
-                a = a.getCause();
-            }
-            msg = p.getClass().getCanonicalName();
-        }
         View p = LayoutInflater.from(getContext()).inflate(R.layout.paste_error, null);
         View sp = p.findViewById(R.id.skip_panel);
         TextView t = (TextView) p.findViewById(R.id.text);
-        t.setText(msg);
+        t.setText(toMessage(e));
         final View ss = p.findViewById(R.id.skip);
         View sa = p.findViewById(R.id.skipall);
         builder.setView(p);
