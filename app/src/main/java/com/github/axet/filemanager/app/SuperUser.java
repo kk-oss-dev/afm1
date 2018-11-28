@@ -317,6 +317,14 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             }
         }
 
+        public int read() throws IOException {
+            int size = 1;
+            writeString(offset + " " + size + EOL, os);
+            int b = is.read();
+            offset += 1;
+            return b;
+        }
+
         public int read(byte[] buf, int off, int size) throws IOException {
             writeString(offset + " " + size + EOL, os);
             long len;

@@ -15,11 +15,9 @@ public class ZipSu extends NativeStorage {
     ZipSu parent;
 
     public static class SuFile extends NativeFile {
-        File f;
         SuperUser.RandomAccessFile r;
 
         public SuFile(Context context, File f) throws FileNotFoundException {
-            this.f = f;
             r = new SuperUser.RandomAccessFile(context, f);
         }
 

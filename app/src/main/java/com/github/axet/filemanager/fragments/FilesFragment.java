@@ -8,6 +8,9 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,6 +20,7 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.provider.DocumentFile;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewCompat;
@@ -173,8 +177,17 @@ public class FilesFragment extends Fragment {
         return msg;
     }
 
-    public static String[] splitPath(String s) {
-        return s.split("[//\\\\]");
+    public static void hideMenu(Menu m, int id) {
+        MenuItem item = m.findItem(id);
+        item.setVisible(false);
+    }
+
+    public static void setTint(MenuItem item, int color) {
+        Drawable d = item.getIcon();
+        d = DrawableCompat.wrap(d);
+        d.mutate();
+        d.setColorFilter(color, PorterDuff.Mode.SRC_ATOP); // DrawableCompat.setTint(d, color);
+        item.setIcon(d);
     }
 
     public static String stripRight(String s, String right) {
@@ -578,8 +591,8 @@ public class FilesFragment extends Fragment {
             int c = Boolean.valueOf(o1.dir).compareTo(o2.dir);
             if (c != 0)
                 return c;
-            String[] cc2 = splitPath(o2.name);
-            String[] cc1 = splitPath(o1.name);
+            String[] cc2 = Storage.splitPath(o2.name);
+            String[] cc1 = Storage.splitPath(o1.name);
             c = Integer.valueOf(cc2.length).compareTo(cc1.length);
             if (c != 0)
                 return c;
@@ -666,6 +679,13 @@ public class FilesFragment extends Fragment {
                     openSelection();
                     PopupMenu menu = new PopupMenu(getContext(), v);
                     menu.inflate(R.menu.menu_select);
+                    Storage.ArchiveReader r = storage.fromArchive(uri);
+                    if (r != null) {
+                        hideMenu(menu.getMenu(), R.id.action_archive);
+                        hideMenu(menu.getMenu(), R.id.action_rename);
+                        hideMenu(menu.getMenu(), R.id.action_cut);
+                        hideMenu(menu.getMenu(), R.id.action_delete);
+                    }
                     menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                         @Override
                         public boolean onMenuItemClick(MenuItem item) {
@@ -814,6 +834,14 @@ public class FilesFragment extends Fragment {
         if (app.copy != null || app.cut != null) {
             pasteMenu.setVisible(true);
             pasteCancel.setVisible(true);
+            Storage.ArchiveReader r = storage.fromArchive(uri);
+            if (r != null) {
+                pasteMenu.setEnabled(false);
+                setTint(pasteMenu, Color.GRAY);
+            } else {
+                pasteMenu.setEnabled(true);
+                setTint(pasteMenu, Color.WHITE);
+            }
         } else {
             pasteMenu.setVisible(false);
             pasteCancel.setVisible(false);
@@ -892,6 +920,8 @@ public class FilesFragment extends Fragment {
             offsets.put(uri, findFirstVisibleItem());
             uri = u;
             updateButton();
+            updatePaste(); // enabled / disabled
+            closeSelection();
             path.setUri(uri);
             reload();
             MainActivity main = (MainActivity) getActivity();
@@ -975,6 +1005,12 @@ public class FilesFragment extends Fragment {
         select.listener = new CollapsibleActionView() {
             @Override
             public void onActionViewExpanded() {
+                Storage.ArchiveReader r = storage.fromArchive(uri);
+                if (r != null) {
+                    select.hide(R.id.action_archive);
+                    select.hide(R.id.action_cut);
+                    select.hide(R.id.action_delete);
+                }
             }
 
             @Override
@@ -1061,7 +1097,7 @@ public class FilesFragment extends Fragment {
             updatePaste();
             return true;
         }
-        if (id == R.id.action_paste) {
+        if (id == R.id.action_paste && item.isEnabled()) {
             paste();
             return true;
         }
