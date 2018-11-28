@@ -645,15 +645,11 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     public void clearCache() {
         for (Uri u : new TreeSet<>(Storage.CACHE.keySet())) {
             String p = u.getPath();
-            if (mSectionsPagerAdapter.left.getUri().getPath().startsWith(p))
+            if (Storage.relative(p, mSectionsPagerAdapter.left.getUri().getPath()) != null)
                 continue;
-            if (mSectionsPagerAdapter.right.getUri().getPath().startsWith(p))
+            if (Storage.relative(p, mSectionsPagerAdapter.right.getUri().getPath()) != null)
                 continue;
             Storage.CACHE.remove(u);
         }
-    }
-
-    public void view(Uri uri) {
-        openHex(uri);
     }
 }

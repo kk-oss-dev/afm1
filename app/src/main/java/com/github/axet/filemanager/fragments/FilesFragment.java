@@ -1019,7 +1019,7 @@ public class FilesFragment extends Fragment {
                 load(uri);
             } else {
                 MainActivity main = (MainActivity) getActivity();
-                main.view(uri);
+                main.openHex(uri);
             }
             return true;
         }

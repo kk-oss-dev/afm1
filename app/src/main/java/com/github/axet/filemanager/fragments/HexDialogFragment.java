@@ -20,18 +20,22 @@ import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.Toast;
 
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.FullscreenActivity;
+import com.github.axet.filemanager.app.Storage;
 
 public class HexDialogFragment extends DialogFragment {
     public static final String CHANGED = HexDialogFragment.class.getCanonicalName() + ".CHANGED";
 
+    Uri uri;
     ViewPager pager;
     View v;
     PagerAdapter adapter;
     AlertDialog d;
+    Storage storage;
+    Toast old;
     BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -56,7 +60,7 @@ public class HexDialogFragment extends DialogFragment {
 
         public void update(Uri uri) {
             left = HexFragment.newInstance(uri);
-            right = MediaFragment.newInstance(uri, true);
+            right = MediaFragment.newInstance(uri);
             notifyDataSetChanged();
         }
 
@@ -120,6 +124,9 @@ public class HexDialogFragment extends DialogFragment {
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
+        uri = getArguments().getParcelable("uri");
+        storage = new Storage(getContext());
+
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setPositiveButton(getContext().getString(R.string.close),
                 new DialogInterface.OnClickListener() {
@@ -131,8 +138,6 @@ public class HexDialogFragment extends DialogFragment {
         builder.setView(createView(LayoutInflater.from(getContext()), null, savedInstanceState));
 
         d = builder.create();
-
-        final Uri uri = getArguments().getParcelable("uri");
 
         d.setOnShowListener(new DialogInterface.OnShowListener() {
             @Override
@@ -169,8 +174,6 @@ public class HexDialogFragment extends DialogFragment {
     public View createView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         v = inflater.inflate(R.layout.hex_dialog, container, false);
 
-        Uri uri = getArguments().getParcelable("uri");
-
         pager = (ViewPager) v.findViewById(R.id.pager);
         adapter = new PagerAdapter(getContext(), getChildFragmentManager(), uri);
         pager.setAdapter(adapter);
@@ -191,5 +194,49 @@ public class HexDialogFragment extends DialogFragment {
     @Override
     public void onResume() {
         super.onResume();
+        updateButtons();
+    }
+
+    public void updateButtons() {
+        View left = v.findViewById(R.id.left);
+        View right = v.findViewById(R.id.right);
+        View fullscreen = v.findViewById(R.id.fullscreen);
+        left.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int i = adapter.right.nodes.find(uri);
+                i--;
+                if (i < 0)
+                    i = 0;
+                uri = adapter.right.nodes.get(i).uri;
+                adapter.update(uri);
+                if (old == null)
+                    old = Toast.makeText(getContext(), "", Toast.LENGTH_SHORT);
+                old.setText(storage.getName(uri));
+                old.show();
+            }
+        });
+        right.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int i = adapter.right.nodes.find(uri);
+                i++;
+                int last = adapter.right.nodes.size() - 1;
+                if (i >= last)
+                    i = last;
+                uri = adapter.right.nodes.get(i).uri;
+                adapter.update(uri);
+                if (old == null)
+                    old = Toast.makeText(getContext(), "", Toast.LENGTH_SHORT);
+                old.setText(storage.getName(uri));
+                old.show();
+            }
+        });
+        fullscreen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FullscreenActivity.start(getContext(), uri);
+            }
+        });
     }
 }
