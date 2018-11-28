@@ -1412,9 +1412,14 @@ public class FilesFragment extends Fragment {
                     t = null;
                     archive.dismiss();
                     closeSelection();
-                    reload();
                     Toast.makeText(getContext(), getString(R.string.toast_files_archived, storage.getName(to), files.size()), Toast.LENGTH_LONG).show();
-                    select(to);
+                    Uri p = Storage.getParent(context, to);
+                    if (!p.equals(uri)) {
+                        getContext().sendBroadcast(new Intent(MOVE_UPDATE));
+                    } else {
+                        reload();
+                        select(to);
+                    }
                 } catch (IOException | RuntimeException e) {
                     switch (check(e).iterator().next()) {
                         case SKIP:

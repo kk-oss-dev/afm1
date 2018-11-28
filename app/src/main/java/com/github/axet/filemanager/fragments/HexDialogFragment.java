@@ -25,14 +25,15 @@ public class HexDialogFragment extends DialogFragment {
     ViewPager pager;
     View v;
     Button play;
-    TorrentPagerAdapter adapter;
+    PagerAdapter adapter;
+    AlertDialog d;
 
-    public static class TorrentPagerAdapter extends FragmentPagerAdapter {
+    public static class PagerAdapter extends FragmentPagerAdapter {
         Context context;
         HexFragment left;
         MediaFragment right;
 
-        public TorrentPagerAdapter(Context context, FragmentManager fm, Uri uri) {
+        public PagerAdapter(Context context, FragmentManager fm, Uri uri) {
             super(fm);
             this.context = context;
             left = HexFragment.newInstance(uri);
@@ -106,7 +107,7 @@ public class HexDialogFragment extends DialogFragment {
         );
         builder.setView(createView(LayoutInflater.from(getContext()), null, savedInstanceState));
 
-        final AlertDialog d = builder.create();
+        d = builder.create();
 
         d.setOnShowListener(new DialogInterface.OnShowListener() {
             @Override
@@ -137,12 +138,12 @@ public class HexDialogFragment extends DialogFragment {
     }
 
     public View createView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        v = inflater.inflate(R.layout.hex_dialog, container);
+        v = inflater.inflate(R.layout.hex_dialog, container, false);
 
         Uri uri = getArguments().getParcelable("uri");
 
         pager = (ViewPager) v.findViewById(R.id.pager);
-        adapter = new TorrentPagerAdapter(getContext(), getChildFragmentManager(), uri);
+        adapter = new PagerAdapter(getContext(), getChildFragmentManager(), uri);
         pager.setAdapter(adapter);
 
         TabLayout tabLayout = (TabLayout) v.findViewById(R.id.tab_layout);
@@ -150,6 +151,12 @@ public class HexDialogFragment extends DialogFragment {
 
         pager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
         return v;
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        d.setView(view); // with out setView api10 crash due to wrapping of child view
     }
 
     @Override
