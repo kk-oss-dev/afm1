@@ -308,7 +308,7 @@ public class FilesFragment extends Fragment {
                 File k = Storage.getFile(to);
                 final File m = new File(k, f.name);
                 if (shared.getBoolean(FilesApplication.PREF_ROOT, false))
-                    os = SuperUser.open(m);
+                    os = new SuperUser.FileOutputStream(m);
                 else
                     os = new FileOutputStream(m);
                 t = Uri.fromFile(m);
@@ -801,8 +801,6 @@ public class FilesFragment extends Fragment {
             }
         });
         updateButton();
-
-        reload();
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(PASTE_UPDATE);

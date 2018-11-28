@@ -1,16 +1,17 @@
 package com.github.axet.filemanager.app;
 
+import android.content.Context;
 import android.support.annotation.NonNull;
+
+import com.github.axet.androidlibrary.app.Natives;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.text.MessageFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -208,116 +209,6 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         }
     }
 
-    public static class RandomAccessFile {
-        public int bs;
-
-        public InputStream is;
-        public OutputStream os;
-        public long size;
-        public long offset;
-
-        public RandomAccessFile(File f, int bs) {
-            this.bs = bs;
-            Commands cmd = new Commands(MessageFormat.format(STATLCS + "; while read cmd; do dd if={0} iseek=$'{'cmd%;*'}' count=$'{'cmd##*;'}' bs={1}; done", escape(f), bs)).exit(true);
-            try {
-                final Process su = Runtime.getRuntime().exec(BIN_SU);
-                su.getErrorStream().close();
-                os = su.getOutputStream();
-                writeString(cmd.build(), os);
-                is = new InputStream() {
-                    InputStream is = su.getInputStream();
-
-                    @Override
-                    public int read() throws IOException {
-                        return is.read();
-                    }
-
-                    @Override
-                    public int read(@NonNull byte[] b, int off, int len) throws IOException {
-                        return is.read(b, off, len);
-                    }
-
-                    @Override
-                    public void close() throws IOException {
-                        super.close();
-                        su.destroy();
-                    }
-                };
-                size = Long.valueOf(readLine().trim());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        public RandomAccessFile(File f) {
-            this(f, 4);
-        }
-
-        public String readLine() throws IOException {
-            ByteArrayOutputStream os = new ByteArrayOutputStream();
-            int b;
-            while ((b = is.read()) > 0) {
-                if (b == 0x0a)
-                    break;
-                os.write(b);
-            }
-            return os.toString();
-        }
-
-        public int read(byte[] buf, int off, int size) throws IOException {
-            long fs = offset / bs; // first sector
-            long ls = (offset + size) / bs; // last sector
-            int sc = (int) (ls - fs + 1); // sectors count
-            long so = fs * bs; // first sector offset in bytes
-            int skip = (int) (offset - so); // bytes to skip from first reading sector
-            int length = sc * bs; // to read from pipe
-            long eof = so + length;
-            if (eof > this.size)
-                length = (int) (this.size - so); // do not cross end of file
-            writeString(fs + ";" + sc + EOL, os);
-            long len;
-            while (skip > 0) {
-                len = is.skip(skip);
-                if (len <= 0)
-                    throw new RuntimeException("unable to skip");
-                skip -= len;
-                length -= len;
-            }
-            int read = 0;
-            while ((len = is.read(buf, off, size)) > 0) {
-                off += len;
-                offset += len;
-                size -= len;
-                length -= len;
-                read += len;
-            }
-            while (length > 0) {
-                len = is.skip(length);
-                if (len <= 0)
-                    throw new RuntimeException("unable to skip");
-                length -= len;
-            }
-            return read;
-        }
-
-        public long getSize() {
-            return size;
-        }
-
-        public void seek(long l) {
-            offset = l;
-        }
-
-        public long getPosition() {
-            return offset;
-        }
-
-        public void close() throws IOException {
-            is.close();
-            os.close();
-        }
-    }
-
     public static ArrayList<File> ls(String opt, File f) {
         ArrayList<File> ff = new ArrayList<>();
         Result r = su(new Commands(MessageFormat.format(opt, escape(f))).stdout(true).exit(true)).must();
@@ -392,12 +283,51 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         return a;
     }
 
-    public static long lastModified(File f) {
-        Result r = su(new Commands(MessageFormat.format("stat -Lc%y {0}", escape(f))).stdout(true).exit(true)).must();
-        try {
-            return TOUCHDATE.parse(r.stdout.trim()).getTime();
-        } catch (ParseException e) {
-            return 0;
+    public static class RandomAccessFile extends com.github.axet.androidlibrary.app.SuperUser.RandomAccessFile {
+        public RandomAccessFile(Context context, File f) {
+            String bin = Natives.search(context, "libraf.so");
+            Commands cmd = new Commands(bin + " " + escape(f)).exit(true);
+            try {
+                final Process su = Runtime.getRuntime().exec(BIN_SU);
+                su.getErrorStream().close();
+                os = new BufferedOutputStream(su.getOutputStream());
+                writeString(cmd.build(), os);
+                is = new BufferedInputStream(new InputStream() {
+                    InputStream is = su.getInputStream();
+
+                    @Override
+                    public int read() throws IOException {
+                        return is.read();
+                    }
+
+                    @Override
+                    public int read(@NonNull byte[] b, int off, int len) throws IOException {
+                        return is.read(b, off, len);
+                    }
+
+                    @Override
+                    public void close() throws IOException {
+                        super.close();
+                        su.destroy();
+                    }
+                });
+                size = Long.valueOf(readLine().trim());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public int read(byte[] buf, int off, int size) throws IOException {
+            writeString(offset + " " + size + EOL, os);
+            long len;
+            int read = 0;
+            while ((len = is.read(buf, off, size)) > 0) {
+                off += len;
+                offset += len;
+                size -= len;
+                read += len;
+            }
+            return read;
         }
     }
 }

@@ -27,11 +27,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     public static final String CONTENTTYPE_ZIP = "application/zip";
+
+    public static HashMap<Uri, ArchiveCache> CACHE = new HashMap<>();
 
     public static Uri getParent(Context context, Uri uri) {
         String p = uri.getQueryParameter("p");
@@ -87,6 +90,13 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     public static class ZipNode extends Node {
         public ZipFile zip;
         public FileHeader h;
+
+        public String getFileName() {
+            String s = h.getFileName();
+            if (s.startsWith(OpenFileDialog.ROOT))
+                s = s.substring(1);
+            return s;
+        }
     }
 
     public class ArchiveCache {
@@ -157,7 +167,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
         public Node find() {
             for (Node n : all) {
-                if (((ZipNode) n).h.getFileName().equals(path))
+                if (((ZipNode) n).getFileName().equals(path))
                     return n;
             }
             return null;
@@ -179,7 +189,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 if (s.equals(ContentResolver.SCHEME_FILE)) {
                     if (getRoot()) {
                         File f = Storage.getFile(uri);
-                        zip = new ZipFile(new ZipSu(f));
+                        zip = new ZipFile(new ZipSu(context, f));
                     } else {
                         File f = Storage.getFile(uri);
                         zip = new ZipFile(new NativeStorage(f));
@@ -194,21 +204,22 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 for (Object o : list) {
                     final FileHeader h = (FileHeader) o;
                     ZipNode n = new ZipNode();
+                    n.h = h;
                     if (s.equals(ContentResolver.SCHEME_FILE)) {
-                        n.uri = uri.buildUpon().appendPath(h.getFileName()).build();
+                        n.uri = uri.buildUpon().appendPath(n.getFileName()).build();
                     } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
-                        n.uri = uri.buildUpon().appendQueryParameter("p", h.getFileName()).build();
+                        n.uri = uri.buildUpon().appendQueryParameter("p", n.getFileName()).build();
                     } else {
                         throw new UnknownUri();
                     }
-                    n.name = new File(h.getFileName()).getName();
+                    n.name = new File(n.getFileName()).getName();
                     n.size = h.getUncompressedSize();
                     n.last = h.getLastModFileTime();
                     n.dir = h.isDirectory();
                     n.zip = zip;
-                    n.h = h;
                     aa.add(n);
                 }
+                CACHE.put(uri, this);
                 all = aa;
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -227,9 +238,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         }
 
         public boolean list(Node n) {
-            String p = ((ZipNode) n).h.getFileName();
-            if (p.startsWith(OpenFileDialog.ROOT))
-                p = p.substring(1);
+            String p = ((ZipNode) n).getFileName();
             String r = relative(path, p);
             if (r != null && !r.isEmpty() && FilesFragment.splitPath(r).length == 1)
                 return true;
@@ -311,6 +320,9 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     }
 
     public ArchiveReader cache(ArchiveReader r) {
+        ArchiveCache c = CACHE.get(r.uri);
+        if (c != null)
+            return new ArchiveReader(c, r);
         return r;
     }
 
@@ -339,7 +351,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             File k = getFile(uri);
             File m = new File(k, name);
             if (getRoot()) {
-                return SuperUser.open(m);
+                return new SuperUser.FileOutputStream(m);
             } else {
                 return new FileOutputStream(m);
             }

@@ -1,5 +1,7 @@
 package com.github.axet.filemanager.app;
 
+import android.content.Context;
+
 import net.lingala.zip4j.core.NativeFile;
 import net.lingala.zip4j.core.NativeStorage;
 
@@ -9,15 +11,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class ZipSu extends NativeStorage {
+    Context context;
     ZipSu parent;
 
     public static class SuFile extends NativeFile {
         File f;
         SuperUser.RandomAccessFile r;
 
-        public SuFile(File f) throws FileNotFoundException {
+        public SuFile(Context context, File f) throws FileNotFoundException {
             this.f = f;
-            r = new SuperUser.RandomAccessFile(f);
+            r = new SuperUser.RandomAccessFile(context, f);
         }
 
         @Override
@@ -71,13 +74,15 @@ public class ZipSu extends NativeStorage {
         }
     }
 
-    public ZipSu(File f) {
+    public ZipSu(Context context, File f) {
         super(f);
+        this.context = context;
     }
 
     public ZipSu(ZipSu parent, File f) {
         super(f);
         this.parent = parent;
+        this.context = parent.context;
     }
 
     public ZipSu(ZipSu v) {
@@ -87,12 +92,12 @@ public class ZipSu extends NativeStorage {
 
     @Override
     public SuFile read() throws FileNotFoundException {
-        return new SuFile(f);
+        return new SuFile(context, f);
     }
 
     @Override
     public SuFile write() throws FileNotFoundException {
-        return new SuFile(f);
+        throw new FileNotFoundException("not supported");
     }
 
     @Override
