@@ -2,7 +2,7 @@
 
 Android friendly!
 
-File Manager support ROOT browsing, SAF and direct sdcard operations.
+File Manager with two panels, smart copy/move dialogs, easy open/share files, multiple files sources including: root, SAF and direct files access.
 
 # Manual install
 
