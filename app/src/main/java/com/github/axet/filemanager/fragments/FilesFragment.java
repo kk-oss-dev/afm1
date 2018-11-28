@@ -132,6 +132,18 @@ public class FilesFragment extends Fragment {
             }
             return false;
         }
+
+        @Override
+        public boolean remove(Object o) {
+            for (int i = 0; i < size(); i++) {
+                Storage.Node n = get(i);
+                if (n.uri.equals(((Storage.Node) o).uri)) {
+                    remove(i);
+                    return true;
+                }
+            }
+            return false;
+        }
     };
     HashMap<Uri, Pos> offsets = new HashMap<>();
     BroadcastReceiver receiver = new BroadcastReceiver() {

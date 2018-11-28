@@ -12,6 +12,7 @@ import android.support.v7.preference.PreferenceManager;
 
 import com.github.axet.androidlibrary.app.FileTypeDetector;
 import com.github.axet.androidlibrary.app.ZipSAF;
+import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.filemanager.fragments.FilesFragment;
 
 import net.lingala.zip4j.core.NativeStorage;
@@ -93,6 +94,29 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         public ArrayList<Node> all;
     }
 
+    public static class ZipInputStreamSafe extends InputStream {
+        ZipInputStream is;
+
+        public ZipInputStreamSafe(ZipInputStream is) {
+            this.is = is;
+        }
+
+        @Override
+        public int read() throws IOException {
+            return is.read();
+        }
+
+        @Override
+        public int read(@NonNull byte[] b, int off, int len) throws IOException {
+            return is.read(b, off, len);
+        }
+
+        @Override
+        public void close() throws IOException {
+            is.close(true);
+        }
+    }
+
     public class ArchiveReader extends ArchiveCache {
         public String path; // inner path
 
@@ -125,24 +149,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             if (n == null)
                 return null;
             try {
-                return new InputStream() {
-                    ZipInputStream is = ((ZipNode) n).zip.getInputStream(((ZipNode) n).h);
-
-                    @Override
-                    public int read() throws IOException {
-                        return is.read();
-                    }
-
-                    @Override
-                    public int read(@NonNull byte[] b, int off, int len) throws IOException {
-                        return is.read(b, off, len);
-                    }
-
-                    @Override
-                    public void close() throws IOException {
-                        is.close(true);
-                    }
-                };
+                return new ZipInputStreamSafe(((ZipNode) n).zip.getInputStream(((ZipNode) n).h));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -170,8 +177,13 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 ZipFile zip;
                 String s = uri.getScheme();
                 if (s.equals(ContentResolver.SCHEME_FILE)) {
-                    File f = Storage.getFile(uri);
-                    zip = new ZipFile(new NativeStorage(f));
+                    if (getRoot()) {
+                        File f = Storage.getFile(uri);
+                        zip = new ZipFile(new ZipSu(f));
+                    } else {
+                        File f = Storage.getFile(uri);
+                        zip = new ZipFile(new NativeStorage(f));
+                    }
                 } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
                     zip = new ZipFile(new ZipSAF(context, Storage.getDocumentTreeUri(uri), uri));
                 } else {
@@ -216,6 +228,8 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
         public boolean list(Node n) {
             String p = ((ZipNode) n).h.getFileName();
+            if (p.startsWith(OpenFileDialog.ROOT))
+                p = p.substring(1);
             String r = relative(path, p);
             if (r != null && !r.isEmpty() && FilesFragment.splitPath(r).length == 1)
                 return true;
@@ -250,7 +264,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 if (p == null || SuperUser.isDirectory(p))
                     return null;
                 try {
-                    InputStream is = SuperUser.cat(k);
+                    InputStream is = SuperUser.cat(p);
                     int len = is.read(buf);
                     if (len > 0) {
                         rar.write(buf, 0, len);
