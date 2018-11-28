@@ -76,6 +76,40 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         return ss[ss.length - 1];
     }
 
+    public static class Nodes extends ArrayList<Node> {
+        public Nodes() {
+        }
+
+        public Nodes(ArrayList<Node> nn) {
+            super(nn);
+        }
+
+        public boolean contains(Uri o) {
+            for (Node n : this) {
+                if (n.uri.equals(o))
+                    return true;
+            }
+            return false;
+        }
+
+        public int find(Uri u) {
+            for (int i = 0; i < size(); i++) {
+                Node n = get(i);
+                if (n.uri.equals(u))
+                    return i;
+            }
+            return -1;
+        }
+
+        public boolean remove(Uri o) {
+            for (Node n : this) {
+                if (n.uri.equals(o))
+                    return true;
+            }
+            return false;
+        }
+    }
+
     public static class SymlinkNode extends Node {
         File symlink;
         Boolean symdir = null;

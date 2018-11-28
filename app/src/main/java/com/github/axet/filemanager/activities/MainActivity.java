@@ -652,4 +652,8 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             Storage.CACHE.remove(u);
         }
     }
+
+    public void view(Uri uri) {
+        openHex(uri);
+    }
 }

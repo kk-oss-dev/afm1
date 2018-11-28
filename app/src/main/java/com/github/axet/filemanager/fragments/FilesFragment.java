@@ -126,29 +126,7 @@ public class FilesFragment extends Fragment {
     MenuItem pasteMenu;
     MenuItem pasteCancel;
     SelectView select;
-    ArrayList<Storage.Node> selected = new ArrayList<Storage.Node>() { // we have to keep Storage.Node and not Uri to know node type (file or dir) before operation begins
-        @Override
-        public boolean contains(Object o) { // in case if adapter.files got reloaded
-            for (int i = 0; i < size(); i++) {
-                Storage.Node n = get(i);
-                if (n.uri.equals(((Storage.Node) o).uri))
-                    return true;
-            }
-            return false;
-        }
-
-        @Override
-        public boolean remove(Object o) {
-            for (int i = 0; i < size(); i++) {
-                Storage.Node n = get(i);
-                if (n.uri.equals(((Storage.Node) o).uri)) {
-                    remove(i);
-                    return true;
-                }
-            }
-            return false;
-        }
-    };
+    Storage.Nodes selected = new Storage.Nodes();
     HashMap<Uri, Pos> offsets = new HashMap<>();
     BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -644,8 +622,8 @@ public class FilesFragment extends Fragment {
                 @Override
                 public void onClick(View v) {
                     if (MenuItemCompat.isActionViewExpanded(toolbar)) {
-                        if (selected.contains(f))
-                            selected.remove(f);
+                        if (selected.contains(f.uri))
+                            selected.remove(f.uri);
                         else
                             selected.add(f);
                         updateSelection();
@@ -704,8 +682,8 @@ public class FilesFragment extends Fragment {
             h.circleFrame.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (selected.contains(f))
-                        selected.remove(f);
+                    if (selected.contains(f.uri))
+                        selected.remove(f.uri);
                     else
                         selected.add(f);
                     openSelection();
@@ -714,7 +692,7 @@ public class FilesFragment extends Fragment {
             ViewCompat.setAlpha(h.selected, 1f);
             if (toolbar != null && MenuItemCompat.isActionViewExpanded(toolbar)) {
                 h.circle.setVisibility(View.INVISIBLE);
-                if (selected.contains(f)) {
+                if (selected.contains(f.uri)) {
                     h.unselected.setVisibility(View.INVISIBLE);
                     h.selected.setVisibility(View.VISIBLE);
                 } else {
@@ -1041,7 +1019,7 @@ public class FilesFragment extends Fragment {
                 load(uri);
             } else {
                 MainActivity main = (MainActivity) getActivity();
-                main.openHex(uri);
+                main.view(uri);
             }
             return true;
         }

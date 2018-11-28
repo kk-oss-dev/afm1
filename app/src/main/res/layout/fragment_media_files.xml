@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/toolbar_files"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#33333333"
+    android:padding="5dp">
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:alpha="0.5"
+        android:background="@drawable/roundlabel"
+        android:gravity="center"
+        android:paddingLeft="7dp"
+        android:paddingRight="7dp"
+        android:text="Title Text"
+        android:textColor="#fff" />
+
+    <ImageView
+        android:id="@+id/left"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_below="@id/title"
+        android:layout_alignParentLeft="true"
+        android:alpha="0.5"
+        android:src="@drawable/ic_chevron_left_black_24dp"
+        android:tint="#fff" />
+
+    <ImageView
+        android:id="@+id/fullscreen"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_below="@id/title"
+        android:layout_centerInParent="true"
+        android:alpha="0.5"
+        android:src="@drawable/ic_fullscreen_black_24dp"
+        android:tint="#fff" />
+
+    <ImageView
+        android:id="@+id/right"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_below="@id/title"
+        android:layout_alignParentRight="true"
+        android:alpha="0.5"
+        android:src="@drawable/ic_chevron_right_black_24dp"
+        android:tint="#fff" />
+
+    <TextView
+        android:id="@+id/count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/fullscreen"
+        android:layout_centerHorizontal="true"
+        android:alpha="0.5"
+        android:background="@drawable/roundlabel"
+        android:paddingLeft="7dp"
+        android:paddingRight="7dp"
+        android:text="1/33"
+        android:textColor="#fff" />
+</RelativeLayout>

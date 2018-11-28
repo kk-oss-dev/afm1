@@ -50,5 +50,11 @@
             android:name=".activities.SettingsActivity"
             android:label="@string/title_activity_settings"
             android:theme="@style/AppThemeLight.NoActionBar" />
+
+        <activity
+            android:name=".activities.FullscreenActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:theme="@style/AppThemeLight.NoActionBar" />
     </application>
+
 </manifest>

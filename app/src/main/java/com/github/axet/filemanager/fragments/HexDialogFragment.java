@@ -2,8 +2,11 @@ package com.github.axet.filemanager.fragments;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -11,7 +14,7 @@ import android.support.design.widget.TabLayout;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
@@ -20,15 +23,27 @@ import android.view.ViewGroup;
 import android.widget.Button;
 
 import com.github.axet.filemanager.R;
+import com.github.axet.filemanager.activities.FullscreenActivity;
 
 public class HexDialogFragment extends DialogFragment {
+    public static final String CHANGED = HexDialogFragment.class.getCanonicalName() + ".CHANGED";
+
     ViewPager pager;
     View v;
-    Button play;
     PagerAdapter adapter;
     AlertDialog d;
+    BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String a = intent.getAction();
+            if (a.equals(CHANGED)) {
+                Uri uri = intent.getParcelableExtra("uri");
+                adapter.update(uri);
+            }
+        }
+    };
 
-    public static class PagerAdapter extends FragmentPagerAdapter {
+    public static class PagerAdapter extends FragmentStatePagerAdapter {
         Context context;
         HexFragment left;
         MediaFragment right;
@@ -36,14 +51,17 @@ public class HexDialogFragment extends DialogFragment {
         public PagerAdapter(Context context, FragmentManager fm, Uri uri) {
             super(fm);
             this.context = context;
+            update(uri);
+        }
+
+        public void update(Uri uri) {
             left = HexFragment.newInstance(uri);
-            right = MediaFragment.newInstance(uri);
+            right = MediaFragment.newInstance(uri, true);
+            notifyDataSetChanged();
         }
 
         @Override
         public Fragment getItem(int i) {
-            Fragment f;
-
             switch (i) {
                 case 0:
                     return left;
@@ -52,6 +70,11 @@ public class HexDialogFragment extends DialogFragment {
                 default:
                     return null;
             }
+        }
+
+        @Override
+        public int getItemPosition(Object object) {
+            return POSITION_NONE;
         }
 
         @Override
@@ -109,20 +132,26 @@ public class HexDialogFragment extends DialogFragment {
 
         d = builder.create();
 
+        final Uri uri = getArguments().getParcelable("uri");
+
         d.setOnShowListener(new DialogInterface.OnShowListener() {
             @Override
             public void onShow(DialogInterface dialog) {
                 if (adapter.right.supported)
                     pager.setCurrentItem(1, false);
-                play = d.getButton(DialogInterface.BUTTON_NEUTRAL);
-                play.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                    }
-                });
             }
         });
+
+        IntentFilter ff = new IntentFilter(CHANGED);
+        getContext().registerReceiver(receiver, ff);
+
         return d;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        getContext().unregisterReceiver(receiver);
     }
 
     @Nullable
