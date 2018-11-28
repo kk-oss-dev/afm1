@@ -5,8 +5,23 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
+import android.os.ParcelFileDescriptor;
+import android.provider.DocumentsContract;
+import android.support.annotation.NonNull;
 import android.support.v4.provider.DocumentFile;
 import android.support.v7.preference.PreferenceManager;
+
+import com.github.axet.androidlibrary.app.FileTypeDetector;
+import com.github.axet.androidlibrary.app.RarSAF;
+import com.github.axet.androidlibrary.app.ZipSAF;
+import com.github.axet.androidlibrary.services.StorageProvider;
+import com.github.axet.androidlibrary.widgets.OpenFileDialog;
+
+import net.lingala.zip4j.core.NativeStorage;
+import net.lingala.zip4j.core.ZipFile;
+import net.lingala.zip4j.exception.ZipException;
+import net.lingala.zip4j.io.ZipInputStream;
+import net.lingala.zip4j.model.FileHeader;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,8 +30,51 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import de.innosystec.unrar.Archive;
+import de.innosystec.unrar.exception.RarException;
 
 public class Storage extends com.github.axet.androidlibrary.app.Storage {
+
+    public static final String CONTENTTYPE_ZIP = "application/zip";
+
+    public static final String WROOT = "\\";
+
+    public static HashMap<Uri, ArchiveCache> CACHE = new HashMap<>();
+
+    public static Uri getParent(Context context, Uri uri) {
+        String p = uri.getQueryParameter("p");
+        if (p != null) {
+            p = new File(p).getParent();
+            Uri.Builder b = uri.buildUpon();
+            b.query("");
+            if (p != null)
+                b.appendQueryParameter("p", p);
+            return b.build();
+        }
+        return com.github.axet.androidlibrary.app.Storage.getParent(context, uri);
+    }
+
+    public static String getName(Context context, Uri uri) {
+        String p = uri.getQueryParameter("p");
+        if (p != null)
+            return new File(p).getName();
+        return com.github.axet.androidlibrary.app.Storage.getName(context, uri);
+    }
+
+    public static String relative(String base, String file) {
+        String r = com.github.axet.androidlibrary.app.Storage.relative(base, file, '/');
+        if (r != null)
+            return r;
+        return com.github.axet.androidlibrary.app.Storage.relative(base, file, '\\');
+    }
+
+    public static String getLast(String name) {
+        String[] ss = splitPath(name);
+        return ss[ss.length - 1];
+    }
 
     public static class SymlinkNode extends Node {
         File symlink;
@@ -49,6 +107,310 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         }
     }
 
+    public static class ArchiveNode extends Node {
+        public String getPath() {
+            return null;
+        }
+
+        public InputStream open() {
+            return null;
+        }
+    }
+
+    public static class ZipNode extends ArchiveNode {
+        public ZipFile zip;
+        public FileHeader h;
+
+        @Override
+        public String getPath() {
+            String s = h.getFileName();
+            if (s.startsWith(OpenFileDialog.ROOT))
+                s = s.substring(1);
+            if (s.startsWith(WROOT))
+                s = s.substring(1);
+            if (s.endsWith(OpenFileDialog.ROOT))
+                s = s.substring(0, s.length() - 1);
+            if (s.endsWith(WROOT))
+                s = s.substring(0, s.length() - 1);
+            return s;
+        }
+
+        @Override
+        public InputStream open() {
+            try {
+                return new ZipInputStreamSafe(zip.getInputStream(h));
+            } catch (ZipException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public static class RarNode extends ArchiveNode {
+        public Archive rar;
+        public de.innosystec.unrar.rarfile.FileHeader h;
+
+        @Override
+        public String getPath() {
+            String s = h.getFileNameW();
+            if (s == null || s.isEmpty())
+                s = h.getFileNameString();
+            if (s.startsWith(OpenFileDialog.ROOT))
+                s = s.substring(1);
+            if (s.startsWith(WROOT))
+                s = s.substring(1);
+            if (s.endsWith(OpenFileDialog.ROOT))
+                s = s.substring(0, s.length() - 1);
+            if (s.endsWith(WROOT))
+                s = s.substring(0, s.length() - 1);
+            return s;
+        }
+
+        @Override
+        public InputStream open() {
+            try {
+                return new ParcelFileDescriptor.AutoCloseInputStream(new StorageProvider.ParcelInputStream() {
+                    @Override
+                    public void copy(OutputStream os) throws IOException {
+                        try {
+                            rar.extractFile(h, os);
+                        } catch (RarException e) {
+                            throw new IOException(e);
+                        }
+                    }
+
+                    @Override
+                    public long getStatSize() {
+                        return h.getFullUnpackSize();
+                    }
+
+                    @Override
+                    public void close() throws IOException {
+                        super.close();
+                    }
+                });
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public class ArchiveCache {
+        public Uri uri; // archive uri
+        public ArrayList<ArchiveNode> all;
+    }
+
+    public static class ZipInputStreamSafe extends InputStream {
+        ZipInputStream is;
+
+        public ZipInputStreamSafe(ZipInputStream is) {
+            this.is = is;
+        }
+
+        @Override
+        public int read() throws IOException {
+            return is.read();
+        }
+
+        @Override
+        public int read(@NonNull byte[] b, int off, int len) throws IOException {
+            return is.read(b, off, len);
+        }
+
+        @Override
+        public void close() throws IOException {
+            is.close(true);
+        }
+    }
+
+    public class ArchiveReader extends ArchiveCache {
+        public String path; // inner path
+
+        public ArchiveReader(Uri u, String p) {
+            uri = u;
+            if (p == null)
+                p = "";
+            path = p;
+        }
+
+        public ArchiveReader(ArchiveCache c, ArchiveReader r) {
+            uri = c.uri;
+            all = c.all;
+            path = r.path;
+        }
+
+        public boolean isDirectory() {
+            if (all == null)
+                read();
+            ArchiveNode n = find();
+            if (n != null)
+                return n.dir;
+            return true;
+        }
+
+        public InputStream open() {
+            if (all == null)
+                read();
+            final ArchiveNode n = find();
+            if (n == null)
+                return null;
+            return n.open();
+        }
+
+        public ArchiveNode find() {
+            for (ArchiveNode n : all) {
+                if (n.getPath().equals(path))
+                    return n;
+            }
+            return null;
+        }
+
+        public long length() {
+            if (all == null)
+                read();
+            ArchiveNode n = find();
+            if (n == null)
+                return -1;
+            return n.size;
+        }
+
+        public void read() {
+        }
+
+        public ArrayList<Node> list() {
+            if (all == null)
+                read();
+            ArrayList<Node> nn = new ArrayList<>();
+            for (ArchiveNode n : all) {
+                String p = n.getPath();
+                String r = relative(path, p);
+                if (r != null && !r.isEmpty() && splitPath(r).length == 1)
+                    nn.add(n);
+            }
+            return nn;
+        }
+
+        public ArrayList<Node> walk(Uri root) {
+            if (all == null)
+                read();
+            ArchiveReader a = fromArchive(root);
+            ArrayList<Node> nn = new ArrayList<>();
+            for (ArchiveNode n : all) {
+                String p = n.getPath();
+                String r = relative(path, p);
+                if (r != null && splitPath(r).length == 1) {
+                    Node k = new Node();
+                    k.size = n.size;
+                    k.name = relative(a.path, p);
+                    k.dir = n.dir;
+                    k.last = n.last;
+                    k.uri = n.uri;
+                    nn.add(k);
+                }
+            }
+            return nn;
+        }
+    }
+
+    public class ZipReader extends ArchiveReader {
+        public ZipReader(Uri u, String p) {
+            super(u, p);
+        }
+
+        public void read() {
+            try {
+                ZipFile zip;
+                String s = uri.getScheme();
+                if (s.equals(ContentResolver.SCHEME_FILE)) {
+                    if (getRoot()) {
+                        File f = Storage.getFile(uri);
+                        zip = new ZipFile(new ZipSu(context, f));
+                    } else {
+                        File f = Storage.getFile(uri);
+                        zip = new ZipFile(new NativeStorage(f));
+                    }
+                } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+                    zip = new ZipFile(new ZipSAF(context, Storage.getDocumentTreeUri(uri), uri));
+                } else {
+                    throw new UnknownUri();
+                }
+                ArrayList<ArchiveNode> aa = new ArrayList<>();
+                List list = zip.getFileHeaders();
+                for (Object o : list) {
+                    final FileHeader h = (FileHeader) o;
+                    ZipNode n = new ZipNode();
+                    n.h = h;
+                    if (s.equals(ContentResolver.SCHEME_FILE)) {
+                        n.uri = uri.buildUpon().appendPath(n.getPath()).build();
+                    } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+                        n.uri = uri.buildUpon().appendQueryParameter("p", n.getPath()).build();
+                    } else {
+                        throw new UnknownUri();
+                    }
+                    n.name = getLast(n.getPath());
+                    n.size = h.getUncompressedSize();
+                    n.last = h.getLastModFileTime();
+                    n.dir = h.isDirectory();
+                    n.zip = zip;
+                    aa.add(n);
+                }
+                CACHE.put(uri, this);
+                all = aa;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public class RarReader extends ArchiveReader {
+        public RarReader(Uri u, String p) {
+            super(u, p);
+        }
+
+        public void read() {
+            try {
+                Archive rar;
+                String s = uri.getScheme();
+                if (s.equals(ContentResolver.SCHEME_FILE)) {
+                    if (getRoot()) {
+                        File f = Storage.getFile(uri);
+                        rar = new Archive(new RarSu(context, f));
+                    } else {
+                        File f = Storage.getFile(uri);
+                        rar = new Archive(new de.innosystec.unrar.NativeStorage(f));
+                    }
+                } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+                    rar = new Archive(new RarSAF(context, Storage.getDocumentTreeUri(uri), uri));
+                } else {
+                    throw new UnknownUri();
+                }
+                ArrayList<ArchiveNode> aa = new ArrayList<>();
+                List list = rar.getFileHeaders();
+                for (Object o : list) {
+                    final de.innosystec.unrar.rarfile.FileHeader h = (de.innosystec.unrar.rarfile.FileHeader) o;
+                    RarNode n = new RarNode();
+                    n.h = h;
+                    if (s.equals(ContentResolver.SCHEME_FILE)) {
+                        n.uri = uri.buildUpon().appendPath(n.getPath()).build();
+                    } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+                        n.uri = uri.buildUpon().appendQueryParameter("p", n.getPath()).build();
+                    } else {
+                        throw new UnknownUri();
+                    }
+                    n.name = getLast(n.getPath());
+                    n.size = h.getFullUnpackSize();
+                    n.last = h.getMTime().getTime();
+                    n.dir = h.isDirectory();
+                    n.rar = rar;
+                    aa.add(n);
+                }
+                CACHE.put(uri, this);
+                all = aa;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     public Storage(Context context) {
         super(context);
     }
@@ -58,7 +420,83 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         return shared.getBoolean(FilesApplication.PREF_ROOT, false);
     }
 
+    public ArchiveReader fromArchive(Uri uri) {
+        String s = uri.getScheme();
+        if (s.equals(ContentResolver.SCHEME_FILE)) {
+            File k = getFile(uri);
+            byte[] buf = new byte[1024];
+            FileTypeDetector.FileRar rar = new FileTypeDetector.FileRar();
+            FileTypeDetector.FileZip zip = new FileTypeDetector.FileZip();
+            if (getRoot()) {
+                File p = k;
+                while (p != null && !p.exists())
+                    p = p.getParentFile();
+                if (p == null || SuperUser.isDirectory(p))
+                    return null;
+                try {
+                    InputStream is = SuperUser.cat(p);
+                    int len = is.read(buf);
+                    if (len > 0) {
+                        rar.write(buf, 0, len);
+                        zip.write(buf, 0, len);
+                    }
+                    is.close();
+                    if (rar.done && rar.detected)
+                        return cache(new RarReader(Uri.fromFile(p), relative(p.getPath(), k.getPath())));
+                    if (zip.done && zip.detected)
+                        return cache(new ZipReader(Uri.fromFile(p), relative(p.getPath(), k.getPath())));
+                } catch (IOException e) {
+                    return null;
+                }
+            } else {
+                File p = k;
+                while (p != null && !p.exists())
+                    p = p.getParentFile();
+                if (p == null || p.isDirectory())
+                    return null;
+                try {
+                    FileInputStream is = new FileInputStream(p);
+                    int len = is.read(buf);
+                    if (len > 0) {
+                        rar.write(buf, 0, len);
+                        zip.write(buf, 0, len);
+                    }
+                    is.close();
+                    if (rar.done && rar.detected)
+                        return cache(new RarReader(Uri.fromFile(p), relative(p.getPath(), k.getPath())));
+                    if (zip.done && zip.detected)
+                        return cache(new ZipReader(Uri.fromFile(p), relative(p.getPath(), k.getPath())));
+                } catch (IOException e) {
+                    return null;
+                }
+            }
+        } else if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
+            if (!DocumentsContract.isDocumentUri(context, uri))
+                return null;
+            Uri u = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getDocumentId(uri));
+            DocumentFile f = DocumentFile.fromSingleUri(context, u);
+            if (f.isDirectory())
+                return null;
+            String t = f.getType();
+            if (t.equals(CONTENTTYPE_RAR))
+                return cache(new RarReader(u, uri.getQueryParameter("p")));
+            if (t.equals(CONTENTTYPE_ZIP))
+                return cache(new ZipReader(u, uri.getQueryParameter("p")));
+        }
+        return null;
+    }
+
+    public ArchiveReader cache(ArchiveReader r) {
+        ArchiveCache c = CACHE.get(r.uri);
+        if (c != null)
+            return new ArchiveReader(c, r);
+        return r;
+    }
+
     public InputStream open(Uri uri) throws IOException {
+        ArchiveReader r = fromArchive(uri);
+        if (r != null && !r.path.isEmpty())
+            return r.open();
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             File k = getFile(uri);
@@ -80,7 +518,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             File k = getFile(uri);
             File m = new File(k, name);
             if (getRoot()) {
-                return SuperUser.open(m);
+                return new SuperUser.FileOutputStream(m);
             } else {
                 return new FileOutputStream(m);
             }
@@ -181,6 +619,9 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     @Override
     public long getLength(Uri uri) {
+        ArchiveReader r = fromArchive(uri);
+        if (r != null)
+            return r.length();
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             return SuperUser.length(Storage.getFile(uri));
         }
@@ -189,6 +630,9 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     @Override
     public ArrayList<Node> list(Uri uri) {
+        ArchiveReader r = fromArchive(uri);
+        if (r != null)
+            return r.list();
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             ArrayList<Node> files = new ArrayList<>();
             ArrayList<File> ff = SuperUser.ls(SuperUser.LSA, Storage.getFile(uri));
@@ -205,6 +649,9 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     @Override
     public ArrayList<Node> walk(Uri root, Uri uri) {
+        ArchiveReader a = fromArchive(uri);
+        if (a != null)
+            return a.walk(root);
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             int r = Storage.getFile(root).getPath().length();
             ArrayList<Node> files = new ArrayList<>();
@@ -233,5 +680,14 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         } else {
             throw new UnknownUri();
         }
+    }
+
+    @Override
+    public String getDisplayName(Uri uri) {
+        String d = super.getDisplayName(uri);
+        String p = uri.getQueryParameter("p");
+        if (p != null)
+            d += "/" + p;
+        return d;
     }
 }

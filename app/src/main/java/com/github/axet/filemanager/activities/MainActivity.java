@@ -63,6 +63,7 @@ import net.i2p.android.ext.floatingactionbutton.FloatingActionButton;
 import net.i2p.android.ext.floatingactionbutton.FloatingActionsMenu;
 
 import java.io.File;
+import java.util.TreeSet;
 
 public class MainActivity extends AppCompatThemeActivity implements NavigationView.OnNavigationItemSelectedListener {
     public static final int RESULT_ADDBOOKMARK = 1;
@@ -638,5 +639,17 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         mSectionsPagerAdapter.notifyDataSetChanged();
         mSectionsPagerAdapter.update();
         onPageChangeListener.onPageScrollStateChanged(ViewPager.SCROLL_STATE_IDLE);
+        clearCache();
+    }
+
+    public void clearCache() {
+        for (Uri u : new TreeSet<>(Storage.CACHE.keySet())) {
+            String p = u.getPath();
+            if (mSectionsPagerAdapter.left.getUri().getPath().startsWith(p))
+                continue;
+            if (mSectionsPagerAdapter.right.getUri().getPath().startsWith(p))
+                continue;
+            Storage.CACHE.remove(u);
+        }
     }
 }

@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.Window;
 
 import com.github.axet.filemanager.R;
+import com.github.axet.filemanager.fragments.FilesFragment;
 
 public class SelectView extends LinearLayoutCompat implements CollapsibleActionView {
     public MenuBuilder menu;
@@ -49,12 +50,14 @@ public class SelectView extends LinearLayoutCompat implements CollapsibleActionV
         menu = new MenuBuilder(getContext());
 
         final Activity a = from(getContext());
-        a.getMenuInflater().inflate(R.menu.menu_select_toolbar, menu);
+        a.getMenuInflater().inflate(R.menu.menu_select, menu);
 
+        FilesFragment.hideMenu(menu, R.id.action_rename);
 
         for (int i = 0; i < menu.size(); i++) {
             final MenuItem item = menu.getItem(i);
             AppCompatImageButton image = new AppCompatImageButton(getContext(), null, R.attr.toolbarNavigationButtonStyle);
+            image.setId(item.getItemId());
             image.setImageDrawable(item.getIcon());
             image.setColorFilter(Color.WHITE);
             LayoutParams lp = generateDefaultLayoutParams();
@@ -66,6 +69,7 @@ public class SelectView extends LinearLayoutCompat implements CollapsibleActionV
                     a.onMenuItemSelected(Window.FEATURE_OPTIONS_PANEL, item);
                 }
             });
+            image.setVisibility(item.isVisible() ? VISIBLE : GONE);
             addView(image);
         }
     }
@@ -80,5 +84,10 @@ public class SelectView extends LinearLayoutCompat implements CollapsibleActionV
     public void onActionViewCollapsed() {
         if (listener != null)
             listener.onActionViewCollapsed();
+    }
+
+    public void hide(int id) {
+        View v = findViewById(id);
+        v.setVisibility(GONE);
     }
 }

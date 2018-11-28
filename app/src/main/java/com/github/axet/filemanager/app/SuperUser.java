@@ -1,8 +1,17 @@
 package com.github.axet.filemanager.app;
 
+import android.content.Context;
+import android.support.annotation.NonNull;
+
+import com.github.axet.androidlibrary.app.Natives;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.MessageFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -272,5 +281,61 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             a.add(new File(s.nextLine()));
         s.close();
         return a;
+    }
+
+    public static class RandomAccessFile extends com.github.axet.androidlibrary.app.SuperUser.RandomAccessFile {
+        public RandomAccessFile(Context context, File f) {
+            String bin = Natives.search(context, "libraf.so");
+            Commands cmd = new Commands(bin + " " + escape(f)).exit(true);
+            try {
+                final Process su = Runtime.getRuntime().exec(BIN_SU);
+                su.getErrorStream().close();
+                os = new BufferedOutputStream(su.getOutputStream());
+                writeString(cmd.build(), os);
+                is = new BufferedInputStream(new InputStream() {
+                    InputStream is = su.getInputStream();
+
+                    @Override
+                    public int read() throws IOException {
+                        return is.read();
+                    }
+
+                    @Override
+                    public int read(@NonNull byte[] b, int off, int len) throws IOException {
+                        return is.read(b, off, len);
+                    }
+
+                    @Override
+                    public void close() throws IOException {
+                        super.close();
+                        su.destroy();
+                    }
+                });
+                size = Long.valueOf(readLine().trim());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public int read() throws IOException {
+            int size = 1;
+            writeString(offset + " " + size + EOL, os);
+            int b = is.read();
+            offset += 1;
+            return b;
+        }
+
+        public int read(byte[] buf, int off, int size) throws IOException {
+            writeString(offset + " " + size + EOL, os);
+            long len;
+            int read = 0;
+            while ((len = is.read(buf, off, size)) > 0) {
+                off += len;
+                offset += len;
+                size -= len;
+                read += len;
+            }
+            return read;
+        }
     }
 }

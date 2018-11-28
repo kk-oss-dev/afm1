@@ -9,7 +9,6 @@ import android.preference.PreferenceManager;
 
 import com.github.axet.androidlibrary.app.MainApplication;
 import com.github.axet.androidlibrary.app.Storage;
-import com.github.axet.filemanager.R;
 
 import java.io.File;
 import java.util.ArrayList;
