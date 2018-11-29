@@ -36,12 +36,6 @@
         android:paddingEnd="12dp"
         android:paddingBottom="4dp">
 
-        <Button
-            android:id="@android:id/button3"
-            style="?attr/buttonBarNeutralButtonStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-
         <ImageView
             android:id="@+id/left"
             style="?attr/buttonBarButtonStyle"
@@ -74,6 +68,12 @@
             android:scaleType="fitCenter"
             android:src="@drawable/ic_chevron_right_black_24dp"
             android:tint="?attr/colorAccent" />
+
+        <Button
+            android:id="@android:id/button3"
+            style="?attr/buttonBarNeutralButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
 
         <View
             android:id="@+id/spacer"
