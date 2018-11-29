@@ -407,6 +407,11 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         searchView.setOnCloseButtonListener(new SearchView.OnCloseButtonListener() {
             @Override
             public void onClosed() {
+                if (MainActivity.this.search != null) {
+                    if (MainActivity.this.search.isActive()) {
+                        MainActivity.this.search.stop();
+                    }
+                }
                 oldSearch = "";
             }
         });
