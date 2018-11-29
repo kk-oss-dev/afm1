@@ -158,7 +158,7 @@ public class FullscreenActivity extends AppCompatThemeActivity {
         @Override
         public Fragment getItem(int i) {
             int k = getIndex(i);
-            return MediaFragment.newInstance(nodes.get(k).uri, false);
+            return MediaFragment.newInstance(nodes.get(k).uri);
         }
 
         @Override

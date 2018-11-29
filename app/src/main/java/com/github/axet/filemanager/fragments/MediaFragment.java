@@ -1,6 +1,5 @@
 package com.github.axet.filemanager.fragments;
 
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
@@ -17,7 +16,6 @@ import android.widget.TextView;
 
 import com.github.axet.androidlibrary.app.FileTypeDetector;
 import com.github.axet.filemanager.R;
-import com.github.axet.filemanager.activities.FullscreenActivity;
 import com.github.axet.filemanager.app.Storage;
 import com.github.axet.filemanager.widgets.HorizontalScrollView;
 import com.github.axet.filemanager.widgets.TextViewStream;
@@ -39,17 +37,14 @@ public class MediaFragment extends Fragment {
     boolean supported;
 
     View image;
-    View left;
-    View right;
 
     public MediaFragment() {
     }
 
-    public static MediaFragment newInstance(Uri uri, boolean b) {
+    public static MediaFragment newInstance(Uri uri) {
         MediaFragment fragment = new MediaFragment();
         Bundle args = new Bundle();
         args.putParcelable("uri", uri);
-        args.putBoolean("buttons", b);
         fragment.setArguments(args);
         return fragment;
     }
@@ -66,6 +61,12 @@ public class MediaFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+        storage = new Storage(getContext());
+        uri = getArguments().getParcelable("uri");
+        final Uri p = Storage.getParent(getContext(), uri);
+        ArrayList<Storage.Node> nn = storage.list(p);
+        nodes = new Storage.Nodes(nn);
+        Collections.sort(nodes, new FilesFragment.SortByName());
     }
 
     @Override
@@ -79,12 +80,6 @@ public class MediaFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        storage = new Storage(getContext());
-        uri = getArguments().getParcelable("uri");
-        final Uri p = Storage.getParent(getContext(), uri);
-        ArrayList<Storage.Node> nn = storage.list(p);
-        nodes = new Storage.Nodes(nn);
-        Collections.sort(nodes, new FilesFragment.SortByName());
         try {
             if (storage.getLength(uri) == 0)
                 return error(getContext().getString(R.string.empty_list));
@@ -160,51 +155,5 @@ public class MediaFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        updateButtons();
-    }
-
-    void updateButtons() {
-        View v = getView();
-        View t = v.findViewById(R.id.toolbar_files);
-        if (getArguments().getBoolean("buttons", false))
-            t.setVisibility(View.VISIBLE);
-        else
-            t.setVisibility(View.GONE);
-        left = v.findViewById(R.id.left);
-        right = v.findViewById(R.id.right);
-        View fullscreen = v.findViewById(R.id.fullscreen);
-        TextView title = (TextView) v.findViewById(R.id.title);
-        TextView count = (TextView) v.findViewById(R.id.count);
-        left.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                int i = nodes.find(uri);
-                i--;
-                if (i < 0)
-                    i = 0;
-                Uri u = nodes.get(i).uri;
-                getContext().sendBroadcast(new Intent(HexDialogFragment.CHANGED).putExtra("uri", u));
-            }
-        });
-        right.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                int i = nodes.find(uri);
-                i++;
-                int last = nodes.size() - 1;
-                if (i >= last)
-                    i = last;
-                Uri u = nodes.get(i).uri;
-                getContext().sendBroadcast(new Intent(HexDialogFragment.CHANGED).putExtra("uri", u));
-            }
-        });
-        fullscreen.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FullscreenActivity.start(getContext(), uri);
-            }
-        });
-        title.setText(storage.getName(uri));
-        count.setText((nodes.find(uri) + 1) + "/" + nodes.size());
     }
 }

@@ -141,6 +141,8 @@ public class FilesFragment extends Fragment {
         }
     };
 
+    public Uri old;
+
     public static String toMessage(Throwable e) {
         String msg = e.getMessage();
         if (msg == null || msg.isEmpty()) {
@@ -268,21 +270,25 @@ public class FilesFragment extends Fragment {
             calcUri = root;
         }
 
+        public void walk(Uri uri) {
+            ArrayList<Storage.Node> nn = storage.walk(calcUri, uri);
+            for (Storage.Node n : nn) {
+                if (n.dir) {
+                    if (n.uri.equals(uri)) // walk return current dirs, do not follow it
+                        files.add(n);
+                    else
+                        calcs.add(n);
+                } else {
+                    files.add(n);
+                    total += n.size;
+                }
+            }
+        }
+
         public boolean calc() {
             Storage.Node c = calcs.get(calcIndex);
             if (c.dir) {
-                ArrayList<Storage.Node> nn = storage.walk(calcUri, c.uri);
-                for (Storage.Node n : nn) {
-                    if (n.dir) {
-                        if (n.uri.equals(c.uri)) // walk return current dirs, do not follow it
-                            files.add(n);
-                        else
-                            calcs.add(n);
-                    } else {
-                        files.add(n);
-                        total += n.size;
-                    }
-                }
+                walk(c.uri);
             } else {
                 files.add(c);
                 total += c.size;
@@ -634,6 +640,7 @@ public class FilesFragment extends Fragment {
                     } else {
                         PopupMenu menu = new PopupMenu(getContext(), v);
                         menu.inflate(R.menu.menu_file);
+                        hideMenu(menu.getMenu(), R.id.action_folder);
                         menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                             @Override
                             public boolean onMenuItemClick(MenuItem item) {
@@ -761,6 +768,10 @@ public class FilesFragment extends Fragment {
         storage = new Storage(getContext());
         adapter = new Adapter();
         specials = new Specials(getContext());
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(PASTE_UPDATE);
+        filter.addAction(MOVE_UPDATE);
+        getContext().registerReceiver(receiver, filter);
     }
 
     @Override
@@ -799,12 +810,6 @@ public class FilesFragment extends Fragment {
             }
         });
         updateButton();
-
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(PASTE_UPDATE);
-        filter.addAction(MOVE_UPDATE);
-        getContext().registerReceiver(receiver, filter);
-
         return rootView;
     }
 
@@ -895,6 +900,7 @@ public class FilesFragment extends Fragment {
         if (uri == null) {
             getArguments().putParcelable("uri", u);
         } else {
+            old = uri;
             offsets.put(uri, findFirstVisibleItem());
             uri = u;
             updateButton();
@@ -1019,7 +1025,7 @@ public class FilesFragment extends Fragment {
                 load(uri);
             } else {
                 MainActivity main = (MainActivity) getActivity();
-                main.view(uri);
+                main.openHex(uri, true);
             }
             return true;
         }

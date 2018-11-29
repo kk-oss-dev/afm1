@@ -50,6 +50,7 @@ import com.github.axet.androidlibrary.widgets.AppCompatThemeActivity;
 import com.github.axet.androidlibrary.widgets.OpenChoicer;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.PathMax;
+import com.github.axet.androidlibrary.widgets.SearchView;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.app.FilesApplication;
@@ -57,6 +58,7 @@ import com.github.axet.filemanager.app.Storage;
 import com.github.axet.filemanager.app.SuperUser;
 import com.github.axet.filemanager.fragments.FilesFragment;
 import com.github.axet.filemanager.fragments.HexDialogFragment;
+import com.github.axet.filemanager.fragments.SearchFragment;
 import com.github.axet.filemanager.services.StorageProvider;
 
 import net.i2p.android.ext.floatingactionbutton.FloatingActionButton;
@@ -70,8 +72,11 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
 
     public static final String ADD_BOOKMARK = "ADDBOOKMARK";
 
+    public static final Uri EXIT = Uri.parse("");
+
     public SectionsPagerAdapter mSectionsPagerAdapter;
     public ViewPager mViewPager;
+    SearchFragment search;
     Storage storage;
     TabLayout tabLayout;
     NavigationView navigationView;
@@ -79,6 +84,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     FilesApplication app;
     Menu bookmarksMenu;
     ViewPager.OnPageChangeListener onPageChangeListener;
+    String oldSearch;
 
     public static void start(Context context) {
         Intent intent = new Intent(context, MainActivity.class);
@@ -109,7 +115,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             this.text.setId(android.R.id.text1);
         }
 
-        void updateLayout(TabLayout.Tab tab) {
+        void attachLayout(TabLayout.Tab tab) {
             tab.setCustomView(this);
             ViewParent p = getParent();
             if (p instanceof LinearLayout) { // TabView extends LinearLayout
@@ -121,9 +127,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
 
     public class SectionsPagerAdapter extends FragmentPagerAdapter {
         FilesFragment left;
-        FilesTabView leftTab;
         FilesFragment right;
-        FilesTabView rightTab;
 
         public SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
@@ -169,11 +173,15 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
 
         public void update() {
             TabLayout.Tab left = tabLayout.getTabAt(0);
-            leftTab = new FilesTabView(MainActivity.this, tabLayout);
-            leftTab.updateLayout(left);
+            FilesTabView leftTab = new FilesTabView(MainActivity.this, tabLayout);
+            leftTab.attachLayout(left);
             TabLayout.Tab right = tabLayout.getTabAt(1);
-            rightTab = new FilesTabView(MainActivity.this, tabLayout);
-            rightTab.updateLayout(right);
+            FilesTabView rightTab = new FilesTabView(MainActivity.this, tabLayout);
+            rightTab.attachLayout(right);
+        }
+
+        public FilesTabView getTabView(int i) {
+            return (FilesTabView) tabLayout.getTabAt(i).getCustomView();
         }
     }
 
@@ -224,15 +232,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         String s = edit.getText();
-                        FilesFragment f = null;
-                        switch (mViewPager.getCurrentItem()) {
-                            case 0:
-                                f = mSectionsPagerAdapter.left;
-                                break;
-                            case 1:
-                                f = mSectionsPagerAdapter.right;
-                                break;
-                        }
+                        FilesFragment f = getActiveFragment();
                         try {
                             if (storage.mkdir(f.getUri(), s) == null)
                                 throw new RuntimeException("unable to create " + s);
@@ -258,15 +258,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         String s = edit.getText();
-                        FilesFragment f = null;
-                        switch (mViewPager.getCurrentItem()) {
-                            case 0:
-                                f = mSectionsPagerAdapter.left;
-                                break;
-                            case 1:
-                                f = mSectionsPagerAdapter.right;
-                                break;
-                        }
+                        FilesFragment f = getActiveFragment();
                         try {
                             Storage storage = new Storage(MainActivity.this);
                             if (!storage.touch(f.getUri(), s))
@@ -309,11 +301,11 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                 if (state == ViewPager.SCROLL_STATE_IDLE) {
                     final FilesTabView collapse, expand;
                     if (mViewPager.getCurrentItem() == 1) {
-                        collapse = mSectionsPagerAdapter.leftTab;
-                        expand = mSectionsPagerAdapter.rightTab;
+                        collapse = mSectionsPagerAdapter.getTabView(0);
+                        expand = mSectionsPagerAdapter.getTabView(1);
                     } else {
-                        collapse = mSectionsPagerAdapter.rightTab;
-                        expand = mSectionsPagerAdapter.leftTab;
+                        collapse = mSectionsPagerAdapter.getTabView(1);
+                        expand = mSectionsPagerAdapter.getTabView(0);
                     }
                     Animation a = new Animation() {
                         float w = collapse.lp.weight;
@@ -388,18 +380,54 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     }
 
     public void open(Uri u) {
-        FilesFragment f = (FilesFragment) mSectionsPagerAdapter.getItem(mViewPager.getCurrentItem());
+        FilesFragment f = getActiveFragment();
         f.load(u);
+        searchClose();
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        MenuItem search = menu.findItem(R.id.action_search);
+        final SearchView searchView = (SearchView) MenuItemCompat.getActionView(search);
+        searchView.setOnQueryTextListener(new android.support.v7.widget.SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                oldSearch = query;
+                searchView.clearFocus();
+                searchOpen(query);
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
+        });
+        searchView.setOnCloseButtonListener(new SearchView.OnCloseButtonListener() {
+            @Override
+            public void onClosed() {
+                oldSearch = "";
+            }
+        });
+        searchView.setOnCollapsedListener(new SearchView.OnCollapsedListener() {
+            @Override
+            public void onCollapsed() {
+                searchClose();
+            }
+        });
+        searchView.setOnSearchClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (oldSearch != null && !oldSearch.isEmpty())
+                    searchView.setQuery(oldSearch, false);
+            }
+        });
         return true;
     }
 
-    public void openHex(Uri uri) {
-        HexDialogFragment d = HexDialogFragment.create(uri);
+    public void openHex(Uri uri, boolean panel) {
+        HexDialogFragment d = HexDialogFragment.create(uri, panel);
         d.show(getSupportFragmentManager(), "");
     }
 
@@ -452,15 +480,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                 }
             };
             choicer.setPermissionsDialog(this, Storage.PERMISSIONS_RW, RESULT_ADDBOOKMARK);
-            Uri old = null;
-            switch (mViewPager.getCurrentItem()) {
-                case 0:
-                    old = mSectionsPagerAdapter.left.getUri();
-                    break;
-                case 1:
-                    old = mSectionsPagerAdapter.right.getUri();
-                    break;
-            }
+            Uri old = getActiveFragment().getUri();
             if (!old.getScheme().equals(ContentResolver.SCHEME_FILE))
                 old = null;
             choicer.show(old);
@@ -645,15 +665,57 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     public void clearCache() {
         for (Uri u : new TreeSet<>(Storage.CACHE.keySet())) {
             String p = u.getPath();
-            if (mSectionsPagerAdapter.left.getUri().getPath().startsWith(p))
+            if (Storage.relative(p, mSectionsPagerAdapter.left.getUri().getPath()) != null)
                 continue;
-            if (mSectionsPagerAdapter.right.getUri().getPath().startsWith(p))
+            if (Storage.relative(p, mSectionsPagerAdapter.right.getUri().getPath()) != null)
                 continue;
             Storage.CACHE.remove(u);
         }
     }
 
-    public void view(Uri uri) {
-        openHex(uri);
+    FilesFragment getActiveFragment() {
+        return (FilesFragment) mSectionsPagerAdapter.getItem(mViewPager.getCurrentItem());
+    }
+
+    @Override
+    public void onBackPressed() {
+        FilesFragment f = getActiveFragment();
+        if (f.old == null) {
+            f.old = EXIT;
+            Toast.makeText(this, R.string.back_exit, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (f.old != EXIT) {
+            f.load(f.old);
+            f.old = null;
+            return;
+        }
+        super.onBackPressed();
+    }
+
+    @Override
+    public void supportInvalidateOptionsMenu() {
+        if (search != null)
+            return;
+        super.supportInvalidateOptionsMenu();
+    }
+
+    public void searchOpen(String q) {
+        FilesFragment f = getActiveFragment();
+        search = SearchFragment.newInstance(f.getUri(), q);
+        View v = findViewById(R.id.searchContainer);
+        v.setVisibility(View.VISIBLE);
+        getSupportFragmentManager().beginTransaction().replace(R.id.searchContainer, search).commit();
+        mViewPager.setVisibility(View.GONE);
+    }
+
+    public void searchClose() {
+        if (search == null)
+            return;
+        View v = findViewById(R.id.searchContainer);
+        v.setVisibility(View.GONE);
+        getSupportFragmentManager().beginTransaction().remove(search).commit();
+        search = null;
+        mViewPager.setVisibility(View.VISIBLE);
     }
 }
