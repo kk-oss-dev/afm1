@@ -184,4 +184,12 @@ public class SearchFragment extends FilesFragment {
         }
         return super.onOptionsItemSelected(item);
     }
+
+    public boolean isActive() {
+        return search.calcIndex < search.calcs.size();
+    }
+
+    public void stop() {
+        handler.removeCallbacks(calc);
+    }
 }
