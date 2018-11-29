@@ -274,7 +274,9 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                 }
             }
             scanner.close();
-        } catch (IOException e) {
+            su.waitFor();
+            new Result(cmd, su).must();
+        } catch (InterruptedException | IOException e) {
             throw new RuntimeException(e);
         } finally {
             if (su != null)
