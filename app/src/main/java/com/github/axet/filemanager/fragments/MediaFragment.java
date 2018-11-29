@@ -35,7 +35,6 @@ public class MediaFragment extends Fragment {
 
     Uri uri;
     Storage storage;
-    Storage.Nodes nodes;
 
     HorizontalScrollView scroll;
     TextViewStream text;
@@ -67,11 +66,7 @@ public class MediaFragment extends Fragment {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         storage = new Storage(getContext());
-        uri = getArguments().getParcelable("uri");
-        final Uri p = Storage.getParent(getContext(), uri);
-        ArrayList<Storage.Node> nn = storage.list(p);
-        nodes = new Storage.Nodes(nn);
-        Collections.sort(nodes, new FilesFragment.SortByName());
+        uri = getUri();
     }
 
     @Override
@@ -81,6 +76,12 @@ public class MediaFragment extends Fragment {
             text.close();
             text = null;
         }
+    }
+
+    public Uri getUri() {
+        if (uri == null)
+            return getArguments().getParcelable("uri");
+        return uri;
     }
 
     @Override
@@ -116,6 +117,8 @@ public class MediaFragment extends Fragment {
             is = storage.open(uri);
             byte[] buf = new byte[1024];
             int len = is.read(buf);
+            if (len == -1)
+                throw new IOException("unable to read");
             FileTypeDetector.FileTxt f = new FileTypeDetector.FileTxt();
             FileTypeDetector.FileHTML h = new FileTypeDetector.FileHTML();
             FileTypeDetector.Detector[] dd = new FileTypeDetector.Detector[]{f, h};

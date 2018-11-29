@@ -9,9 +9,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.view.WindowCallbackWrapper;
 import android.support.v7.widget.Toolbar;
@@ -125,7 +124,7 @@ public class FullscreenActivity extends AppCompatThemeActivity {
         context.startActivity(intent);
     }
 
-    public class PagerAdapter extends FragmentStatePagerAdapter {
+    public class PagerAdapter extends FragmentPagerAdapter {
         int index;
 
         public PagerAdapter(FragmentManager fm, Uri uri) {
@@ -158,12 +157,24 @@ public class FullscreenActivity extends AppCompatThemeActivity {
         @Override
         public Fragment getItem(int i) {
             int k = getIndex(i);
-            return MediaFragment.newInstance(nodes.get(k).uri);
+            Uri uri = nodes.get(k).uri;
+            return MediaFragment.newInstance(uri);
         }
 
         @Override
         public int getItemPosition(Object object) {
+            MediaFragment f = (MediaFragment) object;
+            for (int i = 0; i < getCount(); i++) {
+                int k = getIndex(i);
+                if (nodes.get(k).uri.equals(f.getUri()))
+                    return i;
+            }
             return POSITION_NONE;
+        }
+
+        @Override
+        public long getItemId(int i) {
+            return getIndex(i);
         }
 
         @Override
@@ -222,12 +233,19 @@ public class FullscreenActivity extends AppCompatThemeActivity {
         storage = new Storage(this);
         final Uri p = Storage.getParent(this, uri);
         ArrayList<Storage.Node> nn = storage.list(p);
-        nodes = new Storage.Nodes(nn);
+        nodes = new Storage.Nodes(nn, false);
         Collections.sort(nodes, new FilesFragment.SortByName());
 
         pager = (ViewPager) findViewById(R.id.pager);
         adapter = new PagerAdapter(getSupportFragmentManager(), uri);
         pager.setAdapter(adapter);
+
+        pager.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                update();
+            }
+        });
 
         pager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override

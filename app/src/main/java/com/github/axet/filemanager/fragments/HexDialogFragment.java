@@ -26,6 +26,9 @@ import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.FullscreenActivity;
 import com.github.axet.filemanager.app.Storage;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
 public class HexDialogFragment extends DialogFragment {
     public static final String CHANGED = HexDialogFragment.class.getCanonicalName() + ".CHANGED";
 
@@ -35,15 +38,14 @@ public class HexDialogFragment extends DialogFragment {
     PagerAdapter adapter;
     AlertDialog d;
     Storage storage;
+    Storage.Nodes nodes;
     Toast old;
     BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String a = intent.getAction();
-            if (a.equals(CHANGED)) {
+            if (a.equals(CHANGED))
                 uri = intent.getParcelableExtra("uri");
-                adapter.update(uri);
-            }
         }
     };
 
@@ -51,6 +53,7 @@ public class HexDialogFragment extends DialogFragment {
         Context context;
         HexFragment left;
         MediaFragment right;
+        Uri uri;
 
         public PagerAdapter(Context context, FragmentManager fm, Uri uri) {
             super(fm);
@@ -59,6 +62,9 @@ public class HexDialogFragment extends DialogFragment {
         }
 
         public void update(Uri uri) {
+            if (this.uri != null && this.uri.equals(uri))
+                return;
+            this.uri = uri;
             left = HexFragment.newInstance(uri);
             right = MediaFragment.newInstance(uri);
             notifyDataSetChanged();
@@ -128,6 +134,10 @@ public class HexDialogFragment extends DialogFragment {
         super.onCreate(savedInstanceState);
         uri = getArguments().getParcelable("uri");
         storage = new Storage(getContext());
+        final Uri p = Storage.getParent(getContext(), uri);
+        ArrayList<Storage.Node> nn = storage.list(p);
+        nodes = new Storage.Nodes(nn, false);
+        Collections.sort(nodes, new FilesFragment.SortByName());
     }
 
     @Override
@@ -200,6 +210,16 @@ public class HexDialogFragment extends DialogFragment {
     public void onResume() {
         super.onResume();
         updateButtons();
+        load(uri);
+    }
+
+    public void load(Uri uri) {
+        this.uri = uri;
+        adapter.update(uri);
+        if (old != null)
+            old.cancel();
+        old = Toast.makeText(getContext(), storage.getName(uri), Toast.LENGTH_SHORT);
+        old.show();
     }
 
     public void updateButtons() {
@@ -209,32 +229,20 @@ public class HexDialogFragment extends DialogFragment {
         left.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                int i = adapter.right.nodes.find(uri);
-                i--;
+                int i = nodes.find(uri) - 1;
                 if (i < 0)
                     i = 0;
-                uri = adapter.right.nodes.get(i).uri;
-                adapter.update(uri);
-                if (old == null)
-                    old = Toast.makeText(getContext(), "", Toast.LENGTH_SHORT);
-                old.setText(storage.getName(uri));
-                old.show();
+                load(nodes.get(i).uri);
             }
         });
         right.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                int i = adapter.right.nodes.find(uri);
-                i++;
-                int last = adapter.right.nodes.size() - 1;
+                int i = nodes.find(uri) + 1;
+                int last = nodes.size() - 1;
                 if (i >= last)
                     i = last;
-                uri = adapter.right.nodes.get(i).uri;
-                adapter.update(uri);
-                if (old == null)
-                    old = Toast.makeText(getContext(), "", Toast.LENGTH_SHORT);
-                old.setText(storage.getName(uri));
-                old.show();
+                load(nodes.get(i).uri);
             }
         });
         fullscreen.setOnClickListener(new View.OnClickListener() {

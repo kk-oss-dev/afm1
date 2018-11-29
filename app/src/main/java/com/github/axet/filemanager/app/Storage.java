@@ -84,6 +84,14 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             super(nn);
         }
 
+        public Nodes(ArrayList<Node> nn, boolean dir) {
+            for (Node n : nn) {
+                if (n.dir == dir) {
+                    add(n);
+                }
+            }
+        }
+
         public boolean contains(Uri o) {
             for (Node n : this) {
                 if (n.uri.equals(o))
