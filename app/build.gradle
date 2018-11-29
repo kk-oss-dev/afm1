@@ -6,8 +6,8 @@ android {
         applicationId "com.github.axet.filemanager"
         minSdkVersion 9
         targetSdkVersion 26
-        versionCode 46
-        versionName "0.2.4"
+        versionCode 47
+        versionName "0.2.5"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
