@@ -2,6 +2,7 @@ package com.github.axet.filemanager.app;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.util.Log;
 
 import com.github.axet.androidlibrary.app.Natives;
 
@@ -12,6 +13,7 @@ import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.MessageFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -211,58 +213,87 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
 
     public static ArrayList<File> ls(String opt, File f) {
         ArrayList<File> ff = new ArrayList<>();
-        Result r = su(new Commands(MessageFormat.format(opt, escape(f))).stdout(true).exit(true)).must();
-        Scanner scanner = new Scanner(r.stdout);
-        Pattern p = Pattern.compile("^([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+\\s+[^\\s]+)\\s(.*?)$");
-        while (scanner.hasNextLine()) {
-            String line = scanner.nextLine();
-            Matcher m = p.matcher(line);
-            if (m.matches()) {
-                String perms = m.group(1);
-                long size = 0;
-                try {
-                    size = Long.valueOf(m.group(5));
-                } catch (NumberFormatException e) {
-                }
-                long last = 0;
-                try {
-                    last = LSDATE.parse(m.group(6)).getTime();
-                } catch (ParseException e) {
-                }
-                String name = m.group(7);
-                if (perms.startsWith("d")) {
-                    File k = new File(name);
-                    if (!k.equals(DOTDOT)) {
-                        if (k.equals(DOT))
-                            k = f;
-                        else
-                            k = new File(f, name);
-                        ff.add(new Directory(k, last));
+        Commands cmd = new Commands(MessageFormat.format(opt, escape(f))).stdout(true).exit(true);
+        OutputStream os = null;
+        InputStream is = null;
+        Process su = null;
+        try {
+            su = Runtime.getRuntime().exec(BIN_SU);
+            os = new BufferedOutputStream(su.getOutputStream());
+            writeString(cmd.build(), os);
+            writeString(BIN_EXIT + EOL, os);
+            is = new BufferedInputStream(su.getInputStream());
+            Scanner scanner = new Scanner(is);
+            Pattern p = Pattern.compile("^([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+)\\s+([^\\s]+\\s+[^\\s]+)\\s(.*?)$");
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                Matcher m = p.matcher(line);
+                if (m.matches()) {
+                    String perms = m.group(1);
+                    long size = 0;
+                    try {
+                        size = Long.valueOf(m.group(5));
+                    } catch (NumberFormatException e) {
                     }
-                } else if (perms.startsWith("l")) {
-                    String[] ss = name.split("->", 2);
-                    name = ss[0].trim();
-                    File k = new File(name);
-                    if (!k.equals(DOTDOT)) {
-                        if (k.equals(DOT))
-                            k = f;
-                        else
-                            k = new File(f, name);
-                        ff.add(new SymLink(k, size, new File(ss[1].trim())));
+                    long last = 0;
+                    try {
+                        last = LSDATE.parse(m.group(6)).getTime();
+                    } catch (ParseException e) {
                     }
-                } else {
-                    File k = new File(name);
-                    if (!k.equals(DOTDOT)) {
-                        if (k.equals(DOT))
-                            k = f;
-                        if (!f.equals(k)) // ls file return full path, ls dir return relative path
-                            k = new File(f, name);
-                        ff.add(new NativeFile(k, size, last));
+                    String name = m.group(7);
+                    if (perms.startsWith("d")) {
+                        File k = new File(name);
+                        if (!k.equals(DOTDOT)) {
+                            if (k.equals(DOT))
+                                k = f;
+                            else
+                                k = new File(f, name);
+                            ff.add(new Directory(k, last));
+                        }
+                    } else if (perms.startsWith("l")) {
+                        String[] ss = name.split("->", 2);
+                        name = ss[0].trim();
+                        File k = new File(name);
+                        if (!k.equals(DOTDOT)) {
+                            if (k.equals(DOT))
+                                k = f;
+                            else
+                                k = new File(f, name);
+                            ff.add(new SymLink(k, size, new File(ss[1].trim())));
+                        }
+                    } else {
+                        File k = new File(name);
+                        if (!k.equals(DOTDOT)) {
+                            if (k.equals(DOT))
+                                k = f;
+                            if (!f.equals(k)) // ls file return full path, ls dir return relative path
+                                k = new File(f, name);
+                            ff.add(new NativeFile(k, size, last));
+                        }
                     }
                 }
             }
+            scanner.close();
+            su.waitFor();
+            new Result(cmd, su).must();
+        } catch (InterruptedException | IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (su != null)
+                su.destroy();
+            try {
+                if (is != null)
+                    is.close();
+            } catch (IOException e) {
+                Log.d(TAG, "close exception", e);
+            }
+            try {
+                if (os != null)
+                    os.close();
+            } catch (IOException e) {
+                Log.d(TAG, "close exception", e);
+            }
         }
-        scanner.close();
         return ff;
     }
 
