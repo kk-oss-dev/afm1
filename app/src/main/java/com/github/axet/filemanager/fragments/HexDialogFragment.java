@@ -41,7 +41,7 @@ public class HexDialogFragment extends DialogFragment {
         public void onReceive(Context context, Intent intent) {
             String a = intent.getAction();
             if (a.equals(CHANGED)) {
-                Uri uri = intent.getParcelableExtra("uri");
+                uri = intent.getParcelableExtra("uri");
                 adapter.update(uri);
             }
         }
@@ -99,10 +99,11 @@ public class HexDialogFragment extends DialogFragment {
         }
     }
 
-    public static HexDialogFragment create(Uri t) {
+    public static HexDialogFragment create(Uri t, boolean panel) {
         HexDialogFragment f = new HexDialogFragment();
         Bundle args = new Bundle();
         args.putParcelable("uri", t);
+        args.putBoolean("panel", panel);
         f.setArguments(args);
         return f;
     }
@@ -123,10 +124,14 @@ public class HexDialogFragment extends DialogFragment {
     }
 
     @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         uri = getArguments().getParcelable("uri");
         storage = new Storage(getContext());
+    }
 
+    @Override
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setPositiveButton(getContext().getString(R.string.close),
                 new DialogInterface.OnClickListener() {
@@ -238,5 +243,11 @@ public class HexDialogFragment extends DialogFragment {
                 FullscreenActivity.start(getContext(), uri);
             }
         });
+
+        if (!getArguments().getBoolean("panel", false)) {
+            left.setVisibility(View.GONE);
+            right.setVisibility(View.GONE);
+            fullscreen.setVisibility(View.GONE);
+        }
     }
 }

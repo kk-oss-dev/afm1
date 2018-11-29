@@ -61,6 +61,12 @@ public class MediaFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+        storage = new Storage(getContext());
+        uri = getArguments().getParcelable("uri");
+        final Uri p = Storage.getParent(getContext(), uri);
+        ArrayList<Storage.Node> nn = storage.list(p);
+        nodes = new Storage.Nodes(nn);
+        Collections.sort(nodes, new FilesFragment.SortByName());
     }
 
     @Override
@@ -74,12 +80,6 @@ public class MediaFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        storage = new Storage(getContext());
-        uri = getArguments().getParcelable("uri");
-        final Uri p = Storage.getParent(getContext(), uri);
-        ArrayList<Storage.Node> nn = storage.list(p);
-        nodes = new Storage.Nodes(nn);
-        Collections.sort(nodes, new FilesFragment.SortByName());
         try {
             if (storage.getLength(uri) == 0)
                 return error(getContext().getString(R.string.empty_list));
