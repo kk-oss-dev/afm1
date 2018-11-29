@@ -15,15 +15,20 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.github.axet.androidlibrary.app.FileTypeDetector;
+import com.github.axet.androidlibrary.widgets.WebViewCustom;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.app.Storage;
 import com.github.axet.filemanager.widgets.HorizontalScrollView;
 import com.github.axet.filemanager.widgets.TextViewStream;
 
+import org.apache.commons.io.IOUtils;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+
+import cz.msebera.android.httpclient.entity.ContentType;
 
 public class MediaFragment extends Fragment {
     public static final String TAG = MediaFragment.class.getSimpleName();
@@ -91,10 +96,10 @@ public class MediaFragment extends Fragment {
             is = storage.open(uri);
             Bitmap bm = BitmapFactory.decodeStream(is);
             if (bm != null) {
+                supported = true;
                 image = inflater.inflate(R.layout.fragment_media_image, container, false);
                 ImageView i = (ImageView) image.findViewById(R.id.image);
                 i.setImageBitmap(bm);
-                supported = true;
                 return image;
             }
         } catch (IOException e) {
@@ -112,10 +117,31 @@ public class MediaFragment extends Fragment {
             byte[] buf = new byte[1024];
             int len = is.read(buf);
             FileTypeDetector.FileTxt f = new FileTypeDetector.FileTxt();
-            f.write(buf, 0, len);
+            FileTypeDetector.FileHTML h = new FileTypeDetector.FileHTML();
+            FileTypeDetector.Detector[] dd = new FileTypeDetector.Detector[]{f, h};
+            FileTypeDetector.FileTypeDetectorXml xml = new FileTypeDetector.FileTypeDetectorXml(dd);
+            FileTypeDetector bin = new FileTypeDetector(dd);
+            bin.write(buf, 0, len);
+            bin.close();
+            xml.write(buf, 0, len);
+            xml.close();
             if (len < buf.length && !f.done)
                 f.detected = true;
+            if (h.detected) {
+                supported = true;
+                WebViewCustom web = new WebViewCustom(getContext());
+                web.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                ContentType content;
+                if (h.content != null)
+                    content = ContentType.parse(h.content);
+                else
+                    content = ContentType.DEFAULT_TEXT;
+                String html = IOUtils.toString(storage.open(uri), content.getCharset());
+                web.loadHtmlWithBaseURL(null, html, null);
+                return web;
+            }
             if (f.detected) {
+                supported = true;
                 View v = inflater.inflate(R.layout.fragment_media_text, container, false);
                 View wrap = v.findViewById(R.id.wrap);
                 View mono = v.findViewById(R.id.mono);
@@ -135,7 +161,6 @@ public class MediaFragment extends Fragment {
                 scroll = (HorizontalScrollView) v.findViewById(R.id.scroll);
                 text = (TextViewStream) v.findViewById(R.id.list);
                 text.setText(storage.open(uri));
-                supported = true;
                 return v;
             }
         } catch (IOException e) {

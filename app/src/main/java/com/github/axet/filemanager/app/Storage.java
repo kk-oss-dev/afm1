@@ -655,7 +655,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     @Override
     public long getLength(Uri uri) {
         ArchiveReader r = fromArchive(uri);
-        if (r != null)
+        if (r != null && !r.path.isEmpty())
             return r.length();
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             return SuperUser.length(Storage.getFile(uri));
