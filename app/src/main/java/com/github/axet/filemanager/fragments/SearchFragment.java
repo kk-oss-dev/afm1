@@ -8,6 +8,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -32,20 +33,26 @@ public class SearchFragment extends FilesFragment {
 
         @Override
         public void run() {
-            if (search.calc()) {
-                handler.post(this);
-                if (old == null)
-                    old = Snackbar.make(getActivity().findViewById(android.R.id.content), "", Snackbar.LENGTH_LONG);
-                old.setText(storage.getDisplayName(search.files.get(search.files.size() - 1).uri));
-                old.show();
-                while (search.filesIndex < search.files.size()) {
-                    Storage.Node n = search.files.get(search.filesIndex);
-                    Matcher m = pattern.matcher(n.name);
-                    if (m.find())
-                        nodes.add(n);
-                    search.filesIndex++;
+            try {
+                if (search.calc()) {
+                    handler.post(this);
+                    if (old == null)
+                        old = Snackbar.make(getActivity().findViewById(android.R.id.content), "", Snackbar.LENGTH_LONG);
+                    old.setText(storage.getDisplayName(search.files.get(search.files.size() - 1).uri));
+                    old.show();
+                    while (search.filesIndex < search.files.size()) {
+                        Storage.Node n = search.files.get(search.filesIndex);
+                        Matcher m = pattern.matcher(n.name);
+                        if (m.find())
+                            nodes.add(n);
+                        search.filesIndex++;
+                    }
+                    adapter.notifyDataSetChanged();
                 }
-                adapter.notifyDataSetChanged();
+            } catch (RuntimeException e) {
+                Log.d(TAG, "search error", e);
+                search.calcIndex++;
+                handler.post(this);
             }
         }
     };
@@ -130,6 +137,7 @@ public class SearchFragment extends FilesFragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        handler.removeCallbacks(calc);
     }
 
     @Override
