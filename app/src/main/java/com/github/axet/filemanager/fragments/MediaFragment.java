@@ -25,8 +25,6 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
 
 import cz.msebera.android.httpclient.entity.ContentType;
 
@@ -91,8 +89,9 @@ public class MediaFragment extends Fragment {
                 return error(getContext().getString(R.string.empty_list));
         } catch (Exception e) {
             Log.d(TAG, "Unable to read", e);
-            storage.closeSu();
             return error(e.getMessage());
+        } finally {
+            storage.closeSu();
         }
         InputStream is = null;
         try {
