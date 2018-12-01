@@ -87,9 +87,10 @@ public class MediaFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         try {
-            if (storage.getLength(uri) == 0)
+            if (storage.getLength(uri) <= 0)
                 return error(getContext().getString(R.string.empty_list));
         } catch (Exception e) {
+            Log.d(TAG, "Unable to read", e);
             return error(e.getMessage());
         }
         InputStream is = null;
@@ -115,7 +116,7 @@ public class MediaFragment extends Fragment {
         }
         try {
             is = storage.open(uri);
-            byte[] buf = new byte[1024];
+            byte[] buf = new byte[1024]; // optimal detect size
             int len = is.read(buf);
             if (len == -1)
                 throw new IOException("unable to read");

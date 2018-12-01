@@ -37,6 +37,7 @@ import de.innosystec.unrar.Archive;
 import de.innosystec.unrar.exception.RarException;
 
 public class Storage extends com.github.axet.androidlibrary.app.Storage {
+    public static final String TAG = Storage.class.getSimpleName();
 
     public static final String CONTENTTYPE_ZIP = "application/zip";
 
@@ -121,32 +122,36 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     public static class SymlinkNode extends Node {
         File symlink;
-        Boolean symdir = null;
+        boolean symdir;
 
-        public SymlinkNode(Uri uri, String name, long last, File target) {
+        public SymlinkNode(Uri uri, String name, long last, File target, boolean symdir) {
             this.uri = uri;
             this.name = name;
             this.last = last;
             this.symlink = target;
+            this.symdir = symdir;
         }
 
         public SymlinkNode(SuperUser.SymLink f) {
             super(f);
             symlink = f.getTarget();
+            symdir = f instanceof SuperUser.SymDirLink;
         }
 
         public boolean isSymDir() {
-            if (symdir == null)
-                symdir = SuperUser.isDirectory(symlink);
             return symdir;
-        }
-
-        public void setSymDir(boolean b) {
-            symdir = b;
         }
 
         public File getTarget() {
             return symlink;
+        }
+
+        @Override
+        public String toString() {
+            if (symdir)
+                return name + " -> " + (symlink.getPath().endsWith(OpenFileDialog.ROOT) ? symlink.getPath() : symlink.getPath() + OpenFileDialog.ROOT);
+            else
+                return name + " -> " + symlink.getPath();
         }
     }
 
@@ -366,7 +371,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 if (s.equals(ContentResolver.SCHEME_FILE)) {
                     if (getRoot()) {
                         File f = Storage.getFile(uri);
-                        zip = new ZipFile(new ZipSu(context, f));
+                        zip = new ZipFile(new ZipSu(f));
                     } else {
                         File f = Storage.getFile(uri);
                         zip = new ZipFile(new NativeStorage(f));
@@ -416,7 +421,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 if (s.equals(ContentResolver.SCHEME_FILE)) {
                     if (getRoot()) {
                         File f = Storage.getFile(uri);
-                        rar = new Archive(new RarSu(context, f));
+                        rar = new Archive(new RarSu(f));
                     } else {
                         File f = Storage.getFile(uri);
                         rar = new Archive(new de.innosystec.unrar.NativeStorage(f));
@@ -474,10 +479,10 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 File p = k;
                 while (p != null && !p.exists())
                     p = p.getParentFile();
-                if (p == null || SuperUser.isDirectory(p))
-                    return null;
                 try {
-                    InputStream is = SuperUser.cat(p);
+                    if (p == null || SuperUser.isDirectory(p))
+                        return null;
+                    InputStream is = new SuperUser.FileInputStream(p);
                     int len = is.read(buf);
                     if (len > 0) {
                         rar.write(buf, 0, len);
@@ -544,7 +549,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             File k = getFile(uri);
             if (getRoot()) {
-                return SuperUser.cat(k);
+                return new SuperUser.FileInputStream(k);
             } else {
                 return new FileInputStream(k);
             }
@@ -592,7 +597,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     public boolean touch(Uri uri, String name) {
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             File k = Storage.getFile(uri);
-            return SuperUser.touch(k).ok();
+            return SuperUser.touch(k, System.currentTimeMillis()).ok();
         }
         return super.touch(uri, name);
     }
@@ -625,28 +630,6 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         return super.mkdir(to, name);
     }
 
-    public Uri mkdirs(Uri to, String name) {
-        String s = to.getScheme();
-        if (s.equals(ContentResolver.SCHEME_FILE)) {
-            if (getRoot()) {
-                File k = getFile(to);
-                File m = new File(k, name);
-                if (SuperUser.mkdirs(m).ok())
-                    return Uri.fromFile(m);
-            } else {
-                File k = getFile(to);
-                File m = new File(k, name);
-                if (m.exists() || m.mkdirs())
-                    return Uri.fromFile(m);
-            }
-        } else if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-            return createFolder(to, name);
-        } else {
-            throw new UnknownUri();
-        }
-        return null;
-    }
-
     @Override
     public Uri rename(Uri f, String t) {
         if (f.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
@@ -665,9 +648,8 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         ArchiveReader r = fromArchive(uri);
         if (r != null && !r.path.isEmpty())
             return r.length();
-        if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
+        if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot())
             return SuperUser.length(Storage.getFile(uri));
-        }
         return super.getLength(uri);
     }
 
@@ -678,7 +660,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             return r.list();
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             ArrayList<Node> files = new ArrayList<>();
-            ArrayList<File> ff = SuperUser.ls(SuperUser.LSA, Storage.getFile(uri));
+            ArrayList<File> ff = SuperUser.lsA(Storage.getFile(uri));
             for (File f : ff) {
                 if (f instanceof SuperUser.SymLink)
                     files.add(new SymlinkNode((SuperUser.SymLink) f));
@@ -698,10 +680,10 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             int r = Storage.getFile(root).getPath().length();
             ArrayList<Node> files = new ArrayList<>();
-            ArrayList<File> ff = SuperUser.ls(SuperUser.LSa, Storage.getFile(uri));
+            ArrayList<File> ff = SuperUser.lsa(Storage.getFile(uri));
             for (File f : ff) {
                 if (f instanceof SuperUser.SymLink)
-                    files.add(new SymlinkNode(Uri.fromFile(f), f.getPath().substring(r), f.lastModified(), ((SuperUser.SymLink) f).getTarget()));
+                    files.add(new SymlinkNode(Uri.fromFile(f), f.getPath().substring(r), f.lastModified(), ((SuperUser.SymLink) f).getTarget(), f instanceof SuperUser.SymDirLink));
                 else
                     files.add(new Node(Uri.fromFile(f), f.getPath().substring(r), f.isDirectory(), f.length(), f.lastModified()));
             }

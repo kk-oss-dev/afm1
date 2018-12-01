@@ -6,6 +6,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -16,6 +17,8 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class TextViewStream extends RecyclerView {
+    public static final String TAG = TextViewStream.class.getSimpleName();
+
     InputStream is;
     Adapter adapter;
     Typeface tf = Typeface.MONOSPACE;
@@ -138,18 +141,18 @@ public class TextViewStream extends RecyclerView {
     }
 
     public void close() {
+        setAdapter(null);
+        if (adapter != null) {
+            adapter.close();
+            adapter = null;
+        }
         try {
-            setAdapter(null);
-            if (adapter != null) {
-                adapter.close();
-                adapter = null;
-            }
             if (is != null) {
                 is.close();
                 is = null;
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            Log.e(TAG, "close", e);
         }
     }
 

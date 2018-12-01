@@ -11,14 +11,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class ZipSu extends NativeStorage {
-    Context context;
     ZipSu parent;
 
     public static class SuFile extends NativeFile {
         SuperUser.RandomAccessFile r;
 
-        public SuFile(Context context, File f) throws FileNotFoundException {
-            r = new SuperUser.RandomAccessFile(context, f);
+        public SuFile(File f) throws IOException {
+            r = new SuperUser.RandomAccessFile(f);
         }
 
         @Override
@@ -72,15 +71,13 @@ public class ZipSu extends NativeStorage {
         }
     }
 
-    public ZipSu(Context context, File f) {
+    public ZipSu(File f) {
         super(f);
-        this.context = context;
     }
 
     public ZipSu(ZipSu parent, File f) {
         super(f);
         this.parent = parent;
-        this.context = parent.context;
     }
 
     public ZipSu(ZipSu v) {
@@ -90,7 +87,11 @@ public class ZipSu extends NativeStorage {
 
     @Override
     public SuFile read() throws FileNotFoundException {
-        return new SuFile(context, f);
+        try {
+            return new SuFile(f);
+        } catch (IOException e) {
+            throw new FileNotFoundException(e.getMessage());
+        }
     }
 
     @Override
@@ -173,7 +174,7 @@ public class ZipSu extends NativeStorage {
 
     @Override
     public NativeStorage[] listFiles() {
-        ArrayList<File> ff = SuperUser.ls(SuperUser.LSA, f);
+        ArrayList<File> ff = SuperUser.lsA(f);
         NativeStorage[] nn = new NativeStorage[ff.size()];
         for (int i = 0; i < ff.size(); i++) {
             nn[i++] = new ZipSu(this, f);
