@@ -1,23 +1,19 @@
 package com.github.axet.filemanager.app;
 
-import android.content.Context;
-
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import de.innosystec.unrar.NativeFile;
 import de.innosystec.unrar.NativeStorage;
 
 public class RarSu extends NativeStorage {
-    Context context;
     RarSu parent;
 
     public static class SuFile extends NativeFile {
         SuperUser.RandomAccessFile r;
 
-        public SuFile(Context context, File f) throws FileNotFoundException {
-            r = new SuperUser.RandomAccessFile(context, f);
+        public SuFile(File f) throws IOException {
+            r = new SuperUser.RandomAccessFile(f);
         }
 
         @Override
@@ -54,31 +50,28 @@ public class RarSu extends NativeStorage {
         }
     }
 
-    public RarSu(Context context, File f) {
+    public RarSu(File f) {
         super(f);
-        this.context = context;
     }
 
-    public RarSu(Context context, RarSu parent, File f) {
+    public RarSu(RarSu parent, File f) {
         super(f);
-        this.context = context;
         this.parent = parent;
     }
 
     public RarSu(RarSu v) {
         super(v.f);
-        context = v.context;
         parent = v.parent;
     }
 
     @Override
-    public SuFile read() throws FileNotFoundException {
-        return new SuFile(context, f);
+    public SuFile read() throws IOException {
+        return new SuFile(f);
     }
 
     @Override
     public NativeStorage open(String name) {
-        return new RarSu(context, this, new File(f, name));
+        return new RarSu(this, new File(f, name));
     }
 
     @Override

@@ -16,6 +16,7 @@ import android.support.v7.view.WindowCallbackWrapper;
 import android.support.v7.widget.Toolbar;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
@@ -239,13 +240,6 @@ public class FullscreenActivity extends AppCompatThemeActivity {
         pager = (ViewPager) findViewById(R.id.pager);
         adapter = new PagerAdapter(getSupportFragmentManager(), uri);
         pager.setAdapter(adapter);
-
-        pager.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                update();
-            }
-        });
 
         pager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override

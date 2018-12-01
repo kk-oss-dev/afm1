@@ -788,7 +788,13 @@ public class FilesFragment extends Fragment {
         path.listener = new PathView.Listener() {
             @Override
             public void onUriSelected(Uri u) {
-                load(u);
+                try {
+                    load(u);
+                } catch (RuntimeException e) {
+                    Log.e(TAG, "reload()", e);
+                    error.setText(e.getMessage());
+                    error.setVisibility(View.VISIBLE);
+                }
             }
         };
         path.setUri(uri);
@@ -928,23 +934,7 @@ public class FilesFragment extends Fragment {
             Log.e(TAG, "reload()", e);
             error.setText(e.getMessage());
             error.setVisibility(View.VISIBLE);
-        }
-
-        ArrayList<Storage.SymlinkNode> calcs = new ArrayList<>();
-        ArrayList<File> a = new ArrayList<>();
-        for (Storage.Node n : adapter.files) {
-            if (n instanceof Storage.SymlinkNode) {
-                calcs.add((Storage.SymlinkNode) n);
-                a.add(Storage.getFile(n.uri));
-            }
-        }
-        if (calcs.size() > 0) {
-            a = SuperUser.isDirectory(a);
-            for (Storage.SymlinkNode n : calcs) {
-                File k = Storage.getFile(n.uri);
-                n.setSymDir(a.contains(k));
-            }
-            calcs.clear();
+            return;
         }
         Collections.sort(adapter.files, new SortByName());
         adapter.notifyDataSetChanged();
@@ -1301,7 +1291,7 @@ public class FilesFragment extends Fragment {
                         archive.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
                         archive.update(this);
                         archive.from.setText(getString(R.string.files_archiving) + ": " + formatStart());
-                        archive.to.setText("To: " + storage.getDisplayName(t));
+                        archive.to.setText(getString(R.string.copy_to) + storage.getDisplayName(t));
                         post();
                         return;
                     }
@@ -1577,7 +1567,7 @@ public class FilesFragment extends Fragment {
                         }
                     }
                     if (filesIndex < files.size()) {
-                        cancel(); // cancel previous skped operation if existed
+                        cancel(); // cancel previous skiped operation if existed
                         Storage.Node f = files.get(filesIndex);
                         try {
                             if (f.dir) {
@@ -1644,7 +1634,7 @@ public class FilesFragment extends Fragment {
                                         post();
                                         return;
                                     } else { // we about to copy symlinks as files, update total!!!
-                                        total += SuperUser.length(l.getTarget());
+                                        total += SuperUser.length(Storage.getFile(f.uri));
                                     }
                                 }
                                 open(f, uri);

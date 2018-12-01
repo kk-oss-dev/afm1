@@ -281,7 +281,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         storage = new Storage(this);
 
         if (storage.getRoot())
-            SuperUser.exitTest(); // run once per app restart, only when user already enabled root
+            SuperUser.sudoTest(this); // run once per app restart, only when user already enabled root
 
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
 

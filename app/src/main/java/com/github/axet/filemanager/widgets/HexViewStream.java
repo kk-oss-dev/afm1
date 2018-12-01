@@ -116,13 +116,13 @@ public class HexViewStream extends RecyclerView {
         }
 
         public void close() {
-            if (is != null) {
-                try {
+            try {
+                if (is != null) {
                     is.close();
                     is = null;
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
                 }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }
 
