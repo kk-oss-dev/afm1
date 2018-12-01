@@ -72,6 +72,8 @@ public class HexFragment extends Fragment {
             return rootView;
         } catch (Exception e) {
             return error(getContext(), e.getMessage());
+        } finally {
+            storage.closeSu();
         }
     }
 

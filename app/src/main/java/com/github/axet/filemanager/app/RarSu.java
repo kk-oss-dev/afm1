@@ -1,18 +1,20 @@
 package com.github.axet.filemanager.app;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import de.innosystec.unrar.NativeFile;
 import de.innosystec.unrar.NativeStorage;
 
 public class RarSu extends NativeStorage {
+    SuperUser.SuIO su;
     RarSu parent;
 
     public static class SuFile extends NativeFile {
         SuperUser.RandomAccessFile r;
 
-        public SuFile(File f) throws IOException {
+        public SuFile(File f) throws FileNotFoundException {
             r = new SuperUser.RandomAccessFile(f);
         }
 
@@ -50,22 +52,25 @@ public class RarSu extends NativeStorage {
         }
     }
 
-    public RarSu(File f) {
+    public RarSu(SuperUser.SuIO su, File f) {
         super(f);
+        this.su = su;
     }
 
     public RarSu(RarSu parent, File f) {
         super(f);
+        this.su = parent.su;
         this.parent = parent;
     }
 
     public RarSu(RarSu v) {
         super(v.f);
+        su = v.su;
         parent = v.parent;
     }
 
     @Override
-    public SuFile read() throws IOException {
+    public SuFile read() throws FileNotFoundException {
         return new SuFile(f);
     }
 
@@ -76,7 +81,7 @@ public class RarSu extends NativeStorage {
 
     @Override
     public boolean exists() {
-        return SuperUser.exists(f);
+        return SuperUser.exists(su, f);
     }
 
     @Override
@@ -86,7 +91,7 @@ public class RarSu extends NativeStorage {
 
     @Override
     public long length() {
-        return SuperUser.length(f);
+        return SuperUser.length(su, f);
     }
 
     @Override

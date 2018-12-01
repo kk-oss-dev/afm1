@@ -236,11 +236,13 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                         try {
                             if (storage.mkdir(f.getUri(), s) == null)
                                 throw new RuntimeException("unable to create " + s);
+                            f.reload();
                         } catch (RuntimeException e) {
                             Log.d(TAG, "create folder", e);
                             Toast.makeText(MainActivity.this, R.string.not_permitted, Toast.LENGTH_SHORT).show();
+                        } finally {
+                            storage.closeSu();
                         }
-                        f.reload();
 
                     }
                 });
@@ -260,14 +262,15 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                         String s = edit.getText();
                         FilesFragment f = getActiveFragment();
                         try {
-                            Storage storage = new Storage(MainActivity.this);
                             if (!storage.touch(f.getUri(), s))
                                 throw new RuntimeException("unable to create file");
+                            f.reload();
                         } catch (RuntimeException e) {
                             Log.d(TAG, "create file", e);
                             Toast.makeText(MainActivity.this, R.string.not_permitted, Toast.LENGTH_SHORT).show();
+                        } finally {
+                            storage.closeSu();
                         }
-                        f.reload();
 
                     }
                 });
@@ -279,9 +282,9 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         app = FilesApplication.from(this);
 
         storage = new Storage(this);
-
         if (storage.getRoot())
             SuperUser.sudoTest(this); // run once per app restart, only when user already enabled root
+        storage.closeSu();
 
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
 

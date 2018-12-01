@@ -10,6 +10,7 @@ import android.provider.DocumentsContract;
 import android.support.annotation.NonNull;
 import android.support.v4.provider.DocumentFile;
 import android.support.v7.preference.PreferenceManager;
+import android.util.Log;
 
 import com.github.axet.androidlibrary.app.FileTypeDetector;
 import com.github.axet.androidlibrary.app.RarSAF;
@@ -41,9 +42,11 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     public static final String CONTENTTYPE_ZIP = "application/zip";
 
-    public static final String WROOT = "\\";
+    public static final String WROOT = "\\"; // windows root
 
     public static HashMap<Uri, ArchiveCache> CACHE = new HashMap<>();
+
+    SuperUser.SuIO su;
 
     public static Uri getParent(Context context, Uri uri) {
         String p = uri.getQueryParameter("p");
@@ -371,7 +374,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 if (s.equals(ContentResolver.SCHEME_FILE)) {
                     if (getRoot()) {
                         File f = Storage.getFile(uri);
-                        zip = new ZipFile(new ZipSu(f));
+                        zip = new ZipFile(new ZipSu(getSu(), f));
                     } else {
                         File f = Storage.getFile(uri);
                         zip = new ZipFile(new NativeStorage(f));
@@ -421,7 +424,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 if (s.equals(ContentResolver.SCHEME_FILE)) {
                     if (getRoot()) {
                         File f = Storage.getFile(uri);
-                        rar = new Archive(new RarSu(f));
+                        rar = new Archive(new RarSu(getSu(), f));
                     } else {
                         File f = Storage.getFile(uri);
                         rar = new Archive(new de.innosystec.unrar.NativeStorage(f));
@@ -468,6 +471,35 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         return shared.getBoolean(FilesApplication.PREF_ROOT, false);
     }
 
+    public SuperUser.SuIO getSu() {
+        if (su == null)
+            su = new SuperUser.SuIO();
+        if (!su.valid()) {
+            closeSu();
+            su = new SuperUser.SuIO();
+        }
+        su.clear();
+        if (!su.valid()) {
+            closeSu();
+            su = new SuperUser.SuIO();
+        }
+        return su;
+    }
+
+    public void closeSu() {
+        try {
+            if (su != null) {
+                su.exit();
+                su.close();
+                su = null;
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "close", e);
+            su.close();
+            su = null;
+        }
+    }
+
     public ArchiveReader fromArchive(Uri uri) {
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
@@ -480,7 +512,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 while (p != null && !p.exists())
                     p = p.getParentFile();
                 try {
-                    if (p == null || SuperUser.isDirectory(p))
+                    if (p == null || SuperUser.isDirectory(getSu(), p))
                         return null;
                     InputStream is = new SuperUser.FileInputStream(p);
                     int len = is.read(buf);
@@ -583,7 +615,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             File k = Storage.getFile(uri);
             if (getRoot()) {
-                return SuperUser.touch(k, last).ok();
+                return SuperUser.touch(getSu(), k, last).ok();
             } else {
                 return k.setLastModified(last); // not working for most devices, requiring root
             }
@@ -597,7 +629,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     public boolean touch(Uri uri, String name) {
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             File k = Storage.getFile(uri);
-            return SuperUser.touch(k, System.currentTimeMillis()).ok();
+            return SuperUser.touch(getSu(), k, System.currentTimeMillis()).ok();
         }
         return super.touch(uri, name);
     }
@@ -608,7 +640,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             File k = Storage.getFile(t);
             if (getRoot()) {
-                return SuperUser.delete(k).ok();
+                return SuperUser.delete(getSu(), k).ok();
             } else {
                 return k.delete();
             }
@@ -624,7 +656,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         if (to.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             File k = getFile(to);
             File m = new File(k, name);
-            if (SuperUser.mkdir(m).ok())
+            if (SuperUser.mkdir(getSu(), m).ok())
                 return Uri.fromFile(m);
         }
         return super.mkdir(to, name);
@@ -636,7 +668,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             File k = getFile(f);
             File p = k.getParentFile();
             File m = new File(p, t);
-            if (!SuperUser.rename(k, m).ok())
+            if (!SuperUser.rename(getSu(), k, m).ok())
                 return null;
             return Uri.fromFile(m);
         }
@@ -649,7 +681,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         if (r != null && !r.path.isEmpty())
             return r.length();
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot())
-            return SuperUser.length(Storage.getFile(uri));
+            return SuperUser.length(getSu(), Storage.getFile(uri));
         return super.getLength(uri);
     }
 
@@ -660,7 +692,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             return r.list();
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             ArrayList<Node> files = new ArrayList<>();
-            ArrayList<File> ff = SuperUser.lsA(Storage.getFile(uri));
+            ArrayList<File> ff = SuperUser.lsA(getSu(), Storage.getFile(uri));
             for (File f : ff) {
                 if (f instanceof SuperUser.SymLink)
                     files.add(new SymlinkNode((SuperUser.SymLink) f));
@@ -680,7 +712,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             int r = Storage.getFile(root).getPath().length();
             ArrayList<Node> files = new ArrayList<>();
-            ArrayList<File> ff = SuperUser.lsa(Storage.getFile(uri));
+            ArrayList<File> ff = SuperUser.lsa(getSu(), Storage.getFile(uri));
             for (File f : ff) {
                 if (f instanceof SuperUser.SymLink)
                     files.add(new SymlinkNode(Uri.fromFile(f), f.getPath().substring(r), f.lastModified(), ((SuperUser.SymLink) f).getTarget(), f instanceof SuperUser.SymDirLink));
@@ -699,7 +731,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 return false; // users not allowed to create symlinks
             File k = getFile(uri);
             File m = new File(k, f.name);
-            return SuperUser.ln(f.getTarget(), m).ok();
+            return SuperUser.ln(getSu(), f.getTarget(), m).ok();
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
             return false;
         } else {

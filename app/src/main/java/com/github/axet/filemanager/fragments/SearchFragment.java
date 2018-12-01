@@ -52,6 +52,8 @@ public class SearchFragment extends FilesFragment {
                     }
                     if (changed)
                         adapter.notifyDataSetChanged();
+                } else {
+                    storage.closeSu();
                 }
             } catch (RuntimeException e) {
                 Log.d(TAG, "search error", e);
@@ -132,7 +134,7 @@ public class SearchFragment extends FilesFragment {
             pattern = Pattern.compile(Storage.wildcard(q));
         else
             pattern = Pattern.compile(q);
-        search = new PendingOperation(getContext());
+        search = new PendingOperation(storage);
         search.calcUri = uri;
         search.calcs = new ArrayList<>();
         search.walk(uri);
@@ -191,5 +193,6 @@ public class SearchFragment extends FilesFragment {
 
     public void stop() {
         handler.removeCallbacks(calc);
+        storage.closeSu();
     }
 }

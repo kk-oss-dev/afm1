@@ -91,7 +91,7 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity {
                     if ((boolean) newValue) {
                         SuperUser.Result r = SuperUser.rootTest();
                         if (!r.ok()) {
-                            Toast.makeText(getContext(), r.message(), Toast.LENGTH_LONG).show();
+                            Toast.makeText(getContext(), r.getMessage(), Toast.LENGTH_LONG).show();
                             return false;
                         } else {
                             SuperUser.exitTest(); // second su invoke

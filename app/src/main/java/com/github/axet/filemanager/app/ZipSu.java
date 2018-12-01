@@ -1,7 +1,5 @@
 package com.github.axet.filemanager.app;
 
-import android.content.Context;
-
 import net.lingala.zip4j.core.NativeFile;
 import net.lingala.zip4j.core.NativeStorage;
 
@@ -11,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class ZipSu extends NativeStorage {
+    SuperUser.SuIO su;
     ZipSu parent;
 
     public static class SuFile extends NativeFile {
@@ -71,17 +70,20 @@ public class ZipSu extends NativeStorage {
         }
     }
 
-    public ZipSu(File f) {
+    public ZipSu(SuperUser.SuIO su, File f) {
         super(f);
+        this.su = su;
     }
 
     public ZipSu(ZipSu parent, File f) {
         super(f);
+        this.su = parent.su;
         this.parent = parent;
     }
 
     public ZipSu(ZipSu v) {
         super(v.f);
+        this.su = v.su;
         parent = v.parent;
     }
 
@@ -106,7 +108,7 @@ public class ZipSu extends NativeStorage {
 
     @Override
     public boolean exists() {
-        return SuperUser.exists(f);
+        return SuperUser.exists(su, f);
     }
 
     @Override
@@ -136,22 +138,22 @@ public class ZipSu extends NativeStorage {
 
     @Override
     public boolean isDirectory() {
-        return SuperUser.isDirectory(f);
+        return SuperUser.isDirectory(su, f);
     }
 
     @Override
     public long lastModified() {
-        return SuperUser.lastModified(f);
+        return SuperUser.lastModified(su, f);
     }
 
     @Override
     public long length() {
-        return SuperUser.length(f);
+        return SuperUser.length(su, f);
     }
 
     @Override
     public boolean renameTo(NativeStorage t) {
-        return SuperUser.rename(f, ((ZipSu) t).f).ok();
+        return SuperUser.rename(su, f, ((ZipSu) t).f).ok();
     }
 
     @Override
@@ -169,12 +171,12 @@ public class ZipSu extends NativeStorage {
 
     @Override
     public boolean delete() {
-        return SuperUser.delete(f).ok();
+        return SuperUser.delete(su, f).ok();
     }
 
     @Override
     public NativeStorage[] listFiles() {
-        ArrayList<File> ff = SuperUser.lsA(f);
+        ArrayList<File> ff = SuperUser.lsA(su, f);
         NativeStorage[] nn = new NativeStorage[ff.size()];
         for (int i = 0; i < ff.size(); i++) {
             nn[i++] = new ZipSu(this, f);

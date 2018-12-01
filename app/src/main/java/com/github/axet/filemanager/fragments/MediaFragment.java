@@ -91,6 +91,7 @@ public class MediaFragment extends Fragment {
                 return error(getContext().getString(R.string.empty_list));
         } catch (Exception e) {
             Log.d(TAG, "Unable to read", e);
+            storage.closeSu();
             return error(e.getMessage());
         }
         InputStream is = null;
@@ -113,6 +114,7 @@ public class MediaFragment extends Fragment {
             } catch (IOException e) {
                 Log.d(TAG, "unable to close", e);
             }
+            storage.closeSu();
         }
         try {
             is = storage.open(uri);
@@ -177,6 +179,7 @@ public class MediaFragment extends Fragment {
             } catch (IOException e) {
                 Log.d(TAG, "unable to close", e);
             }
+            storage.closeSu();
         }
         return error(getContext().getString(R.string.unsupported));
     }
