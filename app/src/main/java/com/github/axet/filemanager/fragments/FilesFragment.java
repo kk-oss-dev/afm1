@@ -255,15 +255,15 @@ public class FilesFragment extends Fragment {
 
         enum OPERATION {NONE, ASK, SKIP, OVERWRITE}
 
-        public PendingOperation(Context context) {
-            this.context = context;
+        public PendingOperation(Storage storage) {
+            this.storage = storage;
+            this.context = storage.getContext();
             this.resolver = context.getContentResolver();
-            this.storage = new Storage(context);
             this.shared = PreferenceManager.getDefaultSharedPreferences(context);
         }
 
-        public PendingOperation(Context context, Uri root, ArrayList<Storage.Node> ff) {
-            this(context);
+        public PendingOperation(Storage storage, Uri root, ArrayList<Storage.Node> ff) {
+            this(storage);
             calcIndex = 0;
             calcs = new ArrayList<>(ff);
             calcsStart = new ArrayList<>(ff);
@@ -659,41 +659,57 @@ public class FilesFragment extends Fragment {
             h.itemView.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
-                    selected.clear();
-                    selected.add(f);
-                    openSelection();
-                    PopupMenu menu = new PopupMenu(getContext(), v);
-                    menu.inflate(R.menu.menu_select);
-                    Storage.ArchiveReader r = storage.fromArchive(uri);
-                    if (r != null) {
-                        hideMenu(menu.getMenu(), R.id.action_archive);
-                        hideMenu(menu.getMenu(), R.id.action_rename);
-                        hideMenu(menu.getMenu(), R.id.action_cut);
-                        hideMenu(menu.getMenu(), R.id.action_delete);
-                    }
-                    menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                        @Override
-                        public boolean onMenuItemClick(MenuItem item) {
-                            Intent intent = new Intent(Intent.ACTION_VIEW);
-                            String type = Storage.getTypeByName(f.name);
-                            intent.setDataAndType(f.uri, type);
-                            intent.putExtra("name", f.name);
-                            item.setIntent(intent);
-                            return onOptionsItemSelected(item);
+                    try {
+                        selected.clear();
+                        selected.add(f);
+                        openSelection();
+                        PopupMenu menu = new PopupMenu(getContext(), v);
+                        menu.inflate(R.menu.menu_select);
+                        Storage.ArchiveReader r = storage.fromArchive(uri);
+                        if (r != null) {
+                            hideMenu(menu.getMenu(), R.id.action_archive);
+                            hideMenu(menu.getMenu(), R.id.action_rename);
+                            hideMenu(menu.getMenu(), R.id.action_cut);
+                            hideMenu(menu.getMenu(), R.id.action_delete);
                         }
-                    });
-                    menu.show();
+                        menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                            @Override
+                            public boolean onMenuItemClick(MenuItem item) {
+                                Intent intent = new Intent(Intent.ACTION_VIEW);
+                                String type = Storage.getTypeByName(f.name);
+                                intent.setDataAndType(f.uri, type);
+                                intent.putExtra("name", f.name);
+                                item.setIntent(intent);
+                                return onOptionsItemSelected(item);
+                            }
+                        });
+                        menu.show();
+                    } catch (RuntimeException e) {
+                        Log.d(TAG, "io", e);
+                        error.setText(SuperUser.toMessage(e));
+                        error.setVisibility(View.VISIBLE);
+                    } finally {
+                        storage.closeSu();
+                    }
                     return true;
                 }
             });
             h.circleFrame.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (selected.contains(f.uri))
-                        selected.remove(f.uri);
-                    else
-                        selected.add(f);
-                    openSelection();
+                    try {
+                        if (selected.contains(f.uri))
+                            selected.remove(f.uri);
+                        else
+                            selected.add(f);
+                        openSelection();
+                    } catch (RuntimeException e) {
+                        Log.d(TAG, "io", e);
+                        error.setText(SuperUser.toMessage(e));
+                        error.setVisibility(View.VISIBLE);
+                    } finally {
+                        storage.closeSu();
+                    }
                 }
             });
             ViewCompat.setAlpha(h.selected, 1f);
@@ -794,6 +810,7 @@ public class FilesFragment extends Fragment {
                     Log.e(TAG, "reload()", e);
                     error.setText(e.getMessage());
                     error.setVisibility(View.VISIBLE);
+                    storage.closeSu();
                 }
             }
         };
@@ -935,6 +952,8 @@ public class FilesFragment extends Fragment {
             error.setText(e.getMessage());
             error.setVisibility(View.VISIBLE);
             return;
+        } finally {
+            storage.closeSu();
         }
         Collections.sort(adapter.files, new SortByName());
         adapter.notifyDataSetChanged();
@@ -971,28 +990,36 @@ public class FilesFragment extends Fragment {
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
-        toolbar = menu.findItem(R.id.action_selected);
-        pasteMenu = menu.findItem(R.id.action_paste);
-        pasteCancel = menu.findItem(R.id.action_paste_cancel);
-        updatePaste();
-        select = (SelectView) MenuItemCompat.getActionView(toolbar);
-        select.listener = new CollapsibleActionView() {
-            @Override
-            public void onActionViewExpanded() {
-                Storage.ArchiveReader r = storage.fromArchive(uri);
-                if (r != null) {
-                    select.hide(R.id.action_archive);
-                    select.hide(R.id.action_cut);
-                    select.hide(R.id.action_delete);
+        try {
+            toolbar = menu.findItem(R.id.action_selected);
+            pasteMenu = menu.findItem(R.id.action_paste);
+            pasteCancel = menu.findItem(R.id.action_paste_cancel);
+            updatePaste();
+            select = (SelectView) MenuItemCompat.getActionView(toolbar);
+            select.listener = new CollapsibleActionView() {
+                @Override
+                public void onActionViewExpanded() {
+                    Storage.ArchiveReader r = storage.fromArchive(uri);
+                    if (r != null) {
+                        select.hide(R.id.action_archive);
+                        select.hide(R.id.action_cut);
+                        select.hide(R.id.action_delete);
+                    }
                 }
-            }
 
-            @Override
-            public void onActionViewCollapsed() {
-                adapter.notifyDataSetChanged();
-                selected.clear();
-            }
-        };
+                @Override
+                public void onActionViewCollapsed() {
+                    adapter.notifyDataSetChanged();
+                    selected.clear();
+                }
+            };
+        } catch (RuntimeException e) {
+            Log.d(TAG, "io", e);
+            error.setText(SuperUser.toMessage(e));
+            error.setVisibility(View.VISIBLE);
+        } finally {
+            storage.closeSu();
+        }
     }
 
     @Override
@@ -1076,21 +1103,37 @@ public class FilesFragment extends Fragment {
             return true;
         }
         if (id == R.id.action_copy) {
-            app.copy = new ArrayList<>(selected);
-            app.cut = null;
-            app.uri = uri;
-            updatePaste();
-            closeSelection();
-            Toast.makeText(getContext(), getString(R.string.toast_files_copied, app.copy.size()), Toast.LENGTH_SHORT).show();
+            try {
+                app.copy = new ArrayList<>(selected);
+                app.cut = null;
+                app.uri = uri;
+                updatePaste();
+                closeSelection();
+                Toast.makeText(getContext(), getString(R.string.toast_files_copied, app.copy.size()), Toast.LENGTH_SHORT).show();
+            } catch (RuntimeException e) {
+                Log.e(TAG, "io", e);
+                error.setText(e.getMessage());
+                error.setVisibility(View.VISIBLE);
+            } finally {
+                storage.closeSu();
+            }
             return true;
         }
         if (id == R.id.action_cut) {
-            app.copy = null;
-            app.cut = new ArrayList<>(selected);
-            app.uri = uri;
-            updatePaste();
-            closeSelection();
-            Toast.makeText(getContext(), getString(R.string.toast_files_cut, app.cut.size()), Toast.LENGTH_SHORT).show();
+            try {
+                app.copy = null;
+                app.cut = new ArrayList<>(selected);
+                app.uri = uri;
+                updatePaste();
+                closeSelection();
+                Toast.makeText(getContext(), getString(R.string.toast_files_cut, app.cut.size()), Toast.LENGTH_SHORT).show();
+            } catch (RuntimeException e) {
+                Log.e(TAG, "io", e);
+                error.setText(e.getMessage());
+                error.setVisibility(View.VISIBLE);
+            } finally {
+                storage.closeSu();
+            }
             return true;
         }
         if (id == R.id.action_delete) {
@@ -1104,7 +1147,7 @@ public class FilesFragment extends Fragment {
                         return;
                     delete = new PasteBuilder(getContext());
                     delete.setTitle(getString(R.string.files_deleting));
-                    final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
+                    final PendingOperation op = new PendingOperation(storage, uri, selected) {
                         @Override
                         public void run() {
                             try {
@@ -1273,7 +1316,7 @@ public class FilesFragment extends Fragment {
     void archive(final Uri to, final OutputStream fos) {
         archive = new PasteBuilder(getContext());
         archive.setTitle(R.string.menu_archive);
-        final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
+        final PendingOperation op = new PendingOperation(storage, uri, selected) {
             ZipOutputStream zip;
 
             {
@@ -1484,7 +1527,7 @@ public class FilesFragment extends Fragment {
             n = "Paste";
         paste.setTitle(n);
 
-        final PendingOperation op = new PendingOperation(getContext(), app.uri, ff) {
+        final PendingOperation op = new PendingOperation(storage, app.uri, ff) {
             int deleteIndex = -1;
             ArrayList<Storage.Node> delete = new ArrayList<>();
 
@@ -1634,7 +1677,7 @@ public class FilesFragment extends Fragment {
                                         post();
                                         return;
                                     } else { // we about to copy symlinks as files, update total!!!
-                                        total += SuperUser.length(Storage.getFile(f.uri));
+                                        total += SuperUser.length(storage.getSu(), Storage.getFile(f.uri));
                                     }
                                 }
                                 open(f, uri);
@@ -1743,6 +1786,7 @@ public class FilesFragment extends Fragment {
         builder.setNeutralButton(R.string.copy_retry, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+                storage.closeSu();
                 op.run();
             }
         });

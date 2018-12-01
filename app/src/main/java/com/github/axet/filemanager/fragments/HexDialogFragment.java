@@ -139,6 +139,7 @@ public class HexDialogFragment extends DialogFragment {
         ArrayList<Storage.Node> nn = storage.list(p);
         nodes = new Storage.Nodes(nn, false);
         Collections.sort(nodes, new FilesFragment.SortByName());
+        storage.closeSu();
     }
 
     @Override

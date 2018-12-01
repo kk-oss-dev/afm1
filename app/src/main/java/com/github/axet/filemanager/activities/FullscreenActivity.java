@@ -16,7 +16,6 @@ import android.support.v7.view.WindowCallbackWrapper;
 import android.support.v7.widget.Toolbar;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
@@ -378,5 +377,11 @@ public class FullscreenActivity extends AppCompatThemeActivity {
     protected void onResume() {
         super.onResume();
         setFullscreen(fullscreen); // refresh
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        storage.closeSu();
     }
 }

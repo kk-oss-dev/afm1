@@ -229,6 +229,8 @@ int main(int argc, char *argv[]) {
                         if (fseek(f, 0, SEEK_END) != 0)
                             exit(f, "unable to seek '%s'", buf);
                         putline("%li", ftell(f));
+                    } else {
+                        putline("ok");
                     }
                 }
                 free(target);
@@ -240,6 +242,7 @@ int main(int argc, char *argv[]) {
                 exit(1, "file NULL");
             fclose(f);
             f = NULL;
+            putline("ok");
             continue;
         }
         if (strcmp(buf, "rafread") == 0) {
@@ -263,7 +266,7 @@ int main(int argc, char *argv[]) {
                             exit(f, "unable to read file");
                         size_t w = fwrite(buf, sizeof(char), len, stdout);
                         if (w != len)
-                            exit(f, "uanble to write stdout");
+                            exit(f, "unable to write stdout");
                         size -= len;
                     }
                     fflush(stdout);
@@ -295,31 +298,44 @@ int main(int argc, char *argv[]) {
                             exit(f, "unable to write file");
                         size -= len;
                     }
+                    putline("ok");
                 }
             }
             continue;
         }
         if (strcmp(buf, "isdir") == 0) {
             if (getline(&buf, &bufs) > 0) {
-                if (isdir(buf), stdout)
+                if (isdir(buf))
                     putline("true");
                 else
                     putline("false");
-                fflush(stdout);
+            }
+            continue;
+        }
+        if (strcmp(buf, "exists") == 0) {
+            if (getline(&buf, &bufs) > 0) {
+                if (exists(buf))
+                    putline("true");
+                else
+                    putline("false");
             }
             continue;
         }
         if (strcmp(buf, "delete") == 0) {
             if (getline(&buf, &bufs) > 0) {
                 if (remove(buf) != 0)
-                    exit(errno, "uanble remove %s", buf);
+                    exit(errno, "unable remove %s", buf);
+                else
+                    putline("ok");
             }
             continue;
         }
         if (strcmp(buf, "mkdir") == 0) {
             if (getline(&buf, &bufs) > 0) {
                 if (mkdir(buf, 0755) != 0)
-                    exit(errno, "uanble mkdir %s", buf);
+                    exit(errno, "unable mkdir %s", buf);
+                else
+                    putline("ok");
             }
             continue;
         }
@@ -339,6 +355,8 @@ int main(int argc, char *argv[]) {
                 if (getline(&buf, &bufs) > 0) {
                     if (rename(target, buf) != 0)
                         exit(errno, "unable rename '%s' '%s'", target, buf);
+                    else
+                        putline("ok");
                 }
                 free(target);
             }
@@ -350,6 +368,8 @@ int main(int argc, char *argv[]) {
                 if (getline(&buf, &bufs) > 0) {
                     if (symlink(target, buf) != 0)
                         exit(errno, "unable ln '%s' '%s'", target, buf);
+                    else
+                        putline("ok");
                 }
                 free(target);
             }
@@ -359,8 +379,10 @@ int main(int argc, char *argv[]) {
             char *target;
             if (getline(&buf, &bufs) > 0) {
                 target = strdup(buf);
-                if (getline(&buf, &bufs) > 0)
-                    touch(buf, atol(buf));
+                if (getline(&buf, &bufs) > 0) {
+                    touch(target, atol(buf));
+                    putline("ok");
+                }
                 free(target);
             }
             continue;

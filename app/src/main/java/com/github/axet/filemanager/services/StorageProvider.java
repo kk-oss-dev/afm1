@@ -15,6 +15,7 @@ import com.github.axet.filemanager.app.SuperUser;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 
 public class StorageProvider extends com.github.axet.androidlibrary.services.StorageProvider {
     public static String TAG = StorageProvider.class.getCanonicalName();
@@ -23,8 +24,8 @@ public class StorageProvider extends com.github.axet.androidlibrary.services.Sto
         return (StorageProvider) infos.get(StorageProvider.class);
     }
 
-    public ParcelFileDescriptor openRootFile(final File f, String mode) {
-        return openInputStream(new InputStreamWriter(SuperUser.cat(f)) {
+    public ParcelFileDescriptor openRootFile(final File f, String mode) throws FileNotFoundException {
+        return openInputStream(new InputStreamWriter(new SuperUser.FileInputStream(f)) {
             @Override
             public long getSize() {
                 return SuperUser.length(f);
