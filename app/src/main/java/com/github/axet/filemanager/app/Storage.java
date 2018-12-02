@@ -36,13 +36,12 @@ import java.util.List;
 
 import de.innosystec.unrar.Archive;
 import de.innosystec.unrar.exception.RarException;
+import de.innosystec.unrar.rarfile.HostSystem;
 
 public class Storage extends com.github.axet.androidlibrary.app.Storage {
     public static final String TAG = Storage.class.getSimpleName();
 
     public static final String CONTENTTYPE_ZIP = "application/zip";
-
-    public static final String WROOT = "\\"; // windows root
 
     public static HashMap<Uri, ArchiveCache> CACHE = new HashMap<>();
 
@@ -66,13 +65,6 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         if (p != null)
             return new File(p).getName();
         return com.github.axet.androidlibrary.app.Storage.getName(context, uri);
-    }
-
-    public static String relative(String base, String file) {
-        String r = com.github.axet.androidlibrary.app.Storage.relative(base, file, '/');
-        if (r != null)
-            return r;
-        return com.github.axet.androidlibrary.app.Storage.relative(base, file, '\\');
     }
 
     public static String getLast(String name) {
@@ -177,11 +169,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             String s = h.getFileName();
             if (s.startsWith(OpenFileDialog.ROOT))
                 s = s.substring(1);
-            if (s.startsWith(WROOT))
-                s = s.substring(1);
             if (s.endsWith(OpenFileDialog.ROOT))
-                s = s.substring(0, s.length() - 1);
-            if (s.endsWith(WROOT))
                 s = s.substring(0, s.length() - 1);
             return s;
         }
@@ -200,18 +188,23 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         public Archive rar;
         public de.innosystec.unrar.rarfile.FileHeader h;
 
+        public static String getRarFileName(de.innosystec.unrar.rarfile.FileHeader header) {
+            String s = header.getFileNameW();
+            if (s == null || s.isEmpty())
+                s = header.getFileNameString();
+            if (header.getHostOS().equals(HostSystem.win32))
+                s = s.replaceAll("\\\\", "/");
+            return s;
+        }
+
         @Override
         public String getPath() {
-            String s = h.getFileNameW();
+            String s = getRarFileName(h);
             if (s == null || s.isEmpty())
                 s = h.getFileNameString();
             if (s.startsWith(OpenFileDialog.ROOT))
                 s = s.substring(1);
-            if (s.startsWith(WROOT))
-                s = s.substring(1);
             if (s.endsWith(OpenFileDialog.ROOT))
-                s = s.substring(0, s.length() - 1);
-            if (s.endsWith(WROOT))
                 s = s.substring(0, s.length() - 1);
             return s;
         }

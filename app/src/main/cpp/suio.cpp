@@ -176,8 +176,7 @@ int main(int argc, char *argv[]) {
                         char path[PATH_MAX + 1];
                         snprintf(path, sizeof(path), "%s/%s", buf, ep->d_name);
                         struct stat st = {0};
-                        if (stat(path, &st) != 0)
-                            exit(errno, "unable to stat while ls %s", path);
+                        stat(path, &st); // failed for non existent links
                         char *link = NULL;
                         switch (ep->d_type) {
                             case DT_DIR: {

@@ -648,15 +648,8 @@ public class FilesFragment extends Fragment {
                 h.size.setVisibility(View.GONE);
             } else {
                 h.icon.setImageResource(R.drawable.ic_file);
-                if (isThumbnail(f)) {
-                    File cover = CacheImagesAdapter.cacheUri(getContext(), f.uri);
-                    if (!cover.exists() || cover.length() == 0) {
-                        downloadTask(f, h.itemView);
-                    } else {
-                        downloadTaskClean(h.itemView);
-                        downloadTaskUpdate(null, f, h.itemView);
-                    }
-                }
+                if (isThumbnail(f))
+                    downloadTask(f, h.itemView);
                 h.size.setText(FilesApplication.formatSize(getContext(), f.size));
                 h.size.setVisibility(View.VISIBLE);
             }
@@ -822,23 +815,13 @@ public class FilesFragment extends Fragment {
 
         @Override
         public void downloadTaskUpdate(CacheImagesAdapter.DownloadImageTask task, Object item, Object view) {
-            Storage.Node f = (Storage.Node) item;
-            ImageView image = (ImageView) ((View) view).findViewById(R.id.icon);
-            if (task != null && task.bm != null) {
-                image.setImageBitmap(task.bm);
-                image.setColorFilter(Color.TRANSPARENT);
+            Holder h = new Holder((View) view);
+            if (task.bm != null) {
+                h.icon.setImageBitmap(task.bm);
+                h.icon.setColorFilter(null);
             } else {
-                try {
-                    File cover = CacheImagesAdapter.cacheUri(getContext(), f.uri);
-                    Bitmap bm = BitmapFactory.decodeStream(new FileInputStream(cover));
-                    image.setImageBitmap(bm);
-                    image.setColorFilter(Color.TRANSPARENT);
-                } catch (IOException e) {
-                    Log.e(TAG, "load bmp", e);
-                    image.setImageResource(R.drawable.ic_image_black_24dp);
-                    int accent = ThemeUtils.getThemeColor(getContext(), R.attr.colorAccent);
-                    image.setColorFilter(accent);
-                }
+                h.icon.setImageResource(R.drawable.ic_image_black_24dp);
+                h.icon.setColorFilter(h.accent);
             }
         }
 
