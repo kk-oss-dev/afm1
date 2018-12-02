@@ -18,7 +18,7 @@
     <string name="copy_overwrite">Overwrite:</string>
     <string name="copy_overwrite_with">With:</string>
 
-    <string name="size_bytes">bytes</string>
+    <string name="size_bytes">byte(s)</string>
     <string name="add_bookmark">Add Bookmark</string>
     <string name="bookmarks">Bookmarks</string>
     <string name="empty_list">Empty</string>

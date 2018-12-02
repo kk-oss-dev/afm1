@@ -1,5 +1,6 @@
 package com.github.axet.filemanager.fragments;
 
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -64,6 +65,10 @@ public class SearchFragment extends FilesFragment {
     };
 
     public class SearchAdapter extends Adapter {
+        public SearchAdapter(Context context) {
+            super(context);
+        }
+
         @Override
         public void onBindViewHolder(Holder h, int position) {
             super.onBindViewHolder(h, position);
@@ -127,7 +132,7 @@ public class SearchFragment extends FilesFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
-        adapter = new SearchAdapter();
+        adapter = new SearchAdapter(getContext());
         adapter.files = nodes;
         String q = getArguments().getString("q");
         if (q.contains("*"))

@@ -8,6 +8,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
@@ -47,6 +49,8 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.github.axet.androidlibrary.widgets.CacheImagesAdapter;
+import com.github.axet.androidlibrary.widgets.CacheImagesRecyclerAdapter;
 import com.github.axet.androidlibrary.widgets.OpenChoicer;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
@@ -64,6 +68,7 @@ import com.github.axet.wget.SpeedInfo;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -90,6 +95,8 @@ public class FilesFragment extends Fragment {
 
     public static final int RESULT_PERMS = 1;
     public static final int RESULT_ARCHIVE = 2;
+
+    public static final int COVER_SIZE = 128;
 
     public static final String PASTE_UPDATE = FilesFragment.class.getCanonicalName() + ".PASTE_UPDATE";
     public static final String MOVE_UPDATE = FilesFragment.class.getCanonicalName() + ".MOVE_UPDATE";
@@ -155,6 +162,15 @@ public class FilesFragment extends Fragment {
             msg = p.getClass().getCanonicalName();
         }
         return msg;
+    }
+
+    public static boolean isThumbnail(Storage.Node d) { // do not open every file, show thumbnnails only for correct file extension
+        String[] ss = new String[]{"png", "jpg", "jpeg", "gif", "bmp"};
+        for (String s : ss) {
+            if (d.name.toLowerCase().endsWith(s))
+                return true;
+        }
+        return false;
     }
 
     public static void hideMenu(Menu m, int id) {
@@ -609,8 +625,12 @@ public class FilesFragment extends Fragment {
         }
     }
 
-    public class Adapter extends RecyclerView.Adapter<Holder> {
+    public class Adapter extends CacheImagesRecyclerAdapter<Holder> {
         ArrayList<Storage.Node> files = new ArrayList<>();
+
+        public Adapter(Context context) {
+            super(context);
+        }
 
         @Override
         public Holder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -626,6 +646,15 @@ public class FilesFragment extends Fragment {
                 h.size.setVisibility(View.GONE);
             } else {
                 h.icon.setImageResource(R.drawable.ic_file);
+                if (isThumbnail(f)) {
+                    File cover = CacheImagesAdapter.cacheUri(getContext(), f.uri);
+                    if (!cover.exists() || cover.length() == 0) {
+                        downloadTask(f, h.itemView);
+                    } else {
+                        downloadTaskClean(h.itemView);
+                        downloadTaskUpdate(null, f, h.itemView);
+                    }
+                }
                 h.size.setText(FilesApplication.formatSize(getContext(), f.size));
                 h.size.setVisibility(View.VISIBLE);
             }
@@ -760,6 +789,57 @@ public class FilesFragment extends Fragment {
             return specials.get(f.uri);
         }
 
+        @Override
+        public Bitmap downloadImageTask(CacheImagesAdapter.DownloadImageTask task) {
+            try {
+                Storage.Node n = (Storage.Node) task.item;
+                File cover = CacheImagesAdapter.cacheUri(getContext(), n.uri);
+                try {
+                    if (!cover.exists() || cover.length() == 0) {
+                        Bitmap bm = BitmapFactory.decodeStream(storage.open(n.uri));
+                        float ratio = COVER_SIZE / (float) bm.getWidth();
+                        Bitmap sbm = Bitmap.createScaledBitmap(bm, (int) (bm.getWidth() * ratio), (int) (bm.getHeight() * ratio), true);
+                        if (sbm != bm)
+                            bm.recycle();
+                        OutputStream os = new FileOutputStream(cover);
+                        os = new BufferedOutputStream(os);
+                        sbm.compress(Bitmap.CompressFormat.PNG, 100, os);
+                        os.close();
+                        return sbm;
+                    }
+                    return BitmapFactory.decodeStream(new FileInputStream(cover));
+                } catch (IOException e) {
+                    cover.delete();
+                    throw new RuntimeException(e);
+                }
+            } catch (RuntimeException e) {
+                Log.e(TAG, "Unable to load cover", e);
+            }
+            return null;
+        }
+
+        @Override
+        public void downloadTaskUpdate(CacheImagesAdapter.DownloadImageTask task, Object item, Object view) {
+            Storage.Node f = (Storage.Node) item;
+            ImageView image = (ImageView) ((View) view).findViewById(R.id.icon);
+            if (task != null && task.bm != null) {
+                image.setImageBitmap(task.bm);
+                image.setColorFilter(Color.TRANSPARENT);
+            } else {
+                try {
+                    File cover = CacheImagesAdapter.cacheUri(getContext(), f.uri);
+                    Bitmap bm = BitmapFactory.decodeStream(new FileInputStream(cover));
+                    image.setImageBitmap(bm);
+                    image.setColorFilter(Color.TRANSPARENT);
+                } catch (IOException e) {
+                    Log.e(TAG, "load bmp", e);
+                    image.setImageResource(R.drawable.ic_image_black_24dp);
+                    int accent = ThemeUtils.getThemeColor(getContext(), R.attr.colorAccent);
+                    image.setColorFilter(accent);
+                }
+            }
+        }
+
         public boolean pending(Storage.Node n) {
             return app.copy != null && app.copy.contains(n) || app.cut != null && app.cut.contains(n);
         }
@@ -788,7 +868,7 @@ public class FilesFragment extends Fragment {
         app = FilesApplication.from(getContext());
         uri = getUri();
         storage = new Storage(getContext());
-        adapter = new Adapter();
+        adapter = new Adapter(getContext());
         specials = new Specials(getContext());
         IntentFilter filter = new IntentFilter();
         filter.addAction(PASTE_UPDATE);
