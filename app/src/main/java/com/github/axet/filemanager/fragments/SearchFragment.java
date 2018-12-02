@@ -19,6 +19,7 @@ import com.github.axet.androidlibrary.services.StorageProvider;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.MainActivity;
 import com.github.axet.filemanager.app.Storage;
+import com.github.axet.filemanager.app.SuperUser;
 
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -139,10 +140,17 @@ public class SearchFragment extends FilesFragment {
             pattern = Pattern.compile(Storage.wildcard(q));
         else
             pattern = Pattern.compile(q);
-        search = new PendingOperation(storage);
-        search.calcUri = uri;
-        search.calcs = new ArrayList<>();
-        search.walk(uri);
+        try {
+            search = new PendingOperation(storage);
+            search.calcUri = uri;
+            search.calcs = new ArrayList<>();
+            search.walk(uri);
+            calc.run();
+        } catch (RuntimeException e) {
+            Log.d(TAG, "io", e);
+            error.setText(SuperUser.toMessage(e));
+            error.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override
@@ -157,7 +165,6 @@ public class SearchFragment extends FilesFragment {
         list.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         list.setLayoutManager(new LinearLayoutManager(getContext()));
         list.setAdapter(adapter);
-        calc.run();
         return list;
     }
 
