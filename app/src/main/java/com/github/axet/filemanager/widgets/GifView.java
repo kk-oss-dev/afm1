@@ -15,10 +15,11 @@ import com.github.axet.androidlibrary.app.FileTypeDetector;
 import java.io.InputStream;
 
 public class GifView extends AppCompatImageView {
+    public static final String EXT = "gif";
+
     Paint p = new Paint();
 
     public static class FileGif89a extends FileTypeDetector.ExtDetector.Handler {
-        public static final String EXT = "gif";
 
         public FileGif89a(String ext) {
             super(ext, "GIF89a");
@@ -30,8 +31,6 @@ public class GifView extends AppCompatImageView {
     }
 
     public static class FileGif87a extends FileTypeDetector.ExtDetector.Handler {
-        public static final String EXT = "gif";
-
         public FileGif87a(String ext) {
             super(ext, "GIF89a");
         }
@@ -42,8 +41,6 @@ public class GifView extends AppCompatImageView {
     }
 
     public static class FileGif extends FileTypeDetector.ExtDetector.Handler {
-        public static final String EXT = "gif";
-
         FileGif87a g87 = new FileGif87a();
         FileGif89a g89 = new FileGif89a();
 
@@ -62,7 +59,7 @@ public class GifView extends AppCompatImageView {
     }
 
     public static class GifDrawable extends AnimationDrawable {
-        public static int STEP = 10;
+        public static int STEP = 1000 / 24; // 24 frames per second
         Movie m;
         int frame = 0;
         int duration;
