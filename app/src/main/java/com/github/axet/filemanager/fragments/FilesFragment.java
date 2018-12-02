@@ -601,6 +601,7 @@ public class FilesFragment extends Fragment {
     }
 
     public class Holder extends RecyclerView.ViewHolder {
+        int accent;
         public ImageView icon;
         public ImageView iconSmall;
         public TextView name;
@@ -612,7 +613,7 @@ public class FilesFragment extends Fragment {
 
         public Holder(View itemView) {
             super(itemView);
-            int accent = ThemeUtils.getThemeColor(getContext(), R.attr.colorAccent);
+            accent = ThemeUtils.getThemeColor(getContext(), R.attr.colorAccent);
             icon = (ImageView) itemView.findViewById(R.id.icon);
             icon.setColorFilter(accent);
             iconSmall = (ImageView) itemView.findViewById(R.id.icon_small);
@@ -643,6 +644,7 @@ public class FilesFragment extends Fragment {
             final boolean dir = f.dir || (f instanceof Storage.SymlinkNode && ((Storage.SymlinkNode) f).isSymDir());
             if (dir) {
                 h.icon.setImageResource(R.drawable.ic_folder_black_24dp);
+                h.icon.setColorFilter(h.accent);
                 h.size.setVisibility(View.GONE);
             } else {
                 h.icon.setImageResource(R.drawable.ic_file);
