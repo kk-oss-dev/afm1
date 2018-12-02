@@ -592,6 +592,7 @@ public class FilesFragment extends Fragment {
         public View circle;
         public View unselected;
         public View selected;
+        public TextView size;
 
         public Holder(View itemView) {
             super(itemView);
@@ -600,6 +601,7 @@ public class FilesFragment extends Fragment {
             icon.setColorFilter(accent);
             iconSmall = (ImageView) itemView.findViewById(R.id.icon_small);
             name = (TextView) itemView.findViewById(R.id.name);
+            size = (TextView) itemView.findViewById(R.id.size);
             circleFrame = itemView.findViewById(R.id.circle_frame);
             circle = itemView.findViewById(R.id.circle);
             unselected = itemView.findViewById(R.id.unselected);
@@ -619,10 +621,14 @@ public class FilesFragment extends Fragment {
         public void onBindViewHolder(final Holder h, final int position) {
             final Storage.Node f = files.get(position);
             final boolean dir = f.dir || (f instanceof Storage.SymlinkNode && ((Storage.SymlinkNode) f).isSymDir());
-            if (dir)
+            if (dir) {
                 h.icon.setImageResource(R.drawable.ic_folder_black_24dp);
-            else
+                h.size.setVisibility(View.GONE);
+            } else {
                 h.icon.setImageResource(R.drawable.ic_file);
+                h.size.setText(FilesApplication.formatSize(getContext(), f.size));
+                h.size.setVisibility(View.VISIBLE);
+            }
             h.name.setText(f.name);
             h.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override

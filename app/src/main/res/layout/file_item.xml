@@ -28,6 +28,7 @@
     </RelativeLayout>
 
     <com.github.axet.androidlibrary.widgets.PathMax
+        android:id="@+id/path"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
@@ -39,6 +40,14 @@
             android:layout_height="wrap_content"
             android:text="boot" />
     </com.github.axet.androidlibrary.widgets.PathMax>
+
+    <TextView
+        android:id="@+id/size"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="16kb"
+        android:textSize="10sp" />
 
     <FrameLayout
         android:id="@+id/circle_frame"

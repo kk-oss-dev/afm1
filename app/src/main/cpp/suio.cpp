@@ -175,6 +175,9 @@ int main(int argc, char *argv[]) {
                     while ((ep = readdir(dp))) {
                         char path[PATH_MAX + 1];
                         snprintf(path, sizeof(path), "%s/%s", buf, ep->d_name);
+                        struct stat st = {0};
+                        if (stat(path, &st) != 0)
+                            exit(errno, "unable to stat while ls %s", path);
                         char *link = NULL;
                         switch (ep->d_type) {
                             case DT_DIR: {
@@ -188,6 +191,7 @@ int main(int argc, char *argv[]) {
                                     putline("ld");
                                 } else {
                                     putline("lf");
+                                    st.st_size = getsize(target);
                                 }
                                 if (target != link)
                                     free(target);
@@ -197,8 +201,6 @@ int main(int argc, char *argv[]) {
                                 putline("f");
                             }
                         }
-                        struct stat st = {0};
-                        stat(path, &st); // can fail on non existent links
                         putline("%lli", (long long) st.st_size);
                         putline("%li", (long) st.st_mtime * 1000);
                         putline(ep->d_name);
