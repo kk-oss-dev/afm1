@@ -18,6 +18,7 @@ import com.github.axet.androidlibrary.app.FileTypeDetector;
 import com.github.axet.androidlibrary.widgets.WebViewCustom;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.app.Storage;
+import com.github.axet.filemanager.widgets.GifView;
 import com.github.axet.filemanager.widgets.HorizontalScrollView;
 import com.github.axet.filemanager.widgets.TextViewStream;
 
@@ -96,34 +97,14 @@ public class MediaFragment extends Fragment {
         InputStream is = null;
         try {
             is = storage.open(uri);
-            Bitmap bm = BitmapFactory.decodeStream(is);
-            if (bm != null) {
-                supported = true;
-                image = inflater.inflate(R.layout.fragment_media_image, container, false);
-                ImageView i = (ImageView) image.findViewById(R.id.image);
-                i.setImageBitmap(bm);
-                return image;
-            }
-        } catch (IOException e) {
-            Log.d(TAG, "Unable to read", e);
-        } finally {
-            try {
-                if (is != null)
-                    is.close();
-            } catch (IOException e) {
-                Log.d(TAG, "unable to close", e);
-            }
-            storage.closeSu();
-        }
-        try {
-            is = storage.open(uri);
             byte[] buf = new byte[1024]; // optimal detect size
             int len = is.read(buf);
             if (len == -1)
                 throw new IOException("unable to read");
             FileTypeDetector.FileTxt f = new FileTypeDetector.FileTxt();
             FileTypeDetector.FileHTML h = new FileTypeDetector.FileHTML();
-            FileTypeDetector.Detector[] dd = new FileTypeDetector.Detector[]{f, h};
+            GifView.FileGif g = new GifView.FileGif();
+            FileTypeDetector.Detector[] dd = new FileTypeDetector.Detector[]{f, h, g};
             FileTypeDetector.FileTypeDetectorXml xml = new FileTypeDetector.FileTypeDetectorXml(dd);
             FileTypeDetector bin = new FileTypeDetector(dd);
             bin.write(buf, 0, len);
@@ -167,6 +148,31 @@ public class MediaFragment extends Fragment {
                 text = (TextViewStream) v.findViewById(R.id.list);
                 text.setText(storage.open(uri));
                 return v;
+            }
+            if (g.detected) {
+                supported = true;
+                return new GifView(getContext(), storage.open(uri));
+            }
+            try {
+                is = storage.open(uri);
+                Bitmap bm = BitmapFactory.decodeStream(is);
+                if (bm != null) {
+                    supported = true;
+                    image = inflater.inflate(R.layout.fragment_media_image, container, false);
+                    ImageView i = (ImageView) image.findViewById(R.id.image);
+                    i.setImageBitmap(bm);
+                    return image;
+                }
+            } catch (IOException e) {
+                Log.d(TAG, "Unable to read", e);
+            } finally {
+                try {
+                    if (is != null)
+                        is.close();
+                } catch (IOException e) {
+                    Log.d(TAG, "unable to close", e);
+                }
+                storage.closeSu();
             }
         } catch (IOException e) {
             Log.d(TAG, "Unable to read", e);

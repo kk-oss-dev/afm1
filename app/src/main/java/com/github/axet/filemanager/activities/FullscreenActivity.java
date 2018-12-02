@@ -137,6 +137,8 @@ public class FullscreenActivity extends AppCompatThemeActivity {
             notifyDataSetChanged();
             if (getCount() == 3)
                 pager.setCurrentItem(1, false);
+            else if (getCount() == 2)
+                pager.setCurrentItem(index, false);
         }
 
         int getIndex(int i) {
