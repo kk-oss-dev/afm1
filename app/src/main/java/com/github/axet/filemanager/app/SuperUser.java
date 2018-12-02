@@ -66,8 +66,8 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             su.write("lsa", f);
             String type;
             while (!(type = su.readString()).equals("EOF")) {
-                long size = Long.valueOf(su.readString());
-                long last = Long.valueOf(su.readString());
+                final long size = Long.valueOf(su.readString());
+                final long last = Long.valueOf(su.readString());
                 String name = su.readString();
                 File k = new File(name);
                 if (!k.equals(DOTDOT) && (filter == null || filter.accept(k))) {
@@ -94,7 +94,12 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                                 k = f;
                             else
                                 k = new File(f, name);
-                            ff.add(new SymLink(k, size, new File(target)));
+                            ff.add(new SymLink(k, last, new File(target)) {
+                                @Override
+                                public long length() {
+                                    return size;
+                                }
+                            });
                             break;
                         }
                         default:

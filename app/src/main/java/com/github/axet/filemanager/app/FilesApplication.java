@@ -9,6 +9,7 @@ import android.preference.PreferenceManager;
 
 import com.github.axet.androidlibrary.app.MainApplication;
 import com.github.axet.androidlibrary.app.Storage;
+import com.github.axet.filemanager.R;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -29,6 +30,14 @@ public class FilesApplication extends MainApplication {
     public ArrayList<Storage.Node> copy; // selected files
     public ArrayList<Storage.Node> cut; // selected files
     public Uri uri; // selected root
+
+    public static String formatSize(Context context, long s) {
+        if (s < 1024) {
+            return s + " " + context.getString(R.string.size_bytes);
+        } else {
+            return MainApplication.formatSize(context, s);
+        }
+    }
 
     public static File getLocalTmp() {
         String s = System.getenv("TMPDIR");
