@@ -789,6 +789,7 @@ public class FilesFragment extends Fragment {
             try {
                 Storage.Node n = (Storage.Node) task.item;
                 File cover = CacheImagesAdapter.cacheUri(getContext(), n.uri);
+                Storage storage = new Storage(getContext());
                 try {
                     if (!cover.exists() || cover.length() == 0) {
                         Bitmap bm = BitmapFactory.decodeStream(storage.open(n.uri));
@@ -806,6 +807,8 @@ public class FilesFragment extends Fragment {
                 } catch (IOException e) {
                     cover.delete();
                     throw new RuntimeException(e);
+                } finally {
+                    storage.closeSu();
                 }
             } catch (RuntimeException e) {
                 Log.e(TAG, "Unable to load cover", e);
