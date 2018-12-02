@@ -32,7 +32,7 @@ public class GifView extends AppCompatImageView {
 
     public static class FileGif87a extends FileTypeDetector.ExtDetector.Handler {
         public FileGif87a(String ext) {
-            super(ext, "GIF89a");
+            super(ext, "GIF87a");
         }
 
         public FileGif87a() {
