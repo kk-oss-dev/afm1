@@ -603,8 +603,10 @@ public class FilesFragment extends Fragment {
 
     public class Holder extends RecyclerView.ViewHolder {
         int accent;
+        int primary;
         public ImageView icon;
         public ImageView iconSmall;
+        public ProgressBar progress;
         public TextView name;
         public View circleFrame;
         public View circle;
@@ -615,8 +617,10 @@ public class FilesFragment extends Fragment {
         public Holder(View itemView) {
             super(itemView);
             accent = ThemeUtils.getThemeColor(getContext(), R.attr.colorAccent);
+            primary = ThemeUtils.getThemeColor(getContext(), R.attr.colorPrimary);
             icon = (ImageView) itemView.findViewById(R.id.icon);
             icon.setColorFilter(accent);
+            progress = (ProgressBar) itemView.findViewById(R.id.progress);
             iconSmall = (ImageView) itemView.findViewById(R.id.icon_small);
             name = (TextView) itemView.findViewById(R.id.name);
             size = (TextView) itemView.findViewById(R.id.size);
@@ -644,16 +648,19 @@ public class FilesFragment extends Fragment {
             final Storage.Node f = files.get(position);
             final boolean dir = f.dir || (f instanceof Storage.SymlinkNode && ((Storage.SymlinkNode) f).isSymDir());
             if (dir) {
+                downloadTaskClean(h.itemView);
+                downloadTaskUpdate(null, f, h.itemView);
                 h.icon.setImageResource(R.drawable.ic_folder_black_24dp);
                 h.icon.setColorFilter(h.accent);
-                downloadTaskClean(h.itemView);
                 h.size.setVisibility(View.GONE);
             } else {
-                h.icon.setImageResource(R.drawable.ic_file);
-                if (isThumbnail(f))
+                if (isThumbnail(f)) {
                     downloadTask(f, h.itemView);
-                else
+                } else {
                     downloadTaskClean(h.itemView);
+                    downloadTaskUpdate(null, f, h.itemView);
+                    h.icon.setImageResource(R.drawable.ic_file);
+                }
                 h.size.setText(FilesApplication.formatSize(getContext(), f.size));
                 h.size.setVisibility(View.VISIBLE);
             }
@@ -823,13 +830,15 @@ public class FilesFragment extends Fragment {
         @Override
         public void downloadTaskUpdate(CacheImagesAdapter.DownloadImageTask task, Object item, Object view) {
             Holder h = new Holder((View) view);
-            if (task.bm != null) {
-                h.icon.setImageBitmap(task.bm);
-                h.icon.setColorFilter(null);
-            } else {
+            if (task == null || task.bm == null) {
                 h.icon.setImageResource(R.drawable.ic_image_black_24dp);
                 h.icon.setColorFilter(h.accent);
+            } else {
+                h.icon.setImageBitmap(task.bm);
+                h.icon.setColorFilter(null);
             }
+            h.progress.setVisibility((task == null || task.done) ? View.GONE : View.VISIBLE);
+            h.progress.getIndeterminateDrawable().setColorFilter(Color.WHITE, android.graphics.PorterDuff.Mode.SRC_IN);
         }
 
         public boolean pending(Storage.Node n) {
