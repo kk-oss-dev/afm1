@@ -156,7 +156,7 @@ public class SearchFragment extends FilesFragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        handler.removeCallbacks(calc);
+        stop();
         search.close();
     }
 
@@ -206,6 +206,7 @@ public class SearchFragment extends FilesFragment {
 
     public void stop() {
         handler.removeCallbacks(calc);
+        search.storage.closeSu();
         storage.closeSu();
     }
 }
