@@ -646,11 +646,14 @@ public class FilesFragment extends Fragment {
             if (dir) {
                 h.icon.setImageResource(R.drawable.ic_folder_black_24dp);
                 h.icon.setColorFilter(h.accent);
+                downloadTaskClean(h.itemView);
                 h.size.setVisibility(View.GONE);
             } else {
                 h.icon.setImageResource(R.drawable.ic_file);
                 if (isThumbnail(f))
                     downloadTask(f, h.itemView);
+                else
+                    downloadTaskClean(h.itemView);
                 h.size.setText(FilesApplication.formatSize(getContext(), f.size));
                 h.size.setVisibility(View.VISIBLE);
             }
