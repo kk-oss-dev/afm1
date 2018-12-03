@@ -26,21 +26,27 @@
             android:layout_margin="10dp"
             android:src="@drawable/ic_sd_card_black_24dp"
             android:tint="@android:color/white" />
+
+        <ProgressBar
+            android:id="@+id/progress"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:layout_margin="10dp"
+            android:indeterminate="true"
+            android:visibility="gone" />
     </RelativeLayout>
 
-    <com.github.axet.androidlibrary.widgets.PathMax
-        android:id="@+id/path"
+    <TextView
+        android:id="@+id/name"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
-        android:layout_weight="1">
-
-        <TextView
-            android:id="@+id/name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="boot" />
-    </com.github.axet.androidlibrary.widgets.PathMax>
+        android:layout_weight="1"
+        android:ellipsize="middle"
+        android:singleLine="true"
+        android:text="boot" />
 
     <TextView
         android:id="@+id/size"
