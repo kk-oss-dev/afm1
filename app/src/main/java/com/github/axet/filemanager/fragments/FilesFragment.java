@@ -383,11 +383,11 @@ public class FilesFragment extends Fragment {
                 t = null;
             }
             f = null;
-            storage.closeSu();
         }
 
         public void close() {
             cancel();
+            storage.closeSu();
         }
 
         public EnumSet<OPERATION> check(Storage.Node f, Storage.Node t) { // ask user for confirmations?
