@@ -1174,6 +1174,8 @@ public class FilesFragment extends Fragment {
             return true;
         }
         if (id == R.id.action_paste && item.isEnabled()) {
+            if (paste != null)
+                return true;
             paste();
             return true;
         }
@@ -1212,97 +1214,15 @@ public class FilesFragment extends Fragment {
             return true;
         }
         if (id == R.id.action_delete) {
+            if (delete != null)
+                return true;
             AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
             builder.setTitle(R.string.files_delete);
             builder.setMessage(R.string.are_you_sure);
             builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    if (delete != null)
-                        return;
-                    delete = new PasteBuilder(getContext());
-                    delete.setTitle(getString(R.string.files_deleting));
-                    final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
-                        @Override
-                        public void run() {
-                            try {
-                                if (calcIndex < calcs.size()) {
-                                    if (!calc())
-                                        Collections.sort(files, new SortDelete());
-                                    delete.copy.setGravity(Gravity.NO_GRAVITY);
-                                    delete.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
-                                    delete.update(this);
-                                    delete.progressFile.setVisibility(View.GONE);
-                                    delete.from.setText(getString(R.string.files_deleting) + ": " + formatStart());
-                                    delete.to.setVisibility(View.GONE);
-                                    post();
-                                    return;
-                                }
-                                if (filesIndex < files.size()) {
-                                    int old = filesIndex;
-                                    Storage.Node f = files.get(filesIndex);
-                                    if (!storage.delete(f.uri))
-                                        throw new RuntimeException("Unable to delete: " + f.name);
-                                    if (!f.dir)
-                                        processed += f.size;
-                                    filesIndex++;
-                                    delete.copy.setText(getString(R.string.files_deleting) + ": " + formatStart());
-                                    delete.update(this, old, f);
-                                    delete.progressFile.setVisibility(View.GONE);
-                                    delete.from.setText(storage.getDisplayName(f.uri));
-                                    delete.to.setVisibility(View.GONE);
-                                    post();
-                                    return;
-                                }
-                                delete.dismiss();
-                                closeSelection();
-                                reload();
-                                Toast.makeText(getContext(), getString(R.string.toast_files_deleted, files.size()), Toast.LENGTH_SHORT).show();
-                            } catch (RuntimeException e) {
-                                switch (check(e).iterator().next()) {
-                                    case SKIP:
-                                        Log.d(TAG, "skip", e);
-                                        filesIndex++;
-                                        post();
-                                        return;
-                                }
-                                pasteError(delete, this, e);
-                            }
-                        }
-
-                        public void post() {
-                            handler.removeCallbacks(this);
-                            handler.post(this);
-                        }
-                    };
-                    delete.neutral = new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            final View.OnClickListener neutral = this;
-                            op.pause();
-                            handler.removeCallbacks(op);
-                            final Button b = delete.d.getButton(DialogInterface.BUTTON_NEUTRAL);
-                            b.setText(R.string.copy_resume);
-                            delete.neutral = new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    op.run();
-                                    b.setText(R.string.copy_pause);
-                                    delete.neutral = neutral;
-                                }
-                            };
-                        }
-                    };
-                    delete.dismiss = new DialogInterface.OnDismissListener() {
-                        @Override
-                        public void onDismiss(DialogInterface dialog) {
-                            handler.removeCallbacks(op);
-                            delete.dismiss();
-                            delete = null;
-                        }
-                    };
-                    delete.show();
-                    op.run();
+                    delete();
                 }
             });
             builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -1386,6 +1306,93 @@ public class FilesFragment extends Fragment {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    void delete() {
+        delete = new PasteBuilder(getContext());
+        delete.setTitle(getString(R.string.files_deleting));
+        final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
+            @Override
+            public void run() {
+                try {
+                    if (calcIndex < calcs.size()) {
+                        if (!calc())
+                            Collections.sort(files, new SortDelete());
+                        delete.copy.setGravity(Gravity.NO_GRAVITY);
+                        delete.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
+                        delete.update(this);
+                        delete.progressFile.setVisibility(View.GONE);
+                        delete.from.setText(getString(R.string.files_deleting) + ": " + formatStart());
+                        delete.to.setVisibility(View.GONE);
+                        post();
+                        return;
+                    }
+                    if (filesIndex < files.size()) {
+                        int old = filesIndex;
+                        Storage.Node f = files.get(filesIndex);
+                        if (!storage.delete(f.uri))
+                            throw new RuntimeException("Unable to delete: " + f.name);
+                        if (!f.dir)
+                            processed += f.size;
+                        filesIndex++;
+                        delete.copy.setText(getString(R.string.files_deleting) + ": " + formatStart());
+                        delete.update(this, old, f);
+                        delete.progressFile.setVisibility(View.GONE);
+                        delete.from.setText(storage.getDisplayName(f.uri));
+                        delete.to.setVisibility(View.GONE);
+                        post();
+                        return;
+                    }
+                    delete.dismiss();
+                    closeSelection();
+                    reload();
+                    Toast.makeText(getContext(), getString(R.string.toast_files_deleted, files.size()), Toast.LENGTH_SHORT).show();
+                } catch (RuntimeException e) {
+                    switch (check(e).iterator().next()) {
+                        case SKIP:
+                            Log.d(TAG, "skip", e);
+                            filesIndex++;
+                            post();
+                            return;
+                    }
+                    pasteError(delete, this, e);
+                }
+            }
+
+            public void post() {
+                handler.removeCallbacks(this);
+                handler.post(this);
+            }
+        };
+        delete.neutral = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final View.OnClickListener neutral = this;
+                op.pause();
+                handler.removeCallbacks(op);
+                final Button b = delete.d.getButton(DialogInterface.BUTTON_NEUTRAL);
+                b.setText(R.string.copy_resume);
+                delete.neutral = new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        op.run();
+                        b.setText(R.string.copy_pause);
+                        delete.neutral = neutral;
+                    }
+                };
+            }
+        };
+        delete.dismiss = new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                handler.removeCallbacks(op);
+                delete.dismiss();
+                delete = null;
+                op.close();
+            }
+        };
+        delete.show();
+        op.run();
     }
 
     void archive(final Uri to, final OutputStream fos) {
@@ -1583,8 +1590,6 @@ public class FilesFragment extends Fragment {
     }
 
     public void paste() {
-        if (paste != null)
-            return;
         if (app.uri.equals(uri)) // prevent paste to the original 'tab'
             return;
         ArrayList<Storage.Node> ff = null;
@@ -1826,10 +1831,10 @@ public class FilesFragment extends Fragment {
             @Override
             public void onDismiss(DialogInterface dialog) {
                 paste.dismiss();
+                paste = null;
                 op.close();
                 handler.removeCallbacks(op);
                 reload();
-                paste = null;
             }
         };
         final AlertDialog d = paste.create();
