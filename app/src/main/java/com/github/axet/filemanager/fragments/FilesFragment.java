@@ -271,15 +271,15 @@ public class FilesFragment extends Fragment {
 
         enum OPERATION {NONE, ASK, SKIP, OVERWRITE}
 
-        public PendingOperation(Storage storage) {
-            this.storage = storage;
-            this.context = storage.getContext();
+        public PendingOperation(Context context) {
+            this.context = context;
+            this.storage = new Storage(context);
             this.resolver = context.getContentResolver();
             this.shared = PreferenceManager.getDefaultSharedPreferences(context);
         }
 
-        public PendingOperation(Storage storage, Uri root, ArrayList<Storage.Node> ff) {
-            this(storage);
+        public PendingOperation(Context context, Uri root, ArrayList<Storage.Node> ff) {
+            this(context);
             calcIndex = 0;
             calcs = new ArrayList<>(ff);
             calcsStart = new ArrayList<>(ff);
@@ -383,6 +383,7 @@ public class FilesFragment extends Fragment {
                 t = null;
             }
             f = null;
+            storage.closeSu();
         }
 
         public void close() {
@@ -1221,7 +1222,7 @@ public class FilesFragment extends Fragment {
                         return;
                     delete = new PasteBuilder(getContext());
                     delete.setTitle(getString(R.string.files_deleting));
-                    final PendingOperation op = new PendingOperation(storage, uri, selected) {
+                    final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
                         @Override
                         public void run() {
                             try {
@@ -1390,7 +1391,7 @@ public class FilesFragment extends Fragment {
     void archive(final Uri to, final OutputStream fos) {
         archive = new PasteBuilder(getContext());
         archive.setTitle(R.string.menu_archive);
-        final PendingOperation op = new PendingOperation(storage, uri, selected) {
+        final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
             ZipOutputStream zip;
 
             {
@@ -1601,7 +1602,7 @@ public class FilesFragment extends Fragment {
             n = "Paste";
         paste.setTitle(n);
 
-        final PendingOperation op = new PendingOperation(storage, app.uri, ff) {
+        final PendingOperation op = new PendingOperation(getContext(), app.uri, ff) {
             int deleteIndex = -1;
             ArrayList<Storage.Node> delete = new ArrayList<>();
 

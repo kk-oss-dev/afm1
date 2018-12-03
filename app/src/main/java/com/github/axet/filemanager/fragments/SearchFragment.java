@@ -141,7 +141,7 @@ public class SearchFragment extends FilesFragment {
         else
             pattern = Pattern.compile(q);
         try {
-            search = new PendingOperation(storage);
+            search = new PendingOperation(getContext());
             search.calcUri = uri;
             search.calcs = new ArrayList<>();
             search.walk(uri);
