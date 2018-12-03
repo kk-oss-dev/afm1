@@ -661,8 +661,12 @@ public class FilesFragment extends Fragment {
                     downloadTaskUpdate(null, f, h.itemView);
                     h.icon.setImageResource(R.drawable.ic_file);
                 }
-                h.size.setText(FilesApplication.formatSize(getContext(), f.size));
-                h.size.setVisibility(View.VISIBLE);
+                if (f.size == -1) {
+                    h.size.setVisibility(View.GONE); // link points to non existent file or unable to stat file
+                } else {
+                    h.size.setText(FilesApplication.formatSize(getContext(), f.size));
+                    h.size.setVisibility(View.VISIBLE);
+                }
             }
             h.name.setText(f.name);
             h.itemView.setOnClickListener(new View.OnClickListener() {
