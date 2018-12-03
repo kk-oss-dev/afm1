@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
 import android.support.annotation.NonNull;
@@ -25,6 +26,7 @@ import net.lingala.zip4j.io.ZipInputStream;
 import net.lingala.zip4j.model.FileHeader;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -147,6 +149,34 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 return name + " -> " + (symlink.getPath().endsWith(OpenFileDialog.ROOT) ? symlink.getPath() : symlink.getPath() + OpenFileDialog.ROOT);
             else
                 return name + " -> " + symlink.getPath();
+        }
+    }
+
+    public static class VirtualFile extends SuperUser.VirtualFile {
+        Storage storage;
+
+        public VirtualFile(Storage storage, File f) {
+            super(f);
+            this.storage = storage;
+        }
+
+        public VirtualFile(Storage storage, File f, String name) {
+            super(f, name);
+            this.storage = storage;
+        }
+
+        @Override
+        public File[] listFiles(FileFilter filter) {
+            ArrayList<File> all = SuperUser.lsA(storage.getSu(), this);
+            if (filter != null) {
+                ArrayList<File> ff = new ArrayList<>();
+                for (File f : all) {
+                    if (filter.accept(f))
+                        ff.add(f);
+                }
+                all = ff;
+            }
+            return all.toArray(new File[]{});
         }
     }
 
@@ -479,6 +509,42 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         return su;
     }
 
+    public File getStorageTrash() {
+        File f = Environment.getExternalStorageDirectory();
+        if (f == null)
+            return null;
+        return new File(f, ".trash");
+    }
+
+    public File getExternalTrash() {
+        File f = context.getExternalCacheDir();
+        if (f == null)
+            return null;
+        return new File(f, "trash");
+    }
+
+    public File getLocalTrash() {
+        File f = context.getCacheDir();
+        if (f == null)
+            return null;
+        return new File(f, "trash");
+    }
+
+    public File getTrash() {
+        if (permitted(context, PERMISSIONS_RW)) {
+            return getStorageTrash();
+        } else {
+            if (getRoot())
+                return FilesApplication.getLocalTmp();
+            else {
+                File f = getExternalTrash();
+                if (f == null)
+                    f = getLocalTrash();
+                return f;
+            }
+        }
+    }
+
     public void closeSu() {
         try {
             if (su != null) {
@@ -496,49 +562,55 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     public ArchiveReader fromArchive(Uri uri) {
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
-            File k = getFile(uri);
+            final File k = getFile(uri);
             byte[] buf = new byte[1024];
             FileTypeDetector.FileRar rar = new FileTypeDetector.FileRar();
             FileTypeDetector.FileZip zip = new FileTypeDetector.FileZip();
             if (getRoot()) {
-                File p = k;
-                while (p != null && !p.exists())
-                    p = p.getParentFile();
                 try {
+                    File p = k;
+                    while (p != null && !SuperUser.exists(getSu(), p))
+                        p = p.getParentFile();
                     if (p == null || SuperUser.isDirectory(getSu(), p))
                         return null;
-                    InputStream is = new SuperUser.FileInputStream(p);
-                    int len = is.read(buf);
-                    if (len > 0) {
-                        rar.write(buf, 0, len);
-                        zip.write(buf, 0, len);
+                    String rel = relative(p.getPath(), k.getPath());
+                    if (!rel.isEmpty()) {
+                        InputStream is = new SuperUser.FileInputStream(p);
+                        int len = is.read(buf);
+                        if (len > 0) {
+                            rar.write(buf, 0, len);
+                            zip.write(buf, 0, len);
+                        }
+                        is.close();
+                        if (rar.done && rar.detected)
+                            return cache(new RarReader(Uri.fromFile(p), rel));
+                        if (zip.done && zip.detected)
+                            return cache(new ZipReader(Uri.fromFile(p), rel));
                     }
-                    is.close();
-                    if (rar.done && rar.detected)
-                        return cache(new RarReader(Uri.fromFile(p), relative(p.getPath(), k.getPath())));
-                    if (zip.done && zip.detected)
-                        return cache(new ZipReader(Uri.fromFile(p), relative(p.getPath(), k.getPath())));
                 } catch (IOException e) {
                     return null;
                 }
             } else {
-                File p = k;
-                while (p != null && !p.exists())
-                    p = p.getParentFile();
-                if (p == null || p.isDirectory())
-                    return null;
                 try {
-                    FileInputStream is = new FileInputStream(p);
-                    int len = is.read(buf);
-                    if (len > 0) {
-                        rar.write(buf, 0, len);
-                        zip.write(buf, 0, len);
+                    File p = k;
+                    while (p != null && !p.exists())
+                        p = p.getParentFile();
+                    if (p == null || p.isDirectory())
+                        return null;
+                    String rel = relative(p.getPath(), k.getPath());
+                    if (!rel.isEmpty()) {
+                        FileInputStream is = new FileInputStream(p);
+                        int len = is.read(buf);
+                        if (len > 0) {
+                            rar.write(buf, 0, len);
+                            zip.write(buf, 0, len);
+                        }
+                        is.close();
+                        if (rar.done && rar.detected)
+                            return cache(new RarReader(Uri.fromFile(p), rel));
+                        if (zip.done && zip.detected)
+                            return cache(new ZipReader(Uri.fromFile(p), rel));
                     }
-                    is.close();
-                    if (rar.done && rar.detected)
-                        return cache(new RarReader(Uri.fromFile(p), relative(p.getPath(), k.getPath())));
-                    if (zip.done && zip.detected)
-                        return cache(new ZipReader(Uri.fromFile(p), relative(p.getPath(), k.getPath())));
                 } catch (IOException e) {
                     return null;
                 }
@@ -704,14 +776,14 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         if (a != null)
             return a.walk(root);
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
-            int r = Storage.getFile(root).getPath().length();
+            File r = Storage.getFile(root);
             ArrayList<Node> files = new ArrayList<>();
             ArrayList<File> ff = SuperUser.lsa(getSu(), Storage.getFile(uri));
             for (File f : ff) {
                 if (f instanceof SuperUser.SymLink)
-                    files.add(new SymlinkNode(Uri.fromFile(f), f.getPath().substring(r), f.lastModified(), ((SuperUser.SymLink) f).getTarget(), f instanceof SuperUser.SymDirLink));
+                    files.add(new SymlinkNode(Uri.fromFile(f), relative(r, f).getPath(), f.lastModified(), ((SuperUser.SymLink) f).getTarget(), f instanceof SuperUser.SymDirLink));
                 else
-                    files.add(new Node(Uri.fromFile(f), f.getPath().substring(r), f.isDirectory(), f.length(), f.lastModified()));
+                    files.add(new Node(Uri.fromFile(f), relative(r, f).getPath(), f.isDirectory(), f.length(), f.lastModified()));
             }
             return files;
         }

@@ -5,6 +5,12 @@
         android:summary="@string/pref_root_summary"
         android:title="@string/pref_root_title" />
 
+    <SwitchPreferenceCompat
+        android:defaultValue="false"
+        android:key="recycle"
+        android:summary="@string/pref_recycle_summary"
+        android:title="@string/pref_recycle_title" />
+
     <ListPreference
         android:defaultValue="@string/Theme_Light"
         android:entries="@array/themes_text"

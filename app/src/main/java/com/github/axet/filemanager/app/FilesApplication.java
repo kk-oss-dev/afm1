@@ -25,6 +25,7 @@ public class FilesApplication extends MainApplication {
 
     public static final String PREF_THEME = "theme";
     public static final String PREF_ROOT = "root";
+    public static final String PREF_RECYCLE = "recycle";
 
     public Bookmarks bookmarks;
     public ArrayList<Storage.Node> copy; // selected files
