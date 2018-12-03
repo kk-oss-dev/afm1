@@ -157,6 +157,7 @@ public class SearchFragment extends FilesFragment {
     public void onDestroy() {
         super.onDestroy();
         handler.removeCallbacks(calc);
+        search.close();
     }
 
     @Override
