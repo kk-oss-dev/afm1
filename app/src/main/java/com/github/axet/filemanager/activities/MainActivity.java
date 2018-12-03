@@ -735,6 +735,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             app.bookmarks.remove(uri);
+                            app.bookmarks.save();
                             reloadMenu();
                         }
                     });
