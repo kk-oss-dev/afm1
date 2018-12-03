@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.provider.DocumentsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -118,9 +119,9 @@ public class FilesFragment extends Fragment {
     LinearLayoutManager layout;
     Storage storage;
 
-    PasteBuilder delete;
+    OperationBuilder delete;
     PasteBuilder paste;
-    PasteBuilder archive;
+    OperationBuilder archive;
 
     OpenChoicer choicer;
 
@@ -164,6 +165,11 @@ public class FilesFragment extends Fragment {
         return msg;
     }
 
+    public static String getFirst(String name) {
+        String[] ss = Storage.splitPath(name);
+        return ss[0];
+    }
+
     public static boolean isThumbnail(Storage.Node d) { // do not open every file, show thumbnnails only for correct file extension
         String[] ss = new String[]{"png", "jpg", "jpeg", "gif", "bmp"};
         for (String s : ss) {
@@ -190,6 +196,139 @@ public class FilesFragment extends Fragment {
         if (s.endsWith(right))
             s = s.substring(0, s.length() - right.length());
         return s;
+    }
+
+    public static void pasteError(final OperationBuilder paste, final PendingOperation op, final Throwable e) {
+        Log.e(TAG, "paste", e);
+        AlertDialog.Builder builder = new AlertDialog.Builder(paste.getContext());
+        builder.setCancelable(false);
+        builder.setTitle("Error");
+        View p = LayoutInflater.from(paste.getContext()).inflate(R.layout.paste_error, null);
+        View sp = p.findViewById(R.id.skip_panel);
+        TextView t = (TextView) p.findViewById(R.id.text);
+        t.setText(toMessage(e));
+        final View ss = p.findViewById(R.id.skip);
+        View sa = p.findViewById(R.id.skipall);
+        builder.setView(p);
+        builder.setPositiveButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                paste.dismiss();
+            }
+        });
+        builder.setNeutralButton(R.string.copy_retry, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                op.run();
+            }
+        });
+        EnumSet<PendingOperation.OPERATION> o = op.check(e);
+        if (o.contains(PendingOperation.OPERATION.NONE)) {
+            sp.setVisibility(View.GONE);
+            builder.setNegativeButton(R.string.button_skip, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    ss.performClick();
+                }
+            });
+        }
+        final AlertDialog d = builder.create();
+        ss.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                op.filesIndex++;
+                op.cancel(); // close curret is / os
+                op.run();
+                d.dismiss();
+            }
+        });
+        sa.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EnumSet<PendingOperation.OPERATION> o = op.check(e);
+                o.clear();
+                o.add(PendingOperation.OPERATION.SKIP);
+                op.filesIndex++;
+                op.run();
+                d.dismiss();
+            }
+        });
+        d.show();
+    }
+
+    public static void pasteConflict(final OperationBuilder paste, final PendingOperation op, final Storage.Node f, final Storage.Node t) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(paste.getContext());
+        String n = paste.getContext().getString(R.string.files_conflict);
+        builder.setTitle(n);
+        LayoutInflater inflater = LayoutInflater.from(paste.getContext());
+        View v = inflater.inflate(R.layout.paste_conflict, null);
+        builder.setView(v);
+        builder.setCancelable(false);
+        builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                op.close();
+                paste.dismiss();
+            }
+        });
+
+        final AlertDialog d = builder.create();
+
+        TextView target = (TextView) v.findViewById(R.id.target);
+        TextView source = (TextView) v.findViewById(R.id.source);
+
+        View overwrite = v.findViewById(R.id.overwrite);
+        overwrite.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                op.storage.delete(t.uri);
+                op.run();
+                d.dismiss();
+            }
+        });
+
+        View overwriteall = v.findViewById(R.id.overwriteall);
+        overwriteall.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EnumSet<PendingOperation.OPERATION> o = op.check(f, t);
+                o.clear();
+                o.add(PendingOperation.OPERATION.OVERWRITE);
+                op.run();
+                d.dismiss();
+            }
+        });
+
+        View skip = v.findViewById(R.id.skip);
+        skip.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                op.filesIndex++;
+                op.run();
+                d.dismiss();
+            }
+        });
+
+        View skipall = v.findViewById(R.id.skipall);
+        skipall.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EnumSet<PendingOperation.OPERATION> o = op.check(f, t);
+                o.clear();
+                o.add(PendingOperation.OPERATION.SKIP);
+                op.run();
+                d.dismiss();
+            }
+        });
+
+        target.setText(paste.getContext().getString(R.string.copy_overwrite) + " " +
+                op.storage.getDisplayName(t.uri) + "\n\t\t" + BYTES.format(t.size) + " " +
+                paste.getContext().getString(R.string.size_bytes) + ", " + SIMPLE.format(t.last));
+        source.setText(paste.getContext().getString(R.string.copy_overwrite_with) + " " +
+                op.storage.getDisplayName(f.uri) + "\n\t\t" + BYTES.format(f.size) + " " +
+                paste.getContext().getString(R.string.size_bytes) + ", " + SIMPLE.format(f.last));
+
+        d.show();
     }
 
     public static class Pos {
@@ -235,47 +374,45 @@ public class FilesFragment extends Fragment {
     }
 
     public static class PendingOperation implements Runnable {
-        Context context;
-        ContentResolver resolver;
-        Storage storage;
-        SharedPreferences shared;
-        final Object lock = new Object();
-        final AtomicBoolean interrupt = new AtomicBoolean(); // soft interrupt
-        Thread thread;
-        Throwable delayed;
+        public Context context;
+        public ContentResolver resolver;
+        public Storage storage;
+        public final Object lock = new Object();
+        public final AtomicBoolean interrupt = new AtomicBoolean(); // soft interrupt
+        public Thread thread;
+        public Throwable delayed;
 
-        int calcIndex;
-        ArrayList<Storage.Node> calcs;
-        ArrayList<Storage.Node> calcsStart; // initial calcs dir for UI
-        Uri calcUri;
+        public int calcIndex;
+        public ArrayList<Storage.Node> calcs;
+        public ArrayList<Storage.Node> calcsStart; // initial calcs dir for UI
+        public Uri calcUri;
 
-        int filesIndex;
-        ArrayList<Storage.Node> files = new ArrayList<>();
+        public int filesIndex;
+        public ArrayList<Storage.Node> files = new ArrayList<>();
 
-        Storage.Node f;
-        InputStream is;
-        OutputStream os;
-        Uri t; // target file, to update last modified time or delete in case of errors
+        public Storage.Node f;
+        public InputStream is;
+        public OutputStream os;
+        public Uri t; // target file, to update last modified time or delete in case of errors
 
-        SpeedInfo info = new SpeedInfo(); // speed info
-        long current; // current file transfers
-        long processed; // processed files bytes
-        long total; // total size of all files
+        public SpeedInfo info = new SpeedInfo(); // speed info
+        public long current; // current file transfers
+        public long processed; // processed files bytes
+        public long total; // total size of all files
 
-        EnumSet<OPERATION> small = EnumSet.of(OPERATION.ASK); // overwrite file smaller then source
-        EnumSet<OPERATION> big = EnumSet.of(OPERATION.ASK); // overwrite file bigger then source
-        EnumSet<OPERATION> newer = EnumSet.of(OPERATION.ASK); // overwrite same size file but newer date
-        EnumSet<OPERATION> same = EnumSet.of(OPERATION.ASK); // same file size and date
+        public EnumSet<OPERATION> small = EnumSet.of(OPERATION.ASK); // overwrite file smaller then source
+        public EnumSet<OPERATION> big = EnumSet.of(OPERATION.ASK); // overwrite file bigger then source
+        public EnumSet<OPERATION> newer = EnumSet.of(OPERATION.ASK); // overwrite same size file but newer date
+        public EnumSet<OPERATION> same = EnumSet.of(OPERATION.ASK); // same file size and date
 
-        EnumSet<OPERATION> access = EnumSet.of(OPERATION.ASK); // ErrnoException ACCESS
+        public EnumSet<OPERATION> access = EnumSet.of(OPERATION.ASK); // ErrnoException ACCESS
 
-        enum OPERATION {NONE, ASK, SKIP, OVERWRITE}
+        public enum OPERATION {NONE, ASK, SKIP, OVERWRITE}
 
         public PendingOperation(Context context) {
             this.context = context;
             this.storage = new Storage(context);
             this.resolver = context.getContentResolver();
-            this.shared = PreferenceManager.getDefaultSharedPreferences(context);
         }
 
         public PendingOperation(Context context, Uri root, ArrayList<Storage.Node> ff) {
@@ -313,20 +450,21 @@ public class FilesFragment extends Fragment {
             return calcIndex < calcs.size();
         }
 
-        public void open(final Storage.Node f, Uri to) throws IOException {
+        public void open(final Storage.Node f, Uri to, String target) throws IOException {
             this.f = f;
             is = storage.open(f.uri);
             String s = to.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {
+                SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(context);
                 File k = Storage.getFile(to);
-                final File m = new File(k, f.name);
+                File m = new File(k, target);
                 if (shared.getBoolean(FilesApplication.PREF_ROOT, false))
                     os = new SuperUser.FileOutputStream(m);
                 else
                     os = new FileOutputStream(m);
                 t = Uri.fromFile(m);
             } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-                Uri doc = storage.createFile(to, f.name);
+                Uri doc = storage.createFile(to, target);
                 os = resolver.openOutputStream(doc);
                 t = doc;
             } else {
@@ -460,39 +598,42 @@ public class FilesFragment extends Fragment {
         public String formatCalc() {
             return storage.getDisplayName(files.get(files.size() - 1).uri);
         }
+
+        public void post() {
+        }
     }
 
-    public static class PasteBuilder extends AlertDialog.Builder {
-        View v;
+    public static class OperationBuilder extends AlertDialog.Builder {
+        public View v;
 
-        TextView copy;
-        TextView from;
-        TextView to;
-        ProgressBar progressFile;
-        ProgressBar progressTotal;
-        TextView filesCount;
-        TextView filesTotal;
+        public TextView title;
+        public TextView from;
+        public TextView to;
+        public ProgressBar progressFile;
+        public ProgressBar progressTotal;
+        public TextView filesCount;
+        public TextView filesTotal;
 
-        AlertDialog d;
+        public AlertDialog d;
 
-        DialogInterface.OnDismissListener dismiss = new DialogInterface.OnDismissListener() {
+        public DialogInterface.OnDismissListener dismiss = new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface dialog) {
             }
         };
-        View.OnClickListener neutral = new View.OnClickListener() {
+        public View.OnClickListener neutral = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
             }
         };
-        View.OnClickListener negative = new View.OnClickListener() {
+        public View.OnClickListener negative = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 dismiss();
             }
         };
 
-        public PasteBuilder(Context context) {
+        public OperationBuilder(Context context) {
             super(context);
             setCancelable(false);
             LayoutInflater inflater = LayoutInflater.from(getContext());
@@ -509,7 +650,7 @@ public class FilesFragment extends Fragment {
                 }
             });
 
-            copy = (TextView) v.findViewById(R.id.copy);
+            title = (TextView) v.findViewById(R.id.title);
             from = (TextView) v.findViewById(R.id.from);
             to = (TextView) v.findViewById(R.id.to);
             progressFile = (ProgressBar) v.findViewById(R.id.progress_file);
@@ -571,6 +712,476 @@ public class FilesFragment extends Fragment {
             progressFile.setProgress(f.size == 0 ? 0 : (int) (op.current * 100 / f.size));
             progressTotal.setProgress(op.total == 0 ? 0 : (int) (op.processed * 100 / op.total));
             filesTotal.setText(FilesApplication.formatSize(getContext(), op.processed) + " / " + FilesApplication.formatSize(getContext(), op.total));
+        }
+    }
+
+    public static class DeleteBuilder extends OperationBuilder {
+        public Handler handler = new Handler();
+        public PendingOperation op;
+
+        public DeleteBuilder(Context context) {
+            super(context);
+        }
+
+        public DeleteBuilder(Context context, Uri uri, ArrayList<Storage.Node> selected) {
+            super(context);
+            create(uri, selected);
+        }
+
+        public void create(Uri uri, ArrayList<Storage.Node> selected) {
+            setTitle(getContext().getString(R.string.files_deleting));
+            op = new PendingOperation(getContext(), uri, selected) {
+                @Override
+                public void run() {
+                    try {
+                        if (calcIndex < calcs.size()) {
+                            deleteCalc();
+                            return;
+                        }
+                        if (filesIndex < files.size()) {
+                            deleteProcess();
+                            return;
+                        }
+                        success();
+                    } catch (RuntimeException e) {
+                        deleteError(e);
+                    }
+                }
+
+                public void post() {
+                    handler.removeCallbacks(this);
+                    handler.post(this);
+                }
+            };
+            neutral = new View.OnClickListener() { // pause/resume
+                @Override
+                public void onClick(View v) {
+                    final View.OnClickListener neutral = this;
+                    op.pause();
+                    handler.removeCallbacks(op);
+                    final Button b = d.getButton(DialogInterface.BUTTON_NEUTRAL);
+                    b.setText(R.string.copy_resume);
+                    DeleteBuilder.this.neutral = new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            op.run();
+                            b.setText(R.string.copy_pause);
+                            DeleteBuilder.this.neutral = neutral;
+                        }
+                    };
+                }
+            };
+            dismiss = new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    handler.removeCallbacks(op);
+                    op.close();
+                    dismiss();
+                }
+            };
+        }
+
+        public void deleteCalc() {
+            if (!op.calc())
+                Collections.sort(op.files, new SortDelete());
+            title.setGravity(Gravity.NO_GRAVITY);
+            title.setText(op.context.getString(R.string.files_deleting) + ": " + op.formatStart());
+            update(op);
+            progressFile.setVisibility(View.GONE);
+            from.setText(op.context.getString(R.string.files_calculating) + ": " + op.formatCalc());
+            to.setVisibility(View.GONE);
+            op.post();
+        }
+
+        public void deleteProcess() {
+            int old = op.filesIndex;
+            Storage.Node f = op.files.get(op.filesIndex);
+            if (!op.storage.delete(f.uri))
+                throw new RuntimeException("Unable to delete: " + f.name);
+            if (!f.dir)
+                op.processed += f.size;
+            op.filesIndex++;
+            from.setText(op.context.getString(R.string.files_deleting) + ": " + op.formatStart());
+            update(op, old, f);
+            progressFile.setVisibility(View.GONE);
+            from.setText(op.storage.getDisplayName(f.uri));
+            to.setVisibility(View.GONE);
+            op.post();
+        }
+
+        public void deleteError(Throwable e) {
+            switch (op.check(e).iterator().next()) {
+                case SKIP:
+                    Log.d(TAG, "skip", e);
+                    op.filesIndex++;
+                    op.post();
+                    return;
+            }
+            pasteError(DeleteBuilder.this, op, e);
+        }
+
+        public void success() { // success!
+            dismiss();
+            Toast.makeText(getContext(), op.context.getString(R.string.toast_files_deleted, op.files.size()), Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        public AlertDialog show() {
+            AlertDialog d = super.show();
+            op.run();
+            return d;
+        }
+    }
+
+    public static class PasteBuilder extends OperationBuilder {
+        Handler handler = new Handler();
+        PendingOperation op;
+        String n;
+        HashMap<String, String> rename = new HashMap<>();
+
+        public PasteBuilder(Context context) {
+            super(context);
+        }
+
+        public void create(Uri calcUri, final ArrayList<Storage.Node> ff, final boolean move, final Uri uri) {
+            if (move)
+                n = getContext().getString(R.string.files_moving);
+            else
+                n = getContext().getString(R.string.files_copying);
+            setTitle(n);
+
+            op = new PendingOperation(getContext(), calcUri, ff) {
+                int deleteIndex = -1;
+                ArrayList<Storage.Node> delete = new ArrayList<>();
+
+                @Override
+                public void run() {
+                    try {
+                        if (calcIndex < calcs.size()) {
+                            if (!calc())
+                                calcDone();
+                            title.setGravity(Gravity.NO_GRAVITY);
+                            title.setText(getContext().getString(R.string.files_calculating) + ": " + formatCalc());
+                            update(this);
+                            from.setText(getContext().getString(R.string.copy_from) + " " + formatStart());
+                            to.setText(getContext().getString(R.string.copy_to) + " " + storage.getDisplayName(uri));
+                            post();
+                            return;
+                        }
+                        synchronized (lock) {
+                            if (is != null && os != null) {
+                                final Storage.Node f = files.get(filesIndex);
+                                int old = filesIndex;
+                                Uri oldt = t;
+                                if (thread == null) {
+                                    interrupt.set(false);
+                                    thread = new Thread("Copy thread") {
+                                        @Override
+                                        public void run() {
+                                            byte[] buf = new byte[SuperUser.BUF_SIZE];
+                                            try {
+                                                int len;
+                                                while ((len = copy(buf)) > 0) {
+                                                    synchronized (lock) {
+                                                        current += len;
+                                                        processed += len;
+                                                        info.step(current);
+                                                    }
+                                                    if (Thread.currentThread().isInterrupted() || interrupt.get())
+                                                        return;
+                                                }
+                                                synchronized (lock) {
+                                                    finish();
+                                                    if (move)
+                                                        storage.delete(f.uri);
+                                                    filesIndex++;
+                                                    thread = null; // close thread
+                                                    post();
+                                                }
+                                            } catch (Exception e) {
+                                                synchronized (lock) {
+                                                    delayed = e; // thread != null
+                                                    post();
+                                                }
+                                            }
+                                        }
+                                    };
+                                    thread.start();
+                                } else {
+                                    if (delayed != null) {
+                                        Throwable d = delayed;
+                                        thread = null;
+                                        delayed = null;
+                                        throw new RuntimeException(d);
+                                    }
+                                }
+                                post(thread == null ? 0 : 1000);
+                                int a = info.getAverageSpeed();
+                                String e;
+                                long diff = 0;
+                                if (a > 0)
+                                    diff = (f.size - current) * 1000 / a;
+                                if (diff >= 1000)
+                                    e = FilesApplication.formatLeftExact(context, diff);
+                                else
+                                    e = "∞";
+                                title.setGravity(Gravity.CENTER);
+                                title.setText(n + " " + FilesApplication.formatSize(context, a) + getContext().getString(R.string.per_second) + ", " + e);
+                                update(this, old, f);
+                                from.setText(getContext().getString(R.string.copy_from) + " " + storage.getDisplayName(f.uri));
+                                to.setText(getContext().getString(R.string.copy_to) + " " + storage.getDisplayName(oldt));
+                                return;
+                            }
+                        }
+                        if (filesIndex < files.size()) {
+                            cancel(); // cancel previous skiped operation if existed
+                            Storage.Node f = files.get(filesIndex);
+                            String target;
+                            {
+                                String p = getFirst(f.name);
+                                String r = rename.get(p);
+                                if (r != null)
+                                    target = new File(r, Storage.relative(p, f.name)).getPath();
+                                else
+                                    target = f.name;
+                            }
+                            try {
+                                if (f.dir) {
+                                    Storage.Node t = null;
+                                    String s = uri.getScheme();
+                                    if (s.equals(ContentResolver.SCHEME_FILE)) {
+                                        File k = Storage.getFile(uri);
+                                        File m = new File(k, target);
+                                        if (m.exists() && m.isDirectory())
+                                            t = new Storage.Node(m);
+                                    } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
+                                        Uri doc = storage.child(uri, target);
+                                        DocumentFile k = DocumentFile.fromSingleUri(context, doc);
+                                        if (k.exists() && k.isDirectory())
+                                            t = new Storage.Node(k);
+                                    } else {
+                                        throw new Storage.UnknownUri();
+                                    }
+                                    if (t == null && storage.mkdir(uri, target) == null)
+                                        throw new RuntimeException("unable create dir: " + target);
+                                    filesIndex++;
+                                    if (move) {
+                                        delete.add(f);
+                                        deleteIndex = delete.size() - 1; // reverse index
+                                    }
+                                } else {
+                                    Storage.Node t = null;
+                                    String s = uri.getScheme();
+                                    if (s.equals(ContentResolver.SCHEME_FILE)) {
+                                        File k = Storage.getFile(uri);
+                                        File m = new File(k, target);
+                                        if (m.exists() && m.isFile())
+                                            t = new Storage.Node(m);
+                                    } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
+                                        Uri doc = storage.child(uri, target);
+                                        DocumentFile k = DocumentFile.fromSingleUri(context, doc);
+                                        if (k.exists() && k.isFile())
+                                            t = new Storage.Node(k);
+                                    } else {
+                                        throw new Storage.UnknownUri();
+                                    }
+                                    if (t != null) {
+                                        switch (check(f, t).iterator().next()) {
+                                            case NONE:
+                                                break;
+                                            case ASK:
+                                                pasteConflict(PasteBuilder.this, this, f, t);
+                                                return;
+                                            case SKIP:
+                                                filesIndex++;
+                                                post();
+                                                return;
+                                            case OVERWRITE:
+                                                storage.delete(t.uri);
+                                                break;
+                                        }
+                                    }
+                                    if (f instanceof Storage.SymlinkNode) {
+                                        Storage.SymlinkNode l = (Storage.SymlinkNode) f;
+                                        if (storage.symlink(l, uri) || l.isSymDir()) { // if fails, continue with content copy
+                                            filesIndex++;
+                                            if (move)
+                                                storage.delete(f.uri);
+                                            post();
+                                            return;
+                                        } else { // we about to copy symlinks as files, update total!!!
+                                            total += SuperUser.length(storage.getSu(), Storage.getFile(f.uri));
+                                        }
+                                    }
+                                    if (move) { // try same node device 'mv' operation
+                                        if (s.equals(ContentResolver.SCHEME_FILE)) { // target 's'
+                                            s = f.uri.getScheme();
+                                            if (s.equals(ContentResolver.SCHEME_FILE)) { // source 's'
+                                                File k = Storage.getFile(uri);
+                                                File mf = Storage.getFile(f.uri);
+                                                File mt = new File(k, target);
+                                                if (storage.getRoot()) {
+                                                    if (SuperUser.rename(storage.getSu(), mf, mt).ok()) {
+                                                        filesIndex++;
+                                                        processed += f.size;
+                                                        post();
+                                                        return;
+                                                    }
+                                                } else {
+                                                    if (mf.renameTo(mt)) {
+                                                        filesIndex++;
+                                                        processed += f.size;
+                                                        post();
+                                                        return;
+                                                    }
+                                                }
+                                            }
+                                        } else if (Build.VERSION.SDK_INT >= 24 && s.equals(ContentResolver.SCHEME_CONTENT)) { // moveDocument api24+
+                                            s = f.uri.getScheme();
+                                            if (s.equals(ContentResolver.SCHEME_CONTENT)) { // source 's'
+                                                try {
+                                                    if (DocumentsContract.moveDocument(resolver, f.uri, Storage.getDocumentParent(context, f.uri), uri) != null) {
+                                                        filesIndex++;
+                                                        processed += f.size;
+                                                        post();
+                                                        return;
+                                                    }
+                                                } catch (RuntimeException e) { // IllegalStateException: "Failed to move"
+                                                }
+                                            }
+                                        } else {
+                                            throw new Storage.UnknownUri();
+                                        }
+                                    }
+                                    open(f, uri, target);
+                                    info.start(current);
+                                }
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                            post();
+                            return;
+                        }
+                        if (deleteIndex >= 0) {
+                            Storage.Node f = delete.get(deleteIndex);
+                            storage.delete(f.uri);
+                            deleteIndex--;
+                            title.setVisibility(View.GONE);
+                            progressFile.setVisibility(View.GONE);
+                            progressTotal.setVisibility(View.GONE);
+                            from.setText(getContext().getString(R.string.files_deleting) + ": " + storage.getDisplayName(f.uri));
+                            to.setVisibility(View.GONE);
+                            post();
+                            return;
+                        }
+                        success();
+                    } catch (RuntimeException e) {
+                        switch (check(e).iterator().next()) {
+                            case SKIP:
+                                Log.d(TAG, "skip", e);
+                                filesIndex++;
+                                post();
+                                return;
+                        }
+                        pasteError(PasteBuilder.this, this, e);
+                    }
+                }
+
+                public void post() {
+                    post(0);
+                }
+
+                public void post(long l) {
+                    handler.removeCallbacks(this);
+                    handler.postDelayed(this, l);
+                }
+            };
+
+            neutral = new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    final View.OnClickListener neutral = this;
+                    op.pause();
+                    handler.removeCallbacks(op);
+                    final Button b = d.getButton(DialogInterface.BUTTON_NEUTRAL);
+                    b.setText(R.string.copy_resume);
+                    PasteBuilder.this.neutral = new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            op.run();
+                            b.setText(R.string.copy_pause);
+                            PasteBuilder.this.neutral = neutral;
+                        }
+                    };
+                }
+            };
+
+            dismiss = new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    op.close();
+                    dismiss();
+                    handler.removeCallbacks(op);
+                }
+            };
+        }
+
+        public void calcDone() {
+        }
+
+        public void success() {
+            dismiss(); // all done!
+        }
+
+        @Override
+        public AlertDialog show() {
+            AlertDialog d = super.show();
+            op.run();
+            return d;
+        }
+    }
+
+    public static class RecycleBuilder extends PasteBuilder {
+        File trash;
+
+        public RecycleBuilder(Context context, Uri calcUri, ArrayList<Storage.Node> ff, File trash) {
+            super(context);
+            this.trash = trash;
+            Uri uri = Uri.fromFile(trash);
+            create(calcUri, ff, true, uri);
+            setTitle(n = getContext().getString(R.string.files_deleting));
+            for (Storage.Node f : ff) {
+                File m = new File(trash, f.name);
+                if (m.exists()) {
+                    String next = null;
+                    boolean dup = true;
+                    for (int i = 0; dup; i++) {
+                        String n = Storage.getNameNoExt(m);
+                        String e = Storage.getExt(m);
+                        n = Storage.filterDups(n);
+                        next = Storage.getNextFile(trash, n, i, e).getName();
+                        dup = false;
+                        for (String v : rename.values()) {
+                            if (v.equals(next)) {
+                                dup = true;
+                                break;
+                            }
+                        }
+                    }
+                    rename.put(f.name, next);
+                }
+            }
+        }
+
+        @Override
+        public void calcDone() {
+            if (!trash.exists())
+                trash.mkdir();
+        }
+
+        public void success() { // success!
+            super.success();
+            Toast.makeText(getContext(), getContext().getString(R.string.toast_files_deleted, op.files.size()), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -1192,8 +1803,69 @@ public class FilesFragment extends Fragment {
         if (id == R.id.action_paste && item.isEnabled()) {
             if (paste != null)
                 return true;
-            paste();
-            return true;
+            if (app.uri.equals(uri)) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                builder.setTitle("Duplicate?");
+                builder.setMessage(R.string.are_you_sure);
+                builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                    }
+                });
+                builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        paste = new PasteBuilder(getContext()) {
+                            @Override
+                            public void dismiss() {
+                                super.dismiss();
+                                paste = null;
+                                reload();
+                            }
+                        };
+                        ArrayList<Storage.Node> ff = null;
+                        if (app.copy != null)
+                            ff = app.copy;
+                        if (app.cut != null)
+                            ff = app.cut;
+                        for (Storage.Node f : ff) {
+                            String n = Storage.getNameNoExt(f.name);
+                            String e = Storage.getExt(f.name);
+                            Uri nf = storage.getNextFile(app.uri, n, e);
+                            String t = storage.getName(nf);
+                            paste.rename.put(f.name, t);
+                        }
+                        paste.create(app.uri, ff, false, uri);
+                        paste.show();
+                    }
+                });
+                builder.show();
+                return true;
+            } else {
+                paste = new PasteBuilder(getContext()) {
+                    @Override
+                    public void dismiss() {
+                        super.dismiss();
+                        paste = null;
+                        reload();
+                        if (app.cut != null) {
+                            app.cut = null; // not possible to move twice
+                            getContext().sendBroadcast(new Intent(MOVE_UPDATE));
+                        }
+                    }
+                };
+                ArrayList<Storage.Node> ff = null;
+                boolean move = false;
+                if (app.copy != null)
+                    ff = app.copy;
+                if (app.cut != null) {
+                    ff = app.cut;
+                    move = true;
+                }
+                paste.create(app.uri, ff, move, uri);
+                paste.show();
+                return true;
+            }
         }
         if (id == R.id.action_copy) {
             try {
@@ -1238,7 +1910,48 @@ public class FilesFragment extends Fragment {
             builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    delete();
+                    SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
+                    boolean t = shared.getBoolean(FilesApplication.PREF_RECYCLE, false);
+                    File trash = storage.getTrash();
+                    String s = uri.getScheme();
+                    if (s.equals(ContentResolver.SCHEME_FILE)) {
+                        File f = Storage.getFile(uri);
+                        if (Storage.relative(trash, f) != null)
+                            t = false; // delete permanenty, operation on trash folder
+                    }
+                    if (t) {
+                        delete = new RecycleBuilder(getContext(), uri, selected, trash) {
+                            @Override
+                            public void dismiss() {
+                                super.dismiss();
+                                delete = null;
+                            }
+
+                            @Override
+                            public void success() {
+                                super.success();
+                                closeSelection();
+                                reload();
+                            }
+                        };
+                        delete.show();
+                    } else {
+                        delete = new DeleteBuilder(getContext(), uri, selected) {
+                            @Override
+                            public void dismiss() {
+                                super.dismiss();
+                                delete = null;
+                            }
+
+                            @Override
+                            public void success() {
+                                super.success();
+                                closeSelection();
+                                reload();
+                            }
+                        };
+                        delete.show();
+                    }
                 }
             });
             builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -1324,95 +2037,8 @@ public class FilesFragment extends Fragment {
         return super.onOptionsItemSelected(item);
     }
 
-    void delete() {
-        delete = new PasteBuilder(getContext());
-        delete.setTitle(getString(R.string.files_deleting));
-        final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
-            @Override
-            public void run() {
-                try {
-                    if (calcIndex < calcs.size()) {
-                        if (!calc())
-                            Collections.sort(files, new SortDelete());
-                        delete.copy.setGravity(Gravity.NO_GRAVITY);
-                        delete.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
-                        delete.update(this);
-                        delete.progressFile.setVisibility(View.GONE);
-                        delete.from.setText(getString(R.string.files_deleting) + ": " + formatStart());
-                        delete.to.setVisibility(View.GONE);
-                        post();
-                        return;
-                    }
-                    if (filesIndex < files.size()) {
-                        int old = filesIndex;
-                        Storage.Node f = files.get(filesIndex);
-                        if (!storage.delete(f.uri))
-                            throw new RuntimeException("Unable to delete: " + f.name);
-                        if (!f.dir)
-                            processed += f.size;
-                        filesIndex++;
-                        delete.copy.setText(getString(R.string.files_deleting) + ": " + formatStart());
-                        delete.update(this, old, f);
-                        delete.progressFile.setVisibility(View.GONE);
-                        delete.from.setText(storage.getDisplayName(f.uri));
-                        delete.to.setVisibility(View.GONE);
-                        post();
-                        return;
-                    }
-                    delete.dismiss();
-                    closeSelection();
-                    reload();
-                    Toast.makeText(getContext(), getString(R.string.toast_files_deleted, files.size()), Toast.LENGTH_SHORT).show();
-                } catch (RuntimeException e) {
-                    switch (check(e).iterator().next()) {
-                        case SKIP:
-                            Log.d(TAG, "skip", e);
-                            filesIndex++;
-                            post();
-                            return;
-                    }
-                    pasteError(delete, this, e);
-                }
-            }
-
-            public void post() {
-                handler.removeCallbacks(this);
-                handler.post(this);
-            }
-        };
-        delete.neutral = new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                final View.OnClickListener neutral = this;
-                op.pause();
-                handler.removeCallbacks(op);
-                final Button b = delete.d.getButton(DialogInterface.BUTTON_NEUTRAL);
-                b.setText(R.string.copy_resume);
-                delete.neutral = new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        op.run();
-                        b.setText(R.string.copy_pause);
-                        delete.neutral = neutral;
-                    }
-                };
-            }
-        };
-        delete.dismiss = new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(DialogInterface dialog) {
-                handler.removeCallbacks(op);
-                delete.dismiss();
-                delete = null;
-                op.close();
-            }
-        };
-        delete.show();
-        op.run();
-    }
-
     void archive(final Uri to, final OutputStream fos) {
-        archive = new PasteBuilder(getContext());
+        archive = new OperationBuilder(getContext());
         archive.setTitle(R.string.menu_archive);
         final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
             ZipOutputStream zip;
@@ -1428,8 +2054,8 @@ public class FilesFragment extends Fragment {
                         if (!calc()) {
                             os = zip = new ZipOutputStream(new BufferedOutputStream(fos));
                         }
-                        archive.copy.setGravity(Gravity.NO_GRAVITY);
-                        archive.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
+                        archive.title.setGravity(Gravity.NO_GRAVITY);
+                        archive.title.setText(getString(R.string.files_calculating) + ": " + formatCalc());
                         archive.update(this);
                         archive.from.setText(getString(R.string.files_archiving) + ": " + formatStart());
                         archive.to.setText(getString(R.string.copy_to) + storage.getDisplayName(t));
@@ -1492,8 +2118,8 @@ public class FilesFragment extends Fragment {
                                 e = FilesApplication.formatLeftExact(context, diff);
                             else
                                 e = "∞";
-                            archive.copy.setGravity(Gravity.CENTER);
-                            archive.copy.setText(getString(R.string.files_archiving) + " " + FilesApplication.formatSize(context, a) + getString(R.string.per_second) + ", " + e);
+                            archive.title.setGravity(Gravity.CENTER);
+                            archive.title.setText(getString(R.string.files_archiving) + " " + FilesApplication.formatSize(context, a) + getString(R.string.per_second) + ", " + e);
                             archive.update(this, old, f);
                             archive.from.setText(getString(R.string.copy_from) + " " + storage.getDisplayName(f.uri));
                             archive.to.setText(getString(R.string.copy_to) + " " + storage.getDisplayName(oldt));
@@ -1517,7 +2143,7 @@ public class FilesFragment extends Fragment {
                         }
 
                         filesIndex++;
-                        archive.copy.setText(getString(R.string.files_archiving) + ": " + formatStart());
+                        archive.title.setText(getString(R.string.files_archiving) + ": " + formatStart());
                         archive.update(this, old, f);
                         archive.from.setText(storage.getDisplayName(f.uri));
                         post();
@@ -1577,9 +2203,9 @@ public class FilesFragment extends Fragment {
         archive.dismiss = new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface dialog) {
+                op.close();
                 archive.dismiss();
                 archive = null;
-                op.close();
                 handler.removeCallbacks(op);
                 reload();
             }
@@ -1603,391 +2229,6 @@ public class FilesFragment extends Fragment {
     public void closeSelection() {
         MenuItemCompat.collapseActionView(toolbar);
         updateSelection();
-    }
-
-    public void paste() {
-        if (app.uri.equals(uri)) // prevent paste to the original 'tab'
-            return;
-        ArrayList<Storage.Node> ff = null;
-        if (app.copy != null)
-            ff = app.copy;
-        if (app.cut != null)
-            ff = app.cut;
-        paste = new PasteBuilder(getContext());
-        final String n;
-        if (app.copy != null)
-            n = getString(R.string.files_copying);
-        else if (app.cut != null)
-            n = getString(R.string.files_moving);
-        else
-            n = "Paste";
-        paste.setTitle(n);
-
-        final PendingOperation op = new PendingOperation(getContext(), app.uri, ff) {
-            int deleteIndex = -1;
-            ArrayList<Storage.Node> delete = new ArrayList<>();
-
-            @Override
-            public void run() {
-                try {
-                    if (calcIndex < calcs.size()) {
-                        calc();
-                        paste.copy.setGravity(Gravity.NO_GRAVITY);
-                        paste.copy.setText(getString(R.string.files_calculating) + ": " + formatCalc());
-                        paste.update(this);
-                        paste.from.setText(getString(R.string.copy_from) + " " + formatStart());
-                        paste.to.setText(getString(R.string.copy_to) + " " + storage.getDisplayName(uri));
-                        post();
-                        return;
-                    }
-                    synchronized (lock) {
-                        if (is != null && os != null) {
-                            final Storage.Node f = files.get(filesIndex);
-                            int old = filesIndex;
-                            Uri oldt = t;
-                            if (thread == null) {
-                                interrupt.set(false);
-                                thread = new Thread("Copy thread") {
-                                    @Override
-                                    public void run() {
-                                        byte[] buf = new byte[SuperUser.BUF_SIZE];
-                                        try {
-                                            int len;
-                                            while ((len = copy(buf)) > 0) {
-                                                synchronized (lock) {
-                                                    current += len;
-                                                    processed += len;
-                                                    info.step(current);
-                                                }
-                                                if (Thread.currentThread().isInterrupted() || interrupt.get())
-                                                    return;
-                                            }
-                                            synchronized (lock) {
-                                                finish();
-                                                if (app.cut != null)
-                                                    storage.delete(f.uri);
-                                                filesIndex++;
-                                                thread = null; // close thread
-                                                post();
-                                            }
-                                        } catch (Exception e) {
-                                            synchronized (lock) {
-                                                delayed = e; // thread != null
-                                                post();
-                                            }
-                                        }
-                                    }
-                                };
-                                thread.start();
-                            } else {
-                                if (delayed != null) {
-                                    Throwable d = delayed;
-                                    thread = null;
-                                    delayed = null;
-                                    throw new RuntimeException(d);
-                                }
-                            }
-                            post(thread == null ? 0 : 1000);
-                            int a = info.getAverageSpeed();
-                            String e;
-                            long diff = 0;
-                            if (a > 0)
-                                diff = (f.size - current) * 1000 / a;
-                            if (diff >= 1000)
-                                e = FilesApplication.formatLeftExact(context, diff);
-                            else
-                                e = "∞";
-                            paste.copy.setGravity(Gravity.CENTER);
-                            paste.copy.setText(n + " " + FilesApplication.formatSize(context, a) + getString(R.string.per_second) + ", " + e);
-                            paste.update(this, old, f);
-                            paste.from.setText(getString(R.string.copy_from) + " " + storage.getDisplayName(f.uri));
-                            paste.to.setText(getString(R.string.copy_to) + " " + storage.getDisplayName(oldt));
-                            return;
-                        }
-                    }
-                    if (filesIndex < files.size()) {
-                        cancel(); // cancel previous skiped operation if existed
-                        Storage.Node f = files.get(filesIndex);
-                        try {
-                            if (f.dir) {
-                                Storage.Node t = null;
-                                String s = uri.getScheme();
-                                if (s.equals(ContentResolver.SCHEME_FILE)) {
-                                    File k = Storage.getFile(uri);
-                                    File m = new File(k, f.name);
-                                    if (m.exists() && m.isDirectory())
-                                        t = new Storage.Node(m);
-                                } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-                                    Uri doc = storage.child(uri, f.name);
-                                    DocumentFile k = DocumentFile.fromSingleUri(context, doc);
-                                    if (k.exists() && k.isDirectory())
-                                        t = new Storage.Node(k);
-                                } else {
-                                    throw new Storage.UnknownUri();
-                                }
-                                if (t == null && storage.mkdir(uri, f.name) == null)
-                                    throw new RuntimeException("unable create dir: " + f.name);
-                                filesIndex++;
-                                if (app.cut != null) {
-                                    delete.add(f);
-                                    deleteIndex = delete.size() - 1; // reverse index
-                                }
-                            } else {
-                                Storage.Node t = null;
-                                String s = uri.getScheme();
-                                if (s.equals(ContentResolver.SCHEME_FILE)) {
-                                    File k = Storage.getFile(uri);
-                                    File m = new File(k, f.name);
-                                    if (m.exists() && m.isFile())
-                                        t = new Storage.Node(m);
-                                } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-                                    Uri doc = storage.child(uri, f.name);
-                                    DocumentFile k = DocumentFile.fromSingleUri(context, doc);
-                                    if (k.exists() && k.isFile())
-                                        t = new Storage.Node(k);
-                                } else {
-                                    throw new Storage.UnknownUri();
-                                }
-                                if (t != null) {
-                                    switch (check(f, t).iterator().next()) {
-                                        case NONE:
-                                            break;
-                                        case ASK:
-                                            pasteConflict(this, paste, f, t);
-                                            return;
-                                        case SKIP:
-                                            filesIndex++;
-                                            post();
-                                            return;
-                                        case OVERWRITE:
-                                            storage.delete(t.uri);
-                                            break;
-                                    }
-                                }
-                                if (f instanceof Storage.SymlinkNode) {
-                                    Storage.SymlinkNode l = (Storage.SymlinkNode) f;
-                                    if (storage.symlink(l, uri) || l.isSymDir()) { // if fails, continue with content copy
-                                        filesIndex++;
-                                        if (app.cut != null)
-                                            storage.delete(f.uri);
-                                        post();
-                                        return;
-                                    } else { // we about to copy symlinks as files, update total!!!
-                                        total += SuperUser.length(storage.getSu(), Storage.getFile(f.uri));
-                                    }
-                                }
-                                open(f, uri);
-                                info.start(current);
-                            }
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                        post();
-                        return;
-                    }
-                    if (deleteIndex >= 0) {
-                        Storage.Node f = delete.get(deleteIndex);
-                        storage.delete(f.uri);
-                        deleteIndex--;
-                        paste.copy.setVisibility(View.GONE);
-                        paste.progressFile.setVisibility(View.GONE);
-                        paste.progressTotal.setVisibility(View.GONE);
-                        paste.from.setText(getString(R.string.files_deleting) + ": " + storage.getDisplayName(f.uri));
-                        paste.to.setVisibility(View.GONE);
-                        post();
-                        return;
-                    }
-                    if (app.cut != null) {
-                        app.cut = null; // not possible to move twice
-                        getContext().sendBroadcast(new Intent(MOVE_UPDATE));
-                    }
-                    paste.dismiss(); // all done!
-                } catch (RuntimeException e) {
-                    switch (check(e).iterator().next()) {
-                        case SKIP:
-                            Log.d(TAG, "skip", e);
-                            filesIndex++;
-                            post();
-                            return;
-                    }
-                    pasteError(paste, this, e);
-                }
-            }
-
-            public void post() {
-                post(0);
-            }
-
-            public void post(long l) {
-                handler.removeCallbacks(this);
-                handler.postDelayed(this, l);
-            }
-        };
-
-        paste.neutral = new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                final View.OnClickListener neutral = this;
-                op.pause();
-                handler.removeCallbacks(op);
-                final Button b = paste.d.getButton(DialogInterface.BUTTON_NEUTRAL);
-                b.setText(R.string.copy_resume);
-                paste.neutral = new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        op.run();
-                        b.setText(R.string.copy_pause);
-                        paste.neutral = neutral;
-                    }
-                };
-            }
-        };
-
-        paste.dismiss = new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(DialogInterface dialog) {
-                paste.dismiss();
-                paste = null;
-                op.close();
-                handler.removeCallbacks(op);
-                reload();
-            }
-        };
-        final AlertDialog d = paste.create();
-        d.show();
-
-        op.run();
-    }
-
-    public void pasteError(final PasteBuilder paste, final PendingOperation op, final Throwable e) {
-        Log.e(TAG, "paste", e);
-        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        builder.setCancelable(false);
-        builder.setTitle("Error");
-        View p = LayoutInflater.from(getContext()).inflate(R.layout.paste_error, null);
-        View sp = p.findViewById(R.id.skip_panel);
-        TextView t = (TextView) p.findViewById(R.id.text);
-        t.setText(toMessage(e));
-        final View ss = p.findViewById(R.id.skip);
-        View sa = p.findViewById(R.id.skipall);
-        builder.setView(p);
-        builder.setPositiveButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                op.close();
-                paste.dismiss();
-                handler.removeCallbacks(op);
-            }
-        });
-        builder.setNeutralButton(R.string.copy_retry, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                storage.closeSu();
-                op.run();
-            }
-        });
-        EnumSet<PendingOperation.OPERATION> o = op.check(e);
-        if (o.contains(PendingOperation.OPERATION.NONE)) {
-            sp.setVisibility(View.GONE);
-            builder.setNegativeButton(R.string.button_skip, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    ss.performClick();
-                }
-            });
-        }
-        final AlertDialog d = builder.create();
-        ss.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                op.filesIndex++;
-                op.run();
-                d.dismiss();
-            }
-        });
-        sa.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                EnumSet<PendingOperation.OPERATION> o = op.check(e);
-                o.clear();
-                o.add(PendingOperation.OPERATION.SKIP);
-                op.filesIndex++;
-                op.run();
-                d.dismiss();
-            }
-        });
-        d.show();
-    }
-
-    public void pasteConflict(final PendingOperation op, final PasteBuilder paste, final Storage.Node f, final Storage.Node t) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        String n = getString(R.string.files_conflict);
-        builder.setTitle(n);
-        LayoutInflater inflater = LayoutInflater.from(getContext());
-        View v = inflater.inflate(R.layout.paste_conflict, null);
-        builder.setView(v);
-        builder.setCancelable(false);
-        builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                op.close();
-                paste.dismiss();
-            }
-        });
-
-        final AlertDialog d = builder.create();
-
-        TextView target = (TextView) v.findViewById(R.id.target);
-        TextView source = (TextView) v.findViewById(R.id.source);
-
-        View overwrite = v.findViewById(R.id.overwrite);
-        overwrite.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                storage.delete(t.uri);
-                op.run();
-                d.dismiss();
-            }
-        });
-
-        View overwriteall = v.findViewById(R.id.overwriteall);
-        overwriteall.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                EnumSet<PendingOperation.OPERATION> o = op.check(f, t);
-                o.clear();
-                o.add(PendingOperation.OPERATION.OVERWRITE);
-                op.run();
-                d.dismiss();
-            }
-        });
-
-        View skip = v.findViewById(R.id.skip);
-        skip.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                op.filesIndex++;
-                op.run();
-                d.dismiss();
-            }
-        });
-
-        View skipall = v.findViewById(R.id.skipall);
-        skipall.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                EnumSet<PendingOperation.OPERATION> o = op.check(f, t);
-                o.clear();
-                o.add(PendingOperation.OPERATION.SKIP);
-                op.run();
-                d.dismiss();
-            }
-        });
-
-        target.setText(getString(R.string.copy_overwrite) + " " + storage.getDisplayName(t.uri) + "\n\t\t" + BYTES.format(t.size) + " " + getString(R.string.size_bytes) + ", " + SIMPLE.format(t.last));
-        source.setText(getString(R.string.copy_overwrite_with) + " " + storage.getDisplayName(f.uri) + "\n\t\t" + BYTES.format(f.size) + " " + getString(R.string.size_bytes) + ", " + SIMPLE.format(f.last));
-
-        d.show();
     }
 
     public void select(Uri uri) {

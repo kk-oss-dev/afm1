@@ -355,6 +355,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                 else
                     this.su.ok().must();
             } catch (IOException e) {
+                su.valid = false;
                 throw new FileNotFoundException(toMessage(e));
             }
         }
@@ -364,61 +365,86 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         }
 
         public int read() throws IOException {
-            int size = 1;
-            long last = offset + size;
-            if (last > this.size) {
-                size -= last - this.size;
-                if (size == 0)
-                    return -1;
+            try {
+                int size = 1;
+                long last = offset + size;
+                if (last > this.size) {
+                    size -= last - this.size;
+                    if (size == 0)
+                        return -1;
+                }
+                su.write("rafread", offset, size);
+                int b = su.is.read();
+                offset += size;
+                return b;
+            } catch (IOException e) {
+                su.valid = false;
+                throw new Result(su.cmd, su.su, e);
             }
-            su.write("rafread", offset, size);
-            int b = su.is.read();
-            offset += size;
-            return b;
         }
 
         public int read(byte[] buf, int off, int size) throws IOException {
-            long last = offset + size;
-            if (last > this.size) {
-                size -= last - this.size;
-                if (size == 0)
-                    return -1;
+            try {
+                long last = offset + size;
+                if (last > this.size) {
+                    size -= last - this.size;
+                    if (size == 0)
+                        return -1;
+                }
+                su.write("rafread", offset, size);
+                long len;
+                int read = 0;
+                while ((len = su.is.read(buf, off, size)) > 0) {
+                    off += len;
+                    offset += len;
+                    size -= len;
+                    read += len;
+                }
+                return read;
+            } catch (IOException e) {
+                su.valid = false;
+                throw new Result(su.cmd, su.su, e);
             }
-            su.write("rafread", offset, size);
-            long len;
-            int read = 0;
-            while ((len = su.is.read(buf, off, size)) > 0) {
-                off += len;
-                offset += len;
-                size -= len;
-                read += len;
-            }
-            return read;
         }
 
         public void write(int b) throws IOException {
-            int size = 1;
-            su.write("rafwrite", offset, size);
-            su.os.write(b);
-            su.os.flush();
-            offset += size;
-            su.ok().must();
+            try {
+                int size = 1;
+                su.write("rafwrite", offset, size);
+                su.os.write(b);
+                su.os.flush();
+                offset += size;
+                su.ok().must();
+            } catch (IOException e) {
+                su.valid = false;
+                throw new Result(su.cmd, su.su, e);
+            }
         }
 
         public void write(@NonNull byte[] b, int off, int len) throws IOException {
-            su.write("rafwrite", offset, len);
-            su.os.write(b, off, len);
-            su.os.flush();
-            offset += len;
-            su.ok().must();
+            try {
+                su.write("rafwrite", offset, len);
+                su.os.write(b, off, len);
+                su.os.flush();
+                offset += len;
+                su.ok().must();
+            } catch (IOException e) {
+                su.valid = false;
+                throw new Result(su.cmd, su.su, e);
+            }
         }
 
         @Override
         public void close() throws IOException {
-            su.write("rafclose");
-            su.ok().must();
-            su.exit().must();
-            su.close();
+            try {
+                su.write("rafclose");
+                su.ok().must();
+                su.exit().must();
+                su.close();
+            } catch (IOException e) {
+                su.valid = false;
+                throw new Result(su.cmd, su.su, e);
+            }
         }
     }
 

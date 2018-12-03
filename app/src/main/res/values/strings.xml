@@ -18,7 +18,7 @@
     <string name="copy_overwrite">Overwrite:</string>
     <string name="copy_overwrite_with">With:</string>
 
-    <string name="size_bytes">byte(s)</string>
+    <string name="size_bytes">bytes</string>
     <string name="add_bookmark">Add Bookmark</string>
     <string name="bookmarks">Bookmarks</string>
     <string name="empty_list">Empty</string>
@@ -68,4 +68,8 @@
     <string name="save_to">Save archive to</string>
     <string name="back_exit">Press back again to exit</string>
     <string name="action_folder">Open Folder</string>
+    <string name="pref_recycle_title">Recycle Bin</string>
+    <string name="pref_recycle_summary">Enable recycle bin for deleted files</string>
+    <string name="recyclebin_folder">Trash</string>
+    <string name="empty_recyclebin">Empty Trash</string>
 </resources>

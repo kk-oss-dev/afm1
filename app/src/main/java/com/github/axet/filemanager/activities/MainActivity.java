@@ -41,6 +41,7 @@ import android.view.ViewParent;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.Animation;
 import android.view.animation.Transformation;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -65,6 +66,7 @@ import net.i2p.android.ext.floatingactionbutton.FloatingActionButton;
 import net.i2p.android.ext.floatingactionbutton.FloatingActionsMenu;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.TreeSet;
 
 public class MainActivity extends AppCompatThemeActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -182,6 +184,90 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
 
         public FilesTabView getTabView(int i) {
             return (FilesTabView) tabLayout.getTabAt(i).getCustomView();
+        }
+    }
+
+    public static class EmptyTrashBuilder extends FilesFragment.DeleteBuilder {
+        public EmptyTrashBuilder(Context context) {
+            super(context);
+            setTitle(getContext().getString(R.string.files_deleting));
+            op = new FilesFragment.PendingOperation(getContext()) {
+                int index;
+                File[] tmpFiles;
+
+                {
+                    tmpFiles = new File[]{storage.getLocalTrash(), storage.getExternalTrash(), storage.getStorageTrash()};
+                    calcs = new ArrayList<>();
+                }
+
+                @Override
+                public String formatStart() {
+                    return storage.getDisplayName(Uri.fromFile(storage.getTrash())) + "/*";
+                }
+
+                @Override
+                public void run() {
+                    try {
+                        if (calcIndex < calcs.size()) {
+                            deleteCalc();
+                            return;
+                        }
+                        if (index < tmpFiles.length) {
+                            File f = tmpFiles[index];
+                            if (f.exists() && f.isDirectory() && f.canRead() && f.canWrite()) {
+                                Uri uri = Uri.fromFile(f);
+                                calcUri = uri;
+                                calcs.addAll(storage.list(uri));
+                            }
+                            index++;
+                            post();
+                            return;
+                        }
+                        if (filesIndex < files.size()) {
+                            deleteProcess();
+                            return;
+                        }
+                        success();
+                    } catch (RuntimeException e) {
+                        deleteError(e);
+                    }
+                }
+
+                public void post() {
+                    handler.removeCallbacks(this);
+                    handler.post(this);
+                }
+            };
+            neutral = new View.OnClickListener() { // pause/resume
+                @Override
+                public void onClick(View v) {
+                    final View.OnClickListener neutral = this;
+                    op.pause();
+                    handler.removeCallbacks(op);
+                    final Button b = d.getButton(DialogInterface.BUTTON_NEUTRAL);
+                    b.setText(R.string.copy_resume);
+                    EmptyTrashBuilder.this.neutral = new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            op.run();
+                            b.setText(R.string.copy_pause);
+                            EmptyTrashBuilder.this.neutral = neutral;
+                        }
+                    };
+                }
+            };
+            dismiss = new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    handler.removeCallbacks(op);
+                    op.close();
+                    dismiss();
+                }
+            };
+        }
+
+        public void success() {
+            super.success();
         }
     }
 
@@ -470,13 +556,13 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                         @Override
                         public void scan() {
                             if (storage.getRoot())
-                                currentPath = new SuperUser.VirtualFile(currentPath);
+                                currentPath = new Storage.VirtualFile(storage, currentPath);
                             super.scan();
                         }
 
                         @Override
                         public File open(String name) {
-                            return new SuperUser.VirtualFile(currentPath, name);
+                            return new Storage.VirtualFile(storage, currentPath, name);
                         }
                     });
                     return d;
@@ -573,6 +659,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     @Override
     protected void onResume() {
         super.onResume();
+        reloadMenu(); // trash folder
     }
 
     @Override
@@ -649,6 +736,40 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                         public void onClick(DialogInterface dialog, int which) {
                             app.bookmarks.remove(uri);
                             reloadMenu();
+                        }
+                    });
+                    builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                        }
+                    });
+                    builder.show();
+                }
+            });
+            MenuItemCompat.setActionView(m, b);
+        }
+        SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+        if (shared.getBoolean(FilesApplication.PREF_RECYCLE, false)) {
+            final File trash = storage.getTrash();
+            MenuItem m = bookmarksMenu.add(R.string.recyclebin_folder);
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(Uri.fromFile(trash));
+            m.setIntent(intent);
+            m.setIcon(R.drawable.ic_storage_black_24dp);
+            AppCompatImageButton b = new AppCompatImageButton(this);
+            b.setColorFilter(accent);
+            b.setImageResource(R.drawable.ic_delete_forever_black_24dp);
+            b.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                    builder.setTitle(R.string.empty_recyclebin);
+                    builder.setMessage(R.string.are_you_sure);
+                    builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            EmptyTrashBuilder delete = new EmptyTrashBuilder(MainActivity.this);
+                            delete.show();
                         }
                     });
                     builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
