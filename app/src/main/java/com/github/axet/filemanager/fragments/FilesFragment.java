@@ -1805,7 +1805,7 @@ public class FilesFragment extends Fragment {
                 return true;
             if (app.uri.equals(uri)) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-                builder.setTitle("Duplicate?");
+                builder.setTitle(R.string.duplicate_folder);
                 builder.setMessage(R.string.are_you_sure);
                 builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                     @Override
@@ -1821,6 +1821,10 @@ public class FilesFragment extends Fragment {
                                 super.dismiss();
                                 paste = null;
                                 reload();
+                                if (app.cut != null) {
+                                    app.cut = null; // not possible to move twice
+                                    getContext().sendBroadcast(new Intent(MOVE_UPDATE));
+                                }
                             }
                         };
                         ArrayList<Storage.Node> ff = null;
