@@ -190,7 +190,6 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     public static class EmptyTrashBuilder extends FilesFragment.DeleteBuilder {
         public EmptyTrashBuilder(Context context) {
             super(context);
-            setTitle(getContext().getString(R.string.files_deleting));
             op = new FilesFragment.PendingOperation(getContext()) {
                 int index;
                 File[] tmpFiles;
@@ -231,11 +230,6 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                     } catch (RuntimeException e) {
                         deleteError(e);
                     }
-                }
-
-                public void post() {
-                    handler.removeCallbacks(this);
-                    handler.post(this);
                 }
             };
             neutral = new View.OnClickListener() { // pause/resume

@@ -379,7 +379,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                 return b;
             } catch (IOException e) {
                 su.valid = false;
-                throw new Result(su.cmd, su.su, e);
+                throw new IOException(new Result(su.cmd, su.su, e));
             }
         }
 
@@ -403,7 +403,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                 return read;
             } catch (IOException e) {
                 su.valid = false;
-                throw new Result(su.cmd, su.su, e);
+                throw new IOException(new Result(su.cmd, su.su, e));
             }
         }
 
@@ -417,7 +417,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                 su.ok().must();
             } catch (IOException e) {
                 su.valid = false;
-                throw new Result(su.cmd, su.su, e);
+                throw new IOException(new Result(su.cmd, su.su, e));
             }
         }
 
@@ -430,7 +430,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                 su.ok().must();
             } catch (IOException e) {
                 su.valid = false;
-                throw new Result(su.cmd, su.su, e);
+                throw new IOException(new Result(su.cmd, su.su, e));
             }
         }
 
@@ -443,7 +443,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                 su.close();
             } catch (IOException e) {
                 su.valid = false;
-                throw new Result(su.cmd, su.su, e);
+                throw new IOException(new Result(su.cmd, su.su, e));
             }
         }
     }
