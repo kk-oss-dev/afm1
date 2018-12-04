@@ -173,7 +173,7 @@ public class FilesFragment extends Fragment {
     public static boolean isThumbnail(Storage.Node d) { // do not open every file, show thumbnnails only for correct file extension
         String[] ss = new String[]{"png", "jpg", "jpeg", "gif", "bmp"};
         for (String s : ss) {
-            if (d.name.toLowerCase().endsWith(s))
+            if (d.name.toLowerCase().endsWith("." + s))
                 return true;
         }
         return false;
@@ -198,7 +198,7 @@ public class FilesFragment extends Fragment {
         return s;
     }
 
-    public static void pasteError(final OperationBuilder paste, final PendingOperation op, final Throwable e) {
+    public static void pasteError(final OperationBuilder paste, final PendingOperation op, final Throwable e, boolean move) {
         Log.e(TAG, "paste", e);
         AlertDialog.Builder builder = new AlertDialog.Builder(paste.getContext());
         builder.setCancelable(false);
@@ -207,8 +207,13 @@ public class FilesFragment extends Fragment {
         View sp = p.findViewById(R.id.skip_panel);
         TextView t = (TextView) p.findViewById(R.id.text);
         t.setText(toMessage(e));
+        final View retry = p.findViewById(R.id.retry);
+        final View s1 = p.findViewById(R.id.spacer1);
+        final View del = p.findViewById(R.id.delete);
+        final View s2 = p.findViewById(R.id.spacer2);
         final View ss = p.findViewById(R.id.skip);
-        View sa = p.findViewById(R.id.skipall);
+        final View s3 = p.findViewById(R.id.spacer3);
+        final View sa = p.findViewById(R.id.skipall);
         builder.setView(p);
         builder.setPositiveButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
             @Override
@@ -216,23 +221,39 @@ public class FilesFragment extends Fragment {
                 paste.dismiss();
             }
         });
-        builder.setNeutralButton(R.string.copy_retry, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                op.run();
-            }
-        });
+        if (!move) { // always hide del if "no move" operation
+            del.setVisibility(View.GONE);
+            s2.setVisibility(View.GONE);
+        }
         EnumSet<PendingOperation.OPERATION> o = op.check(e);
-        if (o.contains(PendingOperation.OPERATION.NONE)) {
-            sp.setVisibility(View.GONE);
-            builder.setNegativeButton(R.string.button_skip, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    ss.performClick();
-                }
-            });
+        if (o.contains(PendingOperation.OPERATION.NONE)) { // skip alls not supported?
+            if (move) {
+                s3.setVisibility(View.GONE);
+                sa.setVisibility(View.GONE);
+            } else { // no move and no skip all -> move all remaining buttons to the dialog
+                sp.setVisibility(View.GONE);
+                builder.setNeutralButton(R.string.copy_retry, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        retry.performClick();
+                    }
+                });
+                builder.setNegativeButton(R.string.button_skip, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        ss.performClick();
+                    }
+                });
+            }
         }
         final AlertDialog d = builder.create();
+        retry.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                op.run();
+                d.dismiss();
+            }
+        });
         ss.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -249,6 +270,17 @@ public class FilesFragment extends Fragment {
                 o.clear();
                 o.add(PendingOperation.OPERATION.SKIP);
                 op.filesIndex++;
+                op.cancel();
+                op.run();
+                d.dismiss();
+            }
+        });
+        del.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                op.storage.delete(op.f.uri);
+                op.filesIndex++;
+                op.cancel();
                 op.run();
                 d.dismiss();
             }
@@ -304,6 +336,7 @@ public class FilesFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 op.filesIndex++;
+                op.cancel();
                 op.run();
                 d.dismiss();
             }
@@ -555,7 +588,7 @@ public class FilesFragment extends Fragment {
                 } catch (Exception ignore) {
                 }
             }
-            return EnumSet.of(OPERATION.NONE); // asking
+            return EnumSet.of(OPERATION.NONE); // unknown error, alwayas asking
         }
 
         public int copy(byte[] buf) throws IOException {
@@ -814,10 +847,11 @@ public class FilesFragment extends Fragment {
                 case SKIP:
                     Log.d(TAG, "skip", e);
                     op.filesIndex++;
+                    op.cancel();
                     op.post();
                     return;
             }
-            pasteError(DeleteBuilder.this, op, e);
+            pasteError(DeleteBuilder.this, op, e, true);
         }
 
         public void success() { // success!
@@ -858,8 +892,11 @@ public class FilesFragment extends Fragment {
                 public void run() {
                     try {
                         if (calcIndex < calcs.size()) {
-                            if (!calc())
+                            if (!calc()) {
+                                if (move)
+                                    Collections.sort(files, new SortMove()); // we have to sort only if array contains symlinks and move operation
                                 calcDone();
+                            }
                             title.setGravity(Gravity.NO_GRAVITY);
                             title.setText(getContext().getString(R.string.files_calculating) + ": " + formatCalc());
                             update(this);
@@ -1080,10 +1117,11 @@ public class FilesFragment extends Fragment {
                             case SKIP:
                                 Log.d(TAG, "skip", e);
                                 filesIndex++;
+                                cancel();
                                 post();
                                 return;
                         }
-                        pasteError(PasteBuilder.this, this, e);
+                        pasteError(PasteBuilder.this, this, e, move);
                     }
                 }
 
@@ -1193,6 +1231,24 @@ public class FilesFragment extends Fragment {
             int c = d2.compareTo(d1);
             if (c != 0)
                 return c;
+            return o1.name.compareTo(o2.name);
+        }
+    }
+
+    public static class SortMove implements Comparator<Storage.Node> { // we have to move symlinks first during move operation only
+        @Override
+        public int compare(Storage.Node o1, Storage.Node o2) {
+            Boolean d1 = o1.dir;
+            Boolean d2 = o2.dir;
+            int c = d2.compareTo(d1);
+            if (c != 0)
+                return c; // directories first (ordered by lexagraphcally)
+            Boolean s1 = o1 instanceof Storage.SymlinkNode;
+            Boolean s2 = o2 instanceof Storage.SymlinkNode;
+            if (s1 && !s2)
+                return -1;
+            if (!s1 && s2)
+                return 1; // symlinks first (ordered by lexagraphcally)
             return o1.name.compareTo(o2.name);
         }
     }
@@ -1805,7 +1861,7 @@ public class FilesFragment extends Fragment {
                 return true;
             if (app.uri.equals(uri)) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-                builder.setTitle("Duplicate?");
+                builder.setTitle(R.string.duplicate_folder);
                 builder.setMessage(R.string.are_you_sure);
                 builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                     @Override
@@ -1821,6 +1877,10 @@ public class FilesFragment extends Fragment {
                                 super.dismiss();
                                 paste = null;
                                 reload();
+                                if (app.cut != null) {
+                                    app.cut = null; // not possible to move twice
+                                    getContext().sendBroadcast(new Intent(MOVE_UPDATE));
+                                }
                             }
                         };
                         ArrayList<Storage.Node> ff = null;
@@ -1904,15 +1964,43 @@ public class FilesFragment extends Fragment {
         if (id == R.id.action_delete) {
             if (delete != null)
                 return true;
+            final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
+            final Runnable permanently = new Runnable() {
+                @Override
+                public void run() {
+                    delete = new DeleteBuilder(getContext(), uri, selected) {
+                        @Override
+                        public void dismiss() {
+                            super.dismiss();
+                            delete = null;
+                        }
+
+                        @Override
+                        public void success() {
+                            super.success();
+                            closeSelection();
+                            reload();
+                        }
+                    };
+                    delete.show();
+                }
+            };
             AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
             builder.setTitle(R.string.files_delete);
             builder.setMessage(R.string.are_you_sure);
+            if (shared.getBoolean(FilesApplication.PREF_RECYCLE, false)) {
+                builder.setNeutralButton(R.string.delete_permanently, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        permanently.run();
+                    }
+                });
+            }
             builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
-                    boolean t = shared.getBoolean(FilesApplication.PREF_RECYCLE, false);
                     File trash = storage.getTrash();
+                    boolean t = shared.getBoolean(FilesApplication.PREF_RECYCLE, false);
                     String s = uri.getScheme();
                     if (s.equals(ContentResolver.SCHEME_FILE)) {
                         File f = Storage.getFile(uri);
@@ -1936,21 +2024,7 @@ public class FilesFragment extends Fragment {
                         };
                         delete.show();
                     } else {
-                        delete = new DeleteBuilder(getContext(), uri, selected) {
-                            @Override
-                            public void dismiss() {
-                                super.dismiss();
-                                delete = null;
-                            }
-
-                            @Override
-                            public void success() {
-                                super.success();
-                                closeSelection();
-                                reload();
-                            }
-                        };
-                        delete.show();
+                        permanently.run();
                     }
                 }
             });
@@ -2166,10 +2240,11 @@ public class FilesFragment extends Fragment {
                         case SKIP:
                             Log.d(TAG, "skip", e);
                             filesIndex++;
+                            cancel();
                             post();
                             return;
                     }
-                    pasteError(archive, this, e);
+                    pasteError(archive, this, e, false);
                 }
             }
 

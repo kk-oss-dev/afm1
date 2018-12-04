@@ -26,12 +26,37 @@
         <TableRow>
 
             <Button
+                android:id="@+id/retry"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/copy_retry" />
+
+            <View
+                android:id="@+id/spacer1"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <Button
+                android:id="@+id/delete"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/files_delete" />
+
+            <View
+                android:id="@+id/spacer2"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <Button
                 android:id="@+id/skip"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/button_skip" />
 
             <View
+                android:id="@+id/spacer3"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
                 android:layout_weight="1" />
