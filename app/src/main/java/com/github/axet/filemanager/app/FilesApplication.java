@@ -94,9 +94,9 @@ public class FilesApplication extends MainApplication {
                 try {
                     Uri uri = Uri.parse(shared.getString(PREF_BOOKMARK_PREFIX + i, ""));
                     String s = uri.getScheme();
-                    if (Build.VERSION.SDK_INT >= 19 && s.equals(ContentResolver.SCHEME_CONTENT)) {
+                    if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
                         ContentResolver resolver = getContentResolver();
-                        resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION); // refresh perms
+                        resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION); // refresh perms
                     }
                     add(uri);
                 } catch (SecurityException e) {
