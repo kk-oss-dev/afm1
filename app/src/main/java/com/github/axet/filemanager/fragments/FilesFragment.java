@@ -225,8 +225,7 @@ public class FilesFragment extends Fragment {
             del.setVisibility(View.GONE);
             s2.setVisibility(View.GONE);
         }
-        EnumSet<PendingOperation.OPERATION> o = op.check(e);
-        if (o.contains(PendingOperation.OPERATION.NONE)) { // skip alls not supported?
+        if (op.check(e).contains(PendingOperation.OPERATION.NONE)) { // skip alls not supported?
             if (move) {
                 s3.setVisibility(View.GONE);
                 sa.setVisibility(View.GONE);
