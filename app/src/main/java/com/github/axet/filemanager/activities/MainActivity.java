@@ -231,6 +231,12 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                         deleteError(e);
                     }
                 }
+
+                @Override
+                public void post() {
+                    handler.removeCallbacks(this);
+                    handler.post(this);
+                }
             };
             neutral = new View.OnClickListener() { // pause/resume
                 @Override

@@ -509,6 +509,20 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         return su;
     }
 
+    public void closeSu() {
+        try {
+            if (su != null) {
+                su.exit();
+                su.close();
+                su = null;
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "close", e);
+            su.close();
+            su = null;
+        }
+    }
+
     public File getStorageTrash() {
         File f = Environment.getExternalStorageDirectory();
         if (f == null)
@@ -542,20 +556,6 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                     f = getLocalTrash();
                 return f;
             }
-        }
-    }
-
-    public void closeSu() {
-        try {
-            if (su != null) {
-                su.exit();
-                su.close();
-                su = null;
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "close", e);
-            su.close();
-            su = null;
         }
     }
 
