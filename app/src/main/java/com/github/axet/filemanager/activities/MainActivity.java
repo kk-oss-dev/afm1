@@ -468,9 +468,9 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         }
     }
 
-    public void open(Uri u) {
+    public void open(Uri uri) {
         FilesFragment f = getActiveFragment();
-        f.load(u);
+        f.load(uri);
         searchClose();
     }
 

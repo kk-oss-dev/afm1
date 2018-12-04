@@ -1,11 +1,14 @@
 package com.github.axet.filemanager.app;
 
+import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 import com.github.axet.androidlibrary.app.MainApplication;
 import com.github.axet.androidlibrary.app.Storage;
@@ -88,8 +91,17 @@ public class FilesApplication extends MainApplication {
                 }
             }
             for (int i = 0; i < count; i++) {
-                Uri uri = Uri.parse(shared.getString(PREF_BOOKMARK_PREFIX + i, ""));
-                add(uri);
+                try {
+                    Uri uri = Uri.parse(shared.getString(PREF_BOOKMARK_PREFIX + i, ""));
+                    String s = uri.getScheme();
+                    if (Build.VERSION.SDK_INT >= 19 && s.equals(ContentResolver.SCHEME_CONTENT)) {
+                        ContentResolver resolver = getContentResolver();
+                        resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION); // refresh perms
+                    }
+                    add(uri);
+                } catch (SecurityException e) {
+                    Log.e(TAG, "bad perms", e);
+                }
             }
         }
     }
