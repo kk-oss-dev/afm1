@@ -1473,7 +1473,9 @@ public class FilesFragment extends Fragment {
                 Storage storage = new Storage(getContext());
                 try {
                     if (!cover.exists() || cover.length() == 0) {
-                        Bitmap bm = BitmapFactory.decodeStream(storage.open(n.uri));
+                        InputStream is = storage.open(n.uri);
+                        Bitmap bm = BitmapFactory.decodeStream(is);
+                        is.close();
                         float ratio = COVER_SIZE / (float) bm.getWidth();
                         Bitmap sbm = Bitmap.createScaledBitmap(bm, (int) (bm.getWidth() * ratio), (int) (bm.getHeight() * ratio), true);
                         if (sbm != bm)
