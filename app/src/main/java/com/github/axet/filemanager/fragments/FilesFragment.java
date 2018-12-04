@@ -753,15 +753,15 @@ public class FilesFragment extends Fragment {
 
         public DeleteBuilder(Context context) {
             super(context);
+            setTitle(getContext().getString(R.string.files_deleting));
         }
 
         public DeleteBuilder(Context context, Uri uri, ArrayList<Storage.Node> selected) {
-            super(context);
+            this(context);
             create(uri, selected);
         }
 
         public void create(Uri uri, ArrayList<Storage.Node> selected) {
-            setTitle(getContext().getString(R.string.files_deleting));
             op = new PendingOperation(getContext(), uri, selected) {
                 @Override
                 public void run() {
