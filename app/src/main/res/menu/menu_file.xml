@@ -4,7 +4,6 @@
     tools:context="com.github.axet.filemanager.activities.MainActivity">
     <item
         android:id="@+id/action_open"
-        android:orderInCategory="000"
         android:title="@string/file_open" />
     <item
         android:id="@+id/action_openas"
@@ -12,29 +11,23 @@
         <menu>
             <item
                 android:id="@+id/action_openastext"
-                android:orderInCategory="100"
                 android:title="@string/open_as_text" />
             <item
                 android:id="@+id/action_openasimage"
-                android:orderInCategory="200"
                 android:title="@string/open_as_image" />
             <item
                 android:id="@+id/action_openasaudio"
-                android:orderInCategory="300"
                 android:title="@string/open_as_audio" />
         </menu>
     </item>
     <item
         android:id="@+id/action_view"
-        android:orderInCategory="300"
         android:title="@string/file_view" />
     <item
         android:id="@+id/action_folder"
-        android:orderInCategory="300"
         android:title="@string/action_folder" />
     <item
         android:id="@+id/action_share"
-        android:orderInCategory="400"
         android:title="@string/ShareAction"
         app:showAsAction="never" />
 </menu>

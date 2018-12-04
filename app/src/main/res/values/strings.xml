@@ -74,4 +74,8 @@
     <string name="empty_recyclebin">Empty Trash</string>
     <string name="duplicate_folder">Duplicate?</string>
     <string name="delete_permanently">Permanently</string>
+    <string name="preview">Preview</string>
+    <string name="file_viewas">View as ...</string>
+    <string name="action_fullscreen">Fullscreen</string>
+    <string name="viewas_hex">Hex</string>
 </resources>
