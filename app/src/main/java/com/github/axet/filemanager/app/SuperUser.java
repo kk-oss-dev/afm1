@@ -347,6 +347,15 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
 
         SuIO su;
 
+        public static FileNotFoundException fnfe(final Throwable e) {
+            return (FileNotFoundException) new FileNotFoundException() {
+                @Override
+                public String getMessage() {
+                    return e.getMessage();
+                }
+            }.initCause(e);
+        }
+
         public RandomAccessFile(File f, String mode) throws FileNotFoundException {
             try {
                 su = new SuIO();
@@ -355,12 +364,12 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                     size = Long.valueOf(su.readString());
                 else
                     su.ok().must();
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 su.valid = false;
                 if (su != null)
-                    throw (FileNotFoundException) new FileNotFoundException().initCause(new Result(su.cmd, su.su, e));
+                    throw fnfe(new Result(su.cmd, su.su, e));
                 else
-                    throw (FileNotFoundException) new FileNotFoundException().initCause(e);
+                    throw fnfe(e);
             }
         }
 

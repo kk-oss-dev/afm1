@@ -15,7 +15,7 @@ public class ZipSu extends NativeStorage {
     public static class SuFile extends NativeFile {
         SuperUser.RandomAccessFile r;
 
-        public SuFile(File f) throws IOException {
+        public SuFile(File f) throws FileNotFoundException {
             r = new SuperUser.RandomAccessFile(f);
         }
 
@@ -89,11 +89,7 @@ public class ZipSu extends NativeStorage {
 
     @Override
     public SuFile read() throws FileNotFoundException {
-        try {
-            return new SuFile(f);
-        } catch (IOException e) {
-            throw (FileNotFoundException) new FileNotFoundException().initCause(e);
-        }
+        return new SuFile(f);
     }
 
     @Override

@@ -1862,10 +1862,6 @@ public class FilesFragment extends Fragment {
                                 super.dismiss();
                                 paste = null;
                                 reload();
-                                if (app.cut != null) {
-                                    app.cut = null; // not possible to move twice
-                                    getContext().sendBroadcast(new Intent(MOVE_UPDATE));
-                                }
                             }
                         };
                         ArrayList<Storage.Node> ff = null;
