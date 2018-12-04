@@ -92,7 +92,7 @@ public class ZipSu extends NativeStorage {
         try {
             return new SuFile(f);
         } catch (IOException e) {
-            throw new FileNotFoundException(e.getMessage());
+            throw (FileNotFoundException) new FileNotFoundException().initCause(e);
         }
     }
 

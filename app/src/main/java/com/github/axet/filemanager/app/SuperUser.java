@@ -114,7 +114,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             }
             return ff;
         } catch (IOException e) {
-            throw new Result(su.cmd, su.su, e);
+            throw new RuntimeException(new Result(su.cmd, su.su, e));
         }
     }
 
@@ -123,7 +123,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             su.write("isdir", f);
             return toBoolean(su.readString());
         } catch (IOException e) {
-            throw new Result(su.cmd, su.su, e);
+            throw new RuntimeException(new Result(su.cmd, su.su, e));
         }
     }
 
@@ -132,7 +132,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             su.write("length", f);
             return Long.valueOf(su.readString());
         } catch (IOException e) {
-            throw new Result(su.cmd, su.su, e);
+            throw new RuntimeException(new Result(su.cmd, su.su, e));
         }
     }
 
@@ -141,7 +141,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             su.write("ln", target, file);
             return su.ok();
         } catch (IOException e) {
-            throw new Result(su.cmd, su.su, e);
+            throw new RuntimeException(new Result(su.cmd, su.su, e));
         }
     }
 
@@ -150,7 +150,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             su.write("touch", target, time / 1000);
             return su.ok();
         } catch (IOException e) {
-            throw new Result(su.cmd, su.su, e);
+            throw new RuntimeException(new Result(su.cmd, su.su, e));
         }
     }
 
@@ -159,7 +159,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             su.write("delete", target);
             return su.ok();
         } catch (IOException e) {
-            throw new Result(su.cmd, su.su, e);
+            throw new RuntimeException(new Result(su.cmd, su.su, e));
         }
     }
 
@@ -168,7 +168,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             su.write("mkdir", target);
             return su.ok();
         } catch (IOException e) {
-            throw new Result(su.cmd, su.su, e);
+            throw new RuntimeException(new Result(su.cmd, su.su, e));
         }
     }
 
@@ -177,7 +177,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             su.write("rename", f, t);
             return su.ok();
         } catch (IOException e) {
-            throw new Result(su.cmd, su.su, e);
+            throw new RuntimeException(new Result(su.cmd, su.su, e));
         }
     }
 
@@ -186,7 +186,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             su.write("last", f);
             return Long.valueOf(su.readString());
         } catch (IOException e) {
-            throw new Result(su.cmd, su.su, e);
+            throw new RuntimeException(new Result(su.cmd, su.su, e));
         }
     }
 
@@ -195,7 +195,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             su.write("exists", f);
             return toBoolean(su.readString());
         } catch (IOException e) {
-            throw new Result(su.cmd, su.su, e);
+            throw new RuntimeException(new Result(su.cmd, su.su, e));
         }
     }
 
@@ -236,7 +236,10 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                 SuperUser.writeString(cmd.build(), os);
                 is = new BufferedInputStream(su.getInputStream());
             } catch (IOException e) {
-                throw new Result(cmd, su, e);
+                if (su != null)
+                    throw new RuntimeException(new Result(cmd, su, e));
+                else
+                    throw new RuntimeException(e);
             }
         }
 
@@ -257,7 +260,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                 else if (o instanceof File)
                     writeString(((File) o).getPath());
                 else
-                    throw new RuntimeException("unknown type");
+                    throw new IOException("unknown type");
             }
         }
 
@@ -266,12 +269,13 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             int c;
             while ((c = is.read()) != 0) {
                 if (c == -1) {
+                    valid = false;
                     try {
                         su.waitFor(); // wait to read exitCode() or exception will be thrown
                     } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
+                        throw new IOException(e);
                     }
-                    throw new Result(cmd, su, new EOFException());
+                    throw new EOFException();
                 }
                 os.write(c);
             }
@@ -298,39 +302,36 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             return valid;
         }
 
-        public Result exit() throws IOException {
+        public void exit() throws IOException { // no handling exit codes and stderr here
+            valid = false;
+            write("exit");
             try {
-                valid = false;
-                write("exit");
                 su.waitFor();
-                return new Result(cmd, su);
             } catch (InterruptedException e) {
-                return new Result(cmd, su, e);
-            } catch (IOException e) {
-                return new Result(cmd, su, e);
+                throw new IOException(e);
             }
+            Result.must(su);
         }
 
-        public Result alive() {
+        public void alive() throws IOException {
             try {
                 su.exitValue();
                 valid = false;
-                return new Result(cmd, su, new RuntimeException("!alive"));
-            } catch (IllegalThreadStateException e) {
-                return new Result(0);
+                throw new IOException("!alive");
+            } catch (IllegalThreadStateException ignore) { // not exited
             }
         }
 
-        public Result ok() throws IOException { // input / output stream sanity checks
+        public Result ok() { // input / output stream sanity checks
             try {
                 String ok = readString();
                 if (ok.equals("ok"))
                     return new Result(0);
                 valid = false;
-                return new Result(cmd, su, new RuntimeException("!ok"));
-            } catch (Result e) {
+                return new Result(cmd, su, new Throwable("!ok: " + ok));
+            } catch (IOException e) { // wrap exceptions, so caller decide raise or twist
                 valid = false;
-                return e;
+                return new Result(cmd, su, e);
             }
         }
 
@@ -348,15 +349,18 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
 
         public RandomAccessFile(File f, String mode) throws FileNotFoundException {
             try {
-                this.su = new SuIO();
-                this.su.write("rafopen", f, mode);
+                su = new SuIO();
+                su.write("rafopen", f, mode);
                 if (mode.equals(R))
-                    size = Long.valueOf(this.su.readString());
+                    size = Long.valueOf(su.readString());
                 else
-                    this.su.ok().must();
+                    su.ok().must();
             } catch (IOException e) {
                 su.valid = false;
-                throw new FileNotFoundException(toMessage(e));
+                if (su != null)
+                    throw (FileNotFoundException) new FileNotFoundException().initCause(new Result(su.cmd, su.su, e));
+                else
+                    throw (FileNotFoundException) new FileNotFoundException().initCause(e);
             }
         }
 
@@ -439,7 +443,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             try {
                 su.write("rafclose");
                 su.ok().must();
-                su.exit().must();
+                su.exit();
                 su.close();
             } catch (IOException e) {
                 su.valid = false;

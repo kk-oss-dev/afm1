@@ -366,7 +366,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         public ArrayList<Node> walk(Uri root) {
             if (all == null)
                 read();
-            ArchiveReader a = fromArchive(root);
+            ArchiveReader a = fromArchive(root, true);
             ArrayList<Node> nn = new ArrayList<>();
             for (ArchiveNode n : all) {
                 String p = n.getPath();
@@ -559,7 +559,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         }
     }
 
-    public ArchiveReader fromArchive(Uri uri) {
+    public ArchiveReader fromArchive(Uri uri, boolean root) {
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             final File k = getFile(uri);
@@ -574,7 +574,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                     if (p == null || SuperUser.isDirectory(getSu(), p))
                         return null;
                     String rel = relative(p.getPath(), k.getPath());
-                    if (!rel.isEmpty()) {
+                    if (root || !rel.isEmpty()) {
                         InputStream is = new SuperUser.FileInputStream(p);
                         int len = is.read(buf);
                         if (len > 0) {
@@ -598,7 +598,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                     if (p == null || p.isDirectory())
                         return null;
                     String rel = relative(p.getPath(), k.getPath());
-                    if (!rel.isEmpty()) {
+                    if (root || !rel.isEmpty()) {
                         FileInputStream is = new FileInputStream(p);
                         int len = is.read(buf);
                         if (len > 0) {
@@ -623,10 +623,11 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             if (f.isDirectory())
                 return null;
             String t = f.getType();
+            String rel = uri.getQueryParameter("p");
             if (t.equals(CONTENTTYPE_RAR))
-                return cache(new RarReader(u, uri.getQueryParameter("p")));
+                return cache(new RarReader(u, rel));
             if (t.equals(CONTENTTYPE_ZIP))
-                return cache(new ZipReader(u, uri.getQueryParameter("p")));
+                return cache(new ZipReader(u, rel));
         }
         return null;
     }
@@ -639,17 +640,16 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     }
 
     public InputStream open(Uri uri) throws IOException {
-        ArchiveReader r = fromArchive(uri);
-        if (r != null && !r.path.isEmpty())
+        ArchiveReader r = fromArchive(uri, false);
+        if (r != null)
             return r.open();
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             File k = getFile(uri);
-            if (getRoot()) {
+            if (getRoot())
                 return new SuperUser.FileInputStream(k);
-            } else {
+            else
                 return new FileInputStream(k);
-            }
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
             return resolver.openInputStream(uri);
         } else {
@@ -743,8 +743,8 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     @Override
     public long getLength(Uri uri) {
-        ArchiveReader r = fromArchive(uri);
-        if (r != null && !r.path.isEmpty())
+        ArchiveReader r = fromArchive(uri, false);
+        if (r != null)
             return r.length();
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot())
             return SuperUser.length(getSu(), Storage.getFile(uri));
@@ -753,7 +753,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     @Override
     public ArrayList<Node> list(Uri uri) {
-        ArchiveReader r = fromArchive(uri);
+        ArchiveReader r = fromArchive(uri, true);
         if (r != null)
             return r.list();
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
@@ -772,7 +772,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     @Override
     public ArrayList<Node> walk(Uri root, Uri uri) {
-        ArchiveReader a = fromArchive(uri);
+        ArchiveReader a = fromArchive(uri, true);
         if (a != null)
             return a.walk(root);
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {

@@ -1376,7 +1376,7 @@ public class FilesFragment extends Fragment {
                         openSelection();
                         PopupMenu menu = new PopupMenu(getContext(), v);
                         menu.inflate(R.menu.menu_select);
-                        Storage.ArchiveReader r = storage.fromArchive(uri);
+                        Storage.ArchiveReader r = storage.fromArchive(uri, true);
                         if (r != null) {
                             hideMenu(menu.getMenu(), R.id.action_archive);
                             hideMenu(menu.getMenu(), R.id.action_rename);
@@ -1599,7 +1599,7 @@ public class FilesFragment extends Fragment {
         if (app.copy != null || app.cut != null) {
             pasteMenu.setVisible(true);
             pasteCancel.setVisible(true);
-            Storage.ArchiveReader r = storage.fromArchive(uri);
+            Storage.ArchiveReader r = storage.fromArchive(uri, true);
             if (r != null) {
                 pasteMenu.setEnabled(false);
                 setTint(pasteMenu, Color.GRAY);
@@ -1758,7 +1758,7 @@ public class FilesFragment extends Fragment {
             select.listener = new CollapsibleActionView() {
                 @Override
                 public void onActionViewExpanded() {
-                    Storage.ArchiveReader r = storage.fromArchive(uri);
+                    Storage.ArchiveReader r = storage.fromArchive(uri, true);
                     if (r != null) {
                         select.hide(R.id.action_archive);
                         select.hide(R.id.action_cut);
@@ -1796,7 +1796,7 @@ public class FilesFragment extends Fragment {
         }
         if (id == R.id.action_view) {
             Uri uri = item.getIntent().getData();
-            Storage.ArchiveReader r = storage.fromArchive(uri);
+            Storage.ArchiveReader r = storage.fromArchive(uri, true);
             if (r != null && r.isDirectory()) {
                 load(uri);
             } else {
