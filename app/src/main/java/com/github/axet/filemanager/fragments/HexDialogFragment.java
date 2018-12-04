@@ -92,9 +92,9 @@ public class HexDialogFragment extends DialogFragment {
         public CharSequence getPageTitle(int position) {
             switch (position) {
                 case 0:
-                    return "Hex";
+                    return context.getString(R.string.viewas_hex);
                 case 1:
-                    return "Media";
+                    return context.getString(R.string.preview);
                 default:
                     return "EMPTY";
             }

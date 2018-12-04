@@ -58,6 +58,7 @@ import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.androidlibrary.widgets.Toast;
 import com.github.axet.filemanager.R;
+import com.github.axet.filemanager.activities.FullscreenActivity;
 import com.github.axet.filemanager.activities.MainActivity;
 import com.github.axet.filemanager.app.FilesApplication;
 import com.github.axet.filemanager.app.Storage;
@@ -151,20 +152,6 @@ public class FilesFragment extends Fragment {
 
     public Uri old;
 
-    public static String toMessage(Throwable e) {
-        String msg = e.getMessage();
-        if (msg == null || msg.isEmpty()) {
-            Throwable p = null;
-            Throwable a = e;
-            while (a != null) {
-                p = a;
-                a = a.getCause();
-            }
-            msg = p.getClass().getCanonicalName();
-        }
-        return msg;
-    }
-
     public static String getFirst(String name) {
         String[] ss = Storage.splitPath(name);
         return ss[0];
@@ -206,7 +193,7 @@ public class FilesFragment extends Fragment {
         View p = LayoutInflater.from(paste.getContext()).inflate(R.layout.paste_error, null);
         View sp = p.findViewById(R.id.skip_panel);
         TextView t = (TextView) p.findViewById(R.id.text);
-        t.setText(toMessage(e));
+        t.setText(SuperUser.toMessage(e));
         final View retry = p.findViewById(R.id.retry);
         final View s1 = p.findViewById(R.id.spacer1);
         final View del = p.findViewById(R.id.delete);
@@ -1805,9 +1792,6 @@ public class FilesFragment extends Fragment {
             }
             return true;
         }
-        if (id == R.id.action_openas) {
-            return true;
-        }
         if (id == R.id.action_openastext) {
             Intent intent = item.getIntent();
             Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
@@ -2080,7 +2064,7 @@ public class FilesFragment extends Fragment {
                                 } catch (IOException e) {
                                     AlertDialog.Builder builder = new AlertDialog.Builder(context);
                                     builder.setTitle("Error");
-                                    builder.setMessage(toMessage(e));
+                                    builder.setMessage(SuperUser.toMessage(e));
                                     builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                                         @Override
                                         public void onClick(DialogInterface dialog, int which) {
