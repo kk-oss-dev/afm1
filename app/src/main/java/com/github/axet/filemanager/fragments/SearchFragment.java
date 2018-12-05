@@ -42,21 +42,21 @@ public class SearchFragment extends FilesFragment {
                         old = Snackbar.make(getActivity().findViewById(android.R.id.content), "", Snackbar.LENGTH_LONG);
                     old.setText(storage.getDisplayName(search.files.get(search.files.size() - 1).uri));
                     old.show();
-                    boolean changed = false;
-                    while (search.filesIndex < search.files.size()) {
-                        Storage.Node n = search.files.get(search.filesIndex);
-                        Matcher m = pattern.matcher(n.name);
-                        if (m.find()) {
-                            nodes.add(n);
-                            changed = true;
-                        }
-                        search.filesIndex++;
-                    }
-                    if (changed)
-                        adapter.notifyDataSetChanged();
-                } else {
-                    storage.closeSu();
+                    return;
                 }
+                boolean changed = false;
+                while (search.filesIndex < search.files.size()) {
+                    Storage.Node n = search.files.get(search.filesIndex);
+                    Matcher m = pattern.matcher(n.name);
+                    if (m.find()) {
+                        nodes.add(n);
+                        changed = true;
+                    }
+                    search.filesIndex++;
+                }
+                if (changed)
+                    adapter.notifyDataSetChanged();
+                storage.closeSu();
             } catch (RuntimeException e) {
                 Log.d(TAG, "search error", e);
                 search.calcIndex++;
