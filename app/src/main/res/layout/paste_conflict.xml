@@ -28,11 +28,14 @@
 
     <TableLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingLeft="40dp"
-        android:paddingRight="40dp">
+        android:layout_height="wrap_content">
 
         <TableRow>
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
 
             <Button
                 android:id="@+id/overwrite"
@@ -50,9 +53,20 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/button_skip" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
         </TableRow>
 
         <TableRow>
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
 
             <Button
                 android:id="@+id/overwriteall"
@@ -70,6 +84,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/button_skip_all" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
         </TableRow>
     </TableLayout>
 </LinearLayout>

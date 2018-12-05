@@ -58,7 +58,6 @@ import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.androidlibrary.widgets.Toast;
 import com.github.axet.filemanager.R;
-import com.github.axet.filemanager.activities.FullscreenActivity;
 import com.github.axet.filemanager.activities.MainActivity;
 import com.github.axet.filemanager.app.FilesApplication;
 import com.github.axet.filemanager.app.Storage;
@@ -71,7 +70,6 @@ import com.github.axet.wget.SpeedInfo;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -560,16 +558,20 @@ public class FilesFragment extends Fragment {
         }
 
         public EnumSet<OPERATION> check(Throwable e) { // ask user for confirmations?
-            Throwable c = e.getCause();
+            Throwable c = null;
+            while (e != null) {
+                c = e;
+                e = e.getCause();
+            }
             if (Build.VERSION.SDK_INT >= 21) {
-                if (e instanceof FileNotFoundException && c instanceof ErrnoException && ((ErrnoException) c).errno == OsConstants.EACCES)
+                if (c instanceof ErrnoException && ((ErrnoException) c).errno == OsConstants.EACCES)
                     return access;
             } else {
                 try {
                     final int EACCES = 13; // OsConstants.EACCES
                     Class klass = Class.forName("libcore.io.ErrnoException");
                     Field f = klass.getDeclaredField("errno");
-                    if (e instanceof FileNotFoundException && klass.isInstance(c) && f.getInt(c) == EACCES)
+                    if (klass.isInstance(c) && f.getInt(c) == EACCES)
                         return access;
                 } catch (Exception ignore) {
                 }
