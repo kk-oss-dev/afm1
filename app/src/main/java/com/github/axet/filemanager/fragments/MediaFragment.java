@@ -87,17 +87,25 @@ public class MediaFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        try {
+            if (storage.getLength(uri) <= 0)
+                return error(getContext().getString(R.string.empty_list));
+        } catch (Exception e) {
+            Log.e(TAG, "length", e);
+            storage.closeSu();
+            return error(SuperUser.toMessage(e));
+        }
         FileTypeDetector.FileTxt f = new FileTypeDetector.FileTxt();
         FileTypeDetector.FileHTML h = new FileTypeDetector.FileHTML();
         GifView.FileGif g = new GifView.FileGif();
         InputStream is = null;
         try {
-            if (storage.getLength(uri) <= 0)
-                return error(getContext().getString(R.string.empty_list));
             is = storage.open(uri);
             byte[] buf = new byte[1024]; // optimal detect size
             int len = is.read(buf);
-            if (len == -1)
+            is.close();
+            is = null;
+            if (len <= 0)
                 throw new IOException("unable to read");
             FileTypeDetector.Detector[] dd = new FileTypeDetector.Detector[]{f, h, g};
             FileTypeDetector.FileTypeDetectorXml xml = new FileTypeDetector.FileTypeDetectorXml(dd);
@@ -108,6 +116,18 @@ public class MediaFragment extends Fragment {
             xml.close();
             if (len < buf.length && !f.done)
                 f.detected = true;
+        } catch (Exception e) {
+            Log.d(TAG, "Unable to read", e);
+            try {
+                if (is != null)
+                    is.close();
+            } catch (IOException e1) {
+                Log.d(TAG, "unable to close", e1);
+            }
+            storage.closeSu();
+            return error(SuperUser.toMessage(e));
+        }
+        try {
             if (h.detected) {
                 supported = true;
                 WebViewCustom web = new WebViewCustom(getContext());
@@ -121,19 +141,16 @@ public class MediaFragment extends Fragment {
                 web.loadHtmlWithBaseURL(null, html, null);
                 return web;
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             Log.d(TAG, "Unable to read", e);
-            return error(SuperUser.toMessage(e));
-        } finally {
             try {
-                if (is != null) {
+                if (is != null)
                     is.close();
-                    is = null;
-                }
-            } catch (IOException e) {
-                Log.d(TAG, "unable to close", e);
+            } catch (IOException e1) {
+                Log.d(TAG, "unable to close", e1);
             }
             storage.closeSu();
+            return error(SuperUser.toMessage(e));
         }
         try {
             if (f.detected) {
@@ -162,10 +179,8 @@ public class MediaFragment extends Fragment {
         } catch (Exception e) {
             Log.d(TAG, "Unable to read", e);
             try {
-                if (is != null) {
+                if (is != null)
                     is.close();
-                    is = null;
-                }
             } catch (IOException e1) {
                 Log.e(TAG, "close", e1);
             }
@@ -185,14 +200,12 @@ public class MediaFragment extends Fragment {
                 i.setImageBitmap(bm);
                 return image;
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             Log.d(TAG, "Unable to read", e);
         } finally {
             try {
-                if (is != null) {
+                if (is != null)
                     is.close();
-                    is = null;
-                }
             } catch (IOException e) {
                 Log.d(TAG, "unable to close", e);
             }
