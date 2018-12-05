@@ -1760,18 +1760,22 @@ public class FilesFragment extends Fragment {
             return true;
         }
         if (id == R.id.action_view) {
-            Uri uri = item.getIntent().getData();
-            String name = Storage.getName(getContext(), uri);
-            if (isThumbnail(name)) {
-                FullscreenActivity.start(getContext(), uri);
-                return true;
-            }
-            Storage.ArchiveReader r = storage.fromArchive(uri, true);
-            if (r != null && r.isDirectory()) {
-                load(uri);
-            } else {
-                MainActivity main = (MainActivity) getActivity();
-                main.openHex(uri, true);
+            try {
+                Uri uri = item.getIntent().getData();
+                String name = Storage.getName(getContext(), uri);
+                if (isThumbnail(name)) {
+                    FullscreenActivity.start(getContext(), uri);
+                    return true;
+                }
+                Storage.ArchiveReader r = storage.fromArchive(uri, true);
+                if (r != null && r.isDirectory()) {
+                    load(uri);
+                } else {
+                    MainActivity main = (MainActivity) getActivity();
+                    main.openHex(uri, true);
+                }
+            } finally {
+                storage.closeSu();
             }
             return true;
         }

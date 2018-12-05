@@ -24,6 +24,7 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.TextView;
 
+import com.github.axet.androidlibrary.widgets.AppCompatFullscreenThemeActivity;
 import com.github.axet.androidlibrary.widgets.AppCompatThemeActivity;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.app.FilesApplication;
@@ -35,40 +36,12 @@ import com.github.axet.filemanager.fragments.MediaFragment;
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class FullscreenActivity extends AppCompatThemeActivity {
-    private static final int UI_ANIMATION_DELAY = 300;
-    private final Handler mHideHandler = new Handler();
-    private final Runnable mHidePart2Runnable = new Runnable() {
-        @SuppressLint("InlinedApi")
-        @Override
-        public void run() {
-            hideSystemUI();
-        }
-    };
-    private final Runnable mShowPart2Runnable = new Runnable() {
-        @Override
-        public void run() {
-            ActionBar actionBar = getSupportActionBar();
-            if (actionBar != null)
-                actionBar.show();
-        }
-    };
-    private boolean fullscreen;
-    private final Runnable mHideRunnable = new Runnable() {
-        @Override
-        public void run() {
-            setFullscreen(false);
-        }
-    };
-
-    public Window w;
-    public View decorView;
+public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
     public Toolbar toolbar;
     public Storage storage;
     Storage.Nodes nodes;
     ViewPager pager;
     PagerAdapter adapter;
-    Handler handler = new Handler();
     Runnable update = new Runnable() {
         @Override
         public void run() {
@@ -184,8 +157,7 @@ public class FullscreenActivity extends AppCompatThemeActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_fullscreen);
 
-        w = getWindow();
-        final Window.Callback callback = w.getCallback();
+        Window.Callback callback = w.getCallback();
         w.setCallback(new WindowCallbackWrapper(callback) {
             GestureDetectorCompat gestures = new GestureDetectorCompat(FullscreenActivity.this, new GestureDetector.OnGestureListener() {
                 @Override
@@ -220,20 +192,11 @@ public class FullscreenActivity extends AppCompatThemeActivity {
 
             @SuppressLint("RestrictedApi")
             @Override
-            public void onWindowFocusChanged(boolean hasFocus) {
-                super.onWindowFocusChanged(hasFocus);
-                if (hasFocus)
-                    setFullscreen(fullscreen);
-            }
-
-            @SuppressLint("RestrictedApi")
-            @Override
             public boolean dispatchTouchEvent(MotionEvent event) {
                 gestures.onTouchEvent(event);
                 return super.dispatchTouchEvent(event);
             }
         });
-        decorView = w.getDecorView();
 
         title = (TextView) findViewById(R.id.title);
         left = findViewById(R.id.left);
@@ -323,63 +286,6 @@ public class FullscreenActivity extends AppCompatThemeActivity {
     @Override
     public int getAppThemePopup() {
         return FilesApplication.getTheme(this, FilesApplication.PREF_THEME, R.style.AppThemeLight_PopupOverlay, R.style.AppThemeDark_PopupOverlay, getString(R.string.Theme_Dark));
-    }
-
-    @Override
-    protected void onPostCreate(Bundle savedInstanceState) {
-        super.onPostCreate(savedInstanceState);
-    }
-
-    public void toggle() {
-        setFullscreen(!fullscreen);
-    }
-
-    @SuppressLint({"InlinedApi", "RestrictedApi"})
-    public void setFullscreen(boolean b) {
-        if (fullscreen == b)
-            return;
-        fullscreen = b;
-        if (b) {
-            w.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
-            ActionBar actionBar = getSupportActionBar();
-            if (actionBar != null)
-                actionBar.hide();
-
-            mHideHandler.removeCallbacks(mShowPart2Runnable);
-            mHideHandler.postDelayed(mHidePart2Runnable, UI_ANIMATION_DELAY);
-        } else {
-            w.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-            showSystemUI();
-            mHideHandler.removeCallbacks(mHidePart2Runnable);
-            mHideHandler.postDelayed(mShowPart2Runnable, UI_ANIMATION_DELAY);
-        }
-    }
-
-    public void delayedHide(int delayMillis) {
-        mHideHandler.removeCallbacks(mHideRunnable);
-        mHideHandler.postDelayed(mHideRunnable, delayMillis);
-    }
-
-    private void hideSystemUI() {
-        if (Build.VERSION.SDK_INT >= 11)
-            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
-                    | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
-                    | View.SYSTEM_UI_FLAG_IMMERSIVE);
-    }
-
-    private void showSystemUI() {
-        if (Build.VERSION.SDK_INT >= 11)
-            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        setFullscreen(fullscreen);
     }
 
     @Override
