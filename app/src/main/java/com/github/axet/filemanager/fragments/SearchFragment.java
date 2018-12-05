@@ -30,6 +30,23 @@ public class SearchFragment extends FilesFragment {
     PendingOperation search;
     Pattern pattern;
     Storage.Nodes nodes = new Storage.Nodes();
+    Runnable process = new Runnable() {
+        @Override
+        public void run() {
+            boolean changed = false;
+            while (search.filesIndex < search.files.size()) {
+                Storage.Node n = search.files.get(search.filesIndex);
+                Matcher m = pattern.matcher(n.name);
+                if (m.find()) {
+                    nodes.add(n);
+                    changed = true;
+                }
+                search.filesIndex++;
+            }
+            if (changed)
+                adapter.notifyDataSetChanged();
+        }
+    };
     Runnable calc = new Runnable() {
         Snackbar old;
 
@@ -42,20 +59,10 @@ public class SearchFragment extends FilesFragment {
                         old = Snackbar.make(getActivity().findViewById(android.R.id.content), "", Snackbar.LENGTH_LONG);
                     old.setText(storage.getDisplayName(search.files.get(search.files.size() - 1).uri));
                     old.show();
+                    process.run();
                     return;
                 }
-                boolean changed = false;
-                while (search.filesIndex < search.files.size()) {
-                    Storage.Node n = search.files.get(search.filesIndex);
-                    Matcher m = pattern.matcher(n.name);
-                    if (m.find()) {
-                        nodes.add(n);
-                        changed = true;
-                    }
-                    search.filesIndex++;
-                }
-                if (changed)
-                    adapter.notifyDataSetChanged();
+                process.run();
                 storage.closeSu();
             } catch (RuntimeException e) {
                 Log.d(TAG, "search error", e);
