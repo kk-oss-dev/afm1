@@ -15,6 +15,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.github.axet.androidlibrary.app.FileTypeDetector;
+import com.github.axet.androidlibrary.app.SuperUser;
 import com.github.axet.androidlibrary.widgets.WebViewCustom;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.app.Storage;
@@ -34,6 +35,7 @@ public class MediaFragment extends Fragment {
 
     Uri uri;
     Storage storage;
+    GifView gif;
 
     HorizontalScrollView scroll;
     TextViewStream text;
@@ -75,6 +77,11 @@ public class MediaFragment extends Fragment {
             text.close();
             text = null;
         }
+        if (gif != null) {
+            gif.close();
+            gif = null;
+        }
+        storage.closeSu();
     }
 
     public Uri getUri() {
@@ -90,10 +97,12 @@ public class MediaFragment extends Fragment {
                 return error(getContext().getString(R.string.empty_list));
         } catch (Exception e) {
             Log.d(TAG, "Unable to read", e);
-            return error(e.getMessage());
-        } finally {
             storage.closeSu();
+            return error(e.getMessage());
         }
+        FileTypeDetector.FileTxt f = new FileTypeDetector.FileTxt();
+        FileTypeDetector.FileHTML h = new FileTypeDetector.FileHTML();
+        GifView.FileGif g = new GifView.FileGif();
         InputStream is = null;
         try {
             is = storage.open(uri);
@@ -101,9 +110,6 @@ public class MediaFragment extends Fragment {
             int len = is.read(buf);
             if (len == -1)
                 throw new IOException("unable to read");
-            FileTypeDetector.FileTxt f = new FileTypeDetector.FileTxt();
-            FileTypeDetector.FileHTML h = new FileTypeDetector.FileHTML();
-            GifView.FileGif g = new GifView.FileGif();
             FileTypeDetector.Detector[] dd = new FileTypeDetector.Detector[]{f, h, g};
             FileTypeDetector.FileTypeDetectorXml xml = new FileTypeDetector.FileTypeDetectorXml(dd);
             FileTypeDetector bin = new FileTypeDetector(dd);
@@ -126,6 +132,21 @@ public class MediaFragment extends Fragment {
                 web.loadHtmlWithBaseURL(null, html, null);
                 return web;
             }
+        } catch (IOException e) {
+            Log.d(TAG, "Unable to read", e);
+            return error(SuperUser.toMessage(e));
+        } finally {
+            try {
+                if (is != null) {
+                    is.close();
+                    is = null;
+                }
+            } catch (IOException e) {
+                Log.d(TAG, "unable to close", e);
+            }
+            storage.closeSu();
+        }
+        try {
             if (f.detected) {
                 supported = true;
                 View v = inflater.inflate(R.layout.fragment_media_text, container, false);
@@ -146,33 +167,36 @@ public class MediaFragment extends Fragment {
                 });
                 scroll = (HorizontalScrollView) v.findViewById(R.id.scroll);
                 text = (TextViewStream) v.findViewById(R.id.list);
-                text.setText(storage.open(uri));
+                text.setText(is = storage.open(uri));
                 return v;
             }
             if (g.detected) {
                 supported = true;
-                return new GifView(getContext(), storage.open(uri));
+                gif = new GifView(getContext(), is = storage.open(uri));
+                return gif;
             }
+        } catch (Exception e) {
+            Log.d(TAG, "Unable to read", e);
             try {
-                is = storage.open(uri);
-                Bitmap bm = BitmapFactory.decodeStream(is);
-                if (bm != null) {
-                    supported = true;
-                    image = inflater.inflate(R.layout.fragment_media_image, container, false);
-                    ImageView i = (ImageView) image.findViewById(R.id.image);
-                    i.setImageBitmap(bm);
-                    return image;
+                if (is != null) {
+                    is.close();
+                    is = null;
                 }
-            } catch (IOException e) {
-                Log.d(TAG, "Unable to read", e);
-            } finally {
-                try {
-                    if (is != null)
-                        is.close();
-                } catch (IOException e) {
-                    Log.d(TAG, "unable to close", e);
-                }
-                storage.closeSu();
+            } catch (IOException e1) {
+                Log.e(TAG, "close", e1);
+            }
+            storage.closeSu();
+            return error(SuperUser.toMessage(e));
+        } // no finally keep 'is'
+        try {
+            is = storage.open(uri);
+            Bitmap bm = BitmapFactory.decodeStream(is);
+            if (bm != null) {
+                supported = true;
+                image = inflater.inflate(R.layout.fragment_media_image, container, false);
+                ImageView i = (ImageView) image.findViewById(R.id.image);
+                i.setImageBitmap(bm);
+                return image;
             }
         } catch (IOException e) {
             Log.d(TAG, "Unable to read", e);
@@ -180,6 +204,7 @@ public class MediaFragment extends Fragment {
             try {
                 if (is != null) {
                     is.close();
+                    is = null;
                 }
             } catch (IOException e) {
                 Log.d(TAG, "unable to close", e);
