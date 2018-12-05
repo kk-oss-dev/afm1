@@ -22,7 +22,6 @@ public class GifView extends AppCompatImageView {
     public static final String TAG = GifView.class.getSimpleName();
 
     Paint p = new Paint();
-    InputStream is;
 
     public static class FileGif89a extends FileTypeDetector.ExtDetector.Handler {
 
@@ -145,23 +144,10 @@ public class GifView extends AppCompatImageView {
 
     public GifView(Context context, InputStream is) {
         super(context);
-        this.is = is;
         GifDrawable g = new GifDrawable(is);
         setImageDrawable(g);
         g.start();
         if (Build.VERSION.SDK_INT >= 11)
             setLayerType(LAYER_TYPE_SOFTWARE, p);
-    }
-
-    public void close() {
-        if (is != null) {
-            setImageDrawable(null);
-            try {
-                is.close();
-                is = null;
-            } catch (IOException e) {
-                Log.e(TAG, "close", e);
-            }
-        }
     }
 }

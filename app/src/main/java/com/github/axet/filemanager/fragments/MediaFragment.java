@@ -35,7 +35,6 @@ public class MediaFragment extends Fragment {
 
     Uri uri;
     Storage storage;
-    GifView gif;
 
     HorizontalScrollView scroll;
     TextViewStream text;
@@ -77,10 +76,6 @@ public class MediaFragment extends Fragment {
             text.close();
             text = null;
         }
-        if (gif != null) {
-            gif.close();
-            gif = null;
-        }
         storage.closeSu();
     }
 
@@ -92,19 +87,13 @@ public class MediaFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        try {
-            if (storage.getLength(uri) <= 0)
-                return error(getContext().getString(R.string.empty_list));
-        } catch (Exception e) {
-            Log.d(TAG, "Unable to read", e);
-            storage.closeSu();
-            return error(e.getMessage());
-        }
         FileTypeDetector.FileTxt f = new FileTypeDetector.FileTxt();
         FileTypeDetector.FileHTML h = new FileTypeDetector.FileHTML();
         GifView.FileGif g = new GifView.FileGif();
         InputStream is = null;
         try {
+            if (storage.getLength(uri) <= 0)
+                return error(getContext().getString(R.string.empty_list));
             is = storage.open(uri);
             byte[] buf = new byte[1024]; // optimal detect size
             int len = is.read(buf);
@@ -128,7 +117,7 @@ public class MediaFragment extends Fragment {
                     content = ContentType.parse(h.content);
                 else
                     content = ContentType.DEFAULT_TEXT;
-                String html = IOUtils.toString(storage.open(uri), content.getCharset());
+                String html = IOUtils.toString(is = storage.open(uri), content.getCharset());
                 web.loadHtmlWithBaseURL(null, html, null);
                 return web;
             }
@@ -170,11 +159,6 @@ public class MediaFragment extends Fragment {
                 text.setText(is = storage.open(uri));
                 return v;
             }
-            if (g.detected) {
-                supported = true;
-                gif = new GifView(getContext(), is = storage.open(uri));
-                return gif;
-            }
         } catch (Exception e) {
             Log.d(TAG, "Unable to read", e);
             try {
@@ -189,8 +173,11 @@ public class MediaFragment extends Fragment {
             return error(SuperUser.toMessage(e));
         } // no finally keep 'is'
         try {
-            is = storage.open(uri);
-            Bitmap bm = BitmapFactory.decodeStream(is);
+            if (g.detected) {
+                supported = true;
+                return new GifView(getContext(), is = storage.open(uri));
+            }
+            Bitmap bm = BitmapFactory.decodeStream(is = storage.open(uri));
             if (bm != null) {
                 supported = true;
                 image = inflater.inflate(R.layout.fragment_media_image, container, false);
