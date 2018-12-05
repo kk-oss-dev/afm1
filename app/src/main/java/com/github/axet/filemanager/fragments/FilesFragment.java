@@ -19,7 +19,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.provider.DocumentsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -968,33 +967,10 @@ public class FilesFragment extends Fragment {
                         if (filesIndex < files.size()) {
                             cancel(); // cancel previous skiped operation if existed
                             Storage.Node f = files.get(filesIndex);
-                            String target;
-                            {
-                                String p = getFirst(f.name);
-                                String r = rename.get(p);
-                                if (r != null)
-                                    target = new File(r, Storage.relative(p, f.name)).getPath();
-                                else
-                                    target = f.name;
-                            }
+                            Storage.Node target = getTarget(f); // special Node with no 'uri' if not found, and full path 'name'
                             try {
                                 if (f.dir) {
-                                    Storage.Node t = null;
-                                    String s = uri.getScheme();
-                                    if (s.equals(ContentResolver.SCHEME_FILE)) {
-                                        File k = Storage.getFile(uri);
-                                        File m = new File(k, target);
-                                        if (m.exists() && m.isDirectory())
-                                            t = new Storage.Node(m);
-                                    } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-                                        Uri doc = storage.child(uri, target);
-                                        DocumentFile k = DocumentFile.fromSingleUri(context, doc);
-                                        if (k.exists() && k.isDirectory())
-                                            t = new Storage.Node(k);
-                                    } else {
-                                        throw new Storage.UnknownUri();
-                                    }
-                                    if (t == null && storage.mkdir(uri, target) == null)
+                                    if (!(target.uri != null && target.dir) && storage.mkdir(uri, target.name) == null)
                                         throw new RuntimeException("unable create dir: " + target);
                                     filesIndex++;
                                     if (move) {
@@ -1002,34 +978,19 @@ public class FilesFragment extends Fragment {
                                         deleteIndex = delete.size() - 1; // reverse index
                                     }
                                 } else {
-                                    Storage.Node t = null;
-                                    String s = uri.getScheme();
-                                    if (s.equals(ContentResolver.SCHEME_FILE)) {
-                                        File k = Storage.getFile(uri);
-                                        File m = new File(k, target);
-                                        if (m.exists() && m.isFile())
-                                            t = new Storage.Node(m);
-                                    } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-                                        Uri doc = storage.child(uri, target);
-                                        DocumentFile k = DocumentFile.fromSingleUri(context, doc);
-                                        if (k.exists() && k.isFile())
-                                            t = new Storage.Node(k);
-                                    } else {
-                                        throw new Storage.UnknownUri();
-                                    }
-                                    if (t != null) {
-                                        switch (check(f, t).iterator().next()) {
+                                    if (target.uri != null && !target.dir) {
+                                        switch (check(f, target).iterator().next()) {
                                             case NONE:
                                                 break;
                                             case ASK:
-                                                pasteConflict(PasteBuilder.this, this, f, t);
+                                                pasteConflict(PasteBuilder.this, this, f, target);
                                                 return;
                                             case SKIP:
                                                 filesIndex++;
                                                 post();
                                                 return;
                                             case OVERWRITE:
-                                                storage.delete(t.uri);
+                                                storage.delete(target.uri);
                                                 break;
                                         }
                                     }
@@ -1045,47 +1006,13 @@ public class FilesFragment extends Fragment {
                                             total += SuperUser.length(storage.getSu(), Storage.getFile(f.uri));
                                         }
                                     }
-                                    if (move) { // try same node device 'mv' operation
-                                        if (s.equals(ContentResolver.SCHEME_FILE)) { // target 's'
-                                            s = f.uri.getScheme();
-                                            if (s.equals(ContentResolver.SCHEME_FILE)) { // source 's'
-                                                File k = Storage.getFile(uri);
-                                                File mf = Storage.getFile(f.uri);
-                                                File mt = new File(k, target);
-                                                if (storage.getRoot()) {
-                                                    if (SuperUser.rename(storage.getSu(), mf, mt).ok()) {
-                                                        filesIndex++;
-                                                        processed += f.size;
-                                                        post();
-                                                        return;
-                                                    }
-                                                } else {
-                                                    if (mf.renameTo(mt)) {
-                                                        filesIndex++;
-                                                        processed += f.size;
-                                                        post();
-                                                        return;
-                                                    }
-                                                }
-                                            }
-                                        } else if (Build.VERSION.SDK_INT >= 24 && s.equals(ContentResolver.SCHEME_CONTENT)) { // moveDocument api24+
-                                            s = f.uri.getScheme();
-                                            if (s.equals(ContentResolver.SCHEME_CONTENT)) { // source 's'
-                                                try {
-                                                    if (DocumentsContract.moveDocument(resolver, f.uri, Storage.getDocumentParent(context, f.uri), uri) != null) {
-                                                        filesIndex++;
-                                                        processed += f.size;
-                                                        post();
-                                                        return;
-                                                    }
-                                                } catch (RuntimeException e) { // IllegalStateException: "Failed to move"
-                                                }
-                                            }
-                                        } else {
-                                            throw new Storage.UnknownUri();
-                                        }
+                                    if (move && storage.mv(f.uri, uri, target.name)) { // try same node device 'mv' operation
+                                        filesIndex++;
+                                        processed += f.size;
+                                        post();
+                                        return;
                                     }
-                                    open(f, uri, target);
+                                    open(f, uri, target.name);
                                     info.start(current);
                                 }
                             } catch (IOException e) {
@@ -1118,6 +1045,43 @@ public class FilesFragment extends Fragment {
                         }
                         pasteError(PasteBuilder.this, this, e, move);
                     }
+                }
+
+                Storage.Node getTarget(Storage.Node f) {
+                    String target;
+                    String p = getFirst(f.name);
+                    String r = rename.get(p);
+                    if (r != null)
+                        target = new File(r, Storage.relative(p, f.name)).getPath();
+                    else
+                        target = f.name;
+                    Storage.Node t;
+                    String s = uri.getScheme();
+                    if (s.equals(ContentResolver.SCHEME_FILE)) {
+                        File k = Storage.getFile(uri);
+                        File m = new File(k, target);
+                        if (storage.getRoot()) {
+                            t = new Storage.Node(m);
+                            if (SuperUser.exists(storage.getSu(), m))
+                                t.dir = SuperUser.isDirectory(storage.getSu(), m);
+                            else
+                                t.uri = null;
+                        } else {
+                            t = new Storage.Node(m);
+                            if (!m.exists())
+                                t.uri = null;
+                        }
+                    } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
+                        Uri doc = storage.child(uri, target);
+                        DocumentFile k = DocumentFile.fromSingleUri(context, doc);
+                        t = new Storage.Node(k);
+                        if (!k.exists())
+                            t.uri = null;
+                    } else {
+                        throw new Storage.UnknownUri();
+                    }
+                    t.name = target;
+                    return t;
                 }
 
                 public void post() {

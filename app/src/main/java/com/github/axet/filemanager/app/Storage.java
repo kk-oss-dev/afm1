@@ -813,4 +813,35 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             d += "/" + p;
         return d;
     }
+
+    public boolean mv(Uri f, Uri tp, String tn) {
+        String s = tp.getScheme();
+        if (s.equals(ContentResolver.SCHEME_FILE)) { // target 's'
+            s = f.getScheme();
+            if (s.equals(ContentResolver.SCHEME_FILE)) { // source 's'
+                File k = Storage.getFile(tp);
+                File mf = Storage.getFile(f);
+                File mt = new File(k, tn);
+                if (getRoot()) {
+                    if (SuperUser.rename(getSu(), mf, mt).ok())
+                        return true;
+                } else {
+                    if (mf.renameTo(mt))
+                        return true;
+                }
+            }
+        } else if (Build.VERSION.SDK_INT >= 24 && s.equals(ContentResolver.SCHEME_CONTENT)) { // moveDocument api24+
+            s = f.getScheme();
+            if (s.equals(ContentResolver.SCHEME_CONTENT)) { // source 's'
+                try {
+                    if (DocumentsContract.moveDocument(resolver, f, Storage.getDocumentParent(context, f), tp) != null)
+                        return true;
+                } catch (RuntimeException e) { // IllegalStateException: "Failed to move"
+                }
+            }
+        } else {
+            throw new Storage.UnknownUri();
+        }
+        return false;
+    }
 }
