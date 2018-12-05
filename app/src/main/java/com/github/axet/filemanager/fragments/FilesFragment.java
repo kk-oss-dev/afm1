@@ -57,6 +57,7 @@ import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.androidlibrary.widgets.Toast;
 import com.github.axet.filemanager.R;
+import com.github.axet.filemanager.activities.FullscreenActivity;
 import com.github.axet.filemanager.activities.MainActivity;
 import com.github.axet.filemanager.app.FilesApplication;
 import com.github.axet.filemanager.app.Storage;
@@ -155,9 +156,13 @@ public class FilesFragment extends Fragment {
     }
 
     public static boolean isThumbnail(Storage.Node d) { // do not open every file, show thumbnnails only for correct file extension
+        return isThumbnail(d.name);
+    }
+
+    public static boolean isThumbnail(String name) {
         String[] ss = new String[]{"png", "jpg", "jpeg", "gif", "bmp"};
         for (String s : ss) {
-            if (d.name.toLowerCase().endsWith("." + s))
+            if (name.toLowerCase().endsWith("." + s))
                 return true;
         }
         return false;
@@ -1756,6 +1761,11 @@ public class FilesFragment extends Fragment {
         }
         if (id == R.id.action_view) {
             Uri uri = item.getIntent().getData();
+            String name = Storage.getName(getContext(), uri);
+            if (isThumbnail(name)) {
+                FullscreenActivity.start(getContext(), uri);
+                return true;
+            }
             Storage.ArchiveReader r = storage.fromArchive(uri, true);
             if (r != null && r.isDirectory()) {
                 load(uri);
@@ -1765,6 +1775,8 @@ public class FilesFragment extends Fragment {
             }
             return true;
         }
+        if (id == R.id.action_openas)
+            return true;
         if (id == R.id.action_openastext) {
             Intent intent = item.getIntent();
             Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));

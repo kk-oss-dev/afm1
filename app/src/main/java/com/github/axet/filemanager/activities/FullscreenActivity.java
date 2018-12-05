@@ -10,10 +10,12 @@ import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.view.WindowCallbackWrapper;
 import android.support.v7.widget.Toolbar;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
@@ -34,10 +36,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 public class FullscreenActivity extends AppCompatThemeActivity {
-    private static final boolean AUTO_HIDE = true;
-
-    private static final int AUTO_HIDE_DELAY_MILLIS = 3000;
-
     private static final int UI_ANIMATION_DELAY = 300;
     private final Handler mHideHandler = new Handler();
     private final Runnable mHidePart2Runnable = new Runnable() {
@@ -50,11 +48,9 @@ public class FullscreenActivity extends AppCompatThemeActivity {
     private final Runnable mShowPart2Runnable = new Runnable() {
         @Override
         public void run() {
-            // Delayed display of UI elements
             ActionBar actionBar = getSupportActionBar();
-            if (actionBar != null) {
+            if (actionBar != null)
                 actionBar.show();
-            }
         }
     };
     private boolean fullscreen;
@@ -62,20 +58,6 @@ public class FullscreenActivity extends AppCompatThemeActivity {
         @Override
         public void run() {
             setFullscreen(false);
-        }
-    };
-    /**
-     * Touch listener to use for in-layout UI controls to delay hiding the
-     * system UI. This is to prevent the jarring behavior of controls going away
-     * while interacting with activity UI.
-     */
-    private final View.OnTouchListener mDelayHideTouchListener = new View.OnTouchListener() {
-        @Override
-        public boolean onTouch(View view, MotionEvent motionEvent) {
-            if (AUTO_HIDE) {
-                delayedHide(AUTO_HIDE_DELAY_MILLIS);
-            }
-            return false;
         }
     };
 
@@ -201,18 +183,54 @@ public class FullscreenActivity extends AppCompatThemeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_fullscreen);
-        // toolbar = (Toolbar) findViewById(R.id.toolbar);
-        // setSupportActionBar(toolbar);
 
         w = getWindow();
         final Window.Callback callback = w.getCallback();
         w.setCallback(new WindowCallbackWrapper(callback) {
+            GestureDetectorCompat gestures = new GestureDetectorCompat(FullscreenActivity.this, new GestureDetector.OnGestureListener() {
+                @Override
+                public boolean onDown(MotionEvent e) {
+                    return false;
+                }
+
+                @Override
+                public void onShowPress(MotionEvent e) {
+                }
+
+                @Override
+                public boolean onSingleTapUp(MotionEvent e) {
+                    update();
+                    return true;
+                }
+
+                @Override
+                public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+                    return false;
+                }
+
+                @Override
+                public void onLongPress(MotionEvent e) {
+                }
+
+                @Override
+                public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                    return false;
+                }
+            });
+
             @SuppressLint("RestrictedApi")
             @Override
             public void onWindowFocusChanged(boolean hasFocus) {
                 super.onWindowFocusChanged(hasFocus);
                 if (hasFocus)
                     setFullscreen(fullscreen);
+            }
+
+            @SuppressLint("RestrictedApi")
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent event) {
+                gestures.onTouchEvent(event);
+                return super.dispatchTouchEvent(event);
             }
         });
         decorView = w.getDecorView();
@@ -226,7 +244,7 @@ public class FullscreenActivity extends AppCompatThemeActivity {
         fullscreen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                finish();
+                toggle();
             }
         });
 
@@ -263,7 +281,6 @@ public class FullscreenActivity extends AppCompatThemeActivity {
                             adapter.index += pager.getCurrentItem() - 1;
                     }
                     adapter.update();
-                    update();
                 }
             }
         });
@@ -282,8 +299,6 @@ public class FullscreenActivity extends AppCompatThemeActivity {
                 pager.setCurrentItem(pager.getCurrentItem() + 1);
             }
         });
-
-        setFullscreen(true);
     }
 
     void update() {
@@ -327,38 +342,26 @@ public class FullscreenActivity extends AppCompatThemeActivity {
         if (b) {
             w.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-            // Hide UI first
             ActionBar actionBar = getSupportActionBar();
-            if (actionBar != null) {
+            if (actionBar != null)
                 actionBar.hide();
-            }
 
-            // Schedule a runnable to remove the status and navigation bar after a delay
             mHideHandler.removeCallbacks(mShowPart2Runnable);
             mHideHandler.postDelayed(mHidePart2Runnable, UI_ANIMATION_DELAY);
         } else {
             w.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
             showSystemUI();
-            // Schedule a runnable to display UI elements after a delay
             mHideHandler.removeCallbacks(mHidePart2Runnable);
             mHideHandler.postDelayed(mShowPart2Runnable, UI_ANIMATION_DELAY);
         }
     }
 
-    /**
-     * Schedules a call to hide() in delay milliseconds, canceling any
-     * previously scheduled calls.
-     */
     public void delayedHide(int delayMillis) {
         mHideHandler.removeCallbacks(mHideRunnable);
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
     }
 
-    // This snippet hides the system bars.
     private void hideSystemUI() {
-        // Set the IMMERSIVE flag.
-        // Set the content to appear under the system bars so that the content
-        // doesn't resize when the system bars hide and show.
         if (Build.VERSION.SDK_INT >= 11)
             decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                     | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
@@ -368,8 +371,6 @@ public class FullscreenActivity extends AppCompatThemeActivity {
                     | View.SYSTEM_UI_FLAG_IMMERSIVE);
     }
 
-    // This snippet shows the system bars. It does this by removing all the flags
-// except for the ones that make the content appear under the system bars.
     private void showSystemUI() {
         if (Build.VERSION.SDK_INT >= 11)
             decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
@@ -378,7 +379,7 @@ public class FullscreenActivity extends AppCompatThemeActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        setFullscreen(fullscreen); // refresh
+        setFullscreen(fullscreen);
     }
 
     @Override
