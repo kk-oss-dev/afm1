@@ -72,7 +72,7 @@
     <string name="pref_recycle_summary">Enable recycle bin for deleted files</string>
     <string name="recyclebin_folder">Trash</string>
     <string name="empty_recyclebin">Empty Trash</string>
-    <string name="duplicate_folder">Duplicate?</string>
+    <string name="duplicate_folder">Duplicate</string>
     <string name="delete_permanently">Permanently</string>
     <string name="preview">Preview</string>
     <string name="file_viewas">View as ...</string>
