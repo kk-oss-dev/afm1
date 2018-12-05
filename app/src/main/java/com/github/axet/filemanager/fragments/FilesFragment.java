@@ -33,8 +33,8 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
 import android.system.ErrnoException;
-import android.system.OsConstants;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -422,7 +422,15 @@ public class FilesFragment extends Fragment {
         public EnumSet<OPERATION> newer = EnumSet.of(OPERATION.ASK); // overwrite same size file but newer date
         public EnumSet<OPERATION> same = EnumSet.of(OPERATION.ASK); // same file size and date
 
-        public EnumSet<OPERATION> access = EnumSet.of(OPERATION.ASK); // ErrnoException ACCESS
+        public SparseArray<EnumSet<OPERATION>> errno = new SparseArray<EnumSet<OPERATION>>() {
+            @Override
+            public EnumSet<OPERATION> get(int key) {
+                EnumSet<OPERATION> v = super.get(key);
+                if (v == null)
+                    put(key, v = EnumSet.of(OPERATION.ASK));
+                return v;
+            }
+        };
 
         public enum OPERATION {NONE, ASK, SKIP, OVERWRITE}
 
@@ -564,19 +572,18 @@ public class FilesFragment extends Fragment {
                 e = e.getCause();
             }
             if (Build.VERSION.SDK_INT >= 21) {
-                if (c instanceof ErrnoException && ((ErrnoException) c).errno == OsConstants.EACCES)
-                    return access;
+                if (c instanceof ErrnoException)
+                    return errno.get(((ErrnoException) c).errno);
             } else {
                 try {
-                    final int EACCES = 13; // OsConstants.EACCES
                     Class klass = Class.forName("libcore.io.ErrnoException");
                     Field f = klass.getDeclaredField("errno");
-                    if (klass.isInstance(c) && f.getInt(c) == EACCES)
-                        return access;
+                    if (klass.isInstance(c))
+                        return errno.get(f.getInt(c));
                 } catch (Exception ignore) {
                 }
             }
-            return EnumSet.of(OPERATION.NONE); // unknown error, alwayas asking
+            return EnumSet.of(OPERATION.NONE); // unknown error, always asking
         }
 
         public int copy(byte[] buf) throws IOException {
