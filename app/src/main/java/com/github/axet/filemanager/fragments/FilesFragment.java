@@ -570,20 +570,20 @@ public class FilesFragment extends Fragment {
         }
 
         public EnumSet<OPERATION> check(Throwable e) { // ask user for confirmations?
-            Throwable c = null;
+            Throwable p = null;
             while (e != null) {
-                c = e;
+                p = e;
                 e = e.getCause();
             }
             if (Build.VERSION.SDK_INT >= 21) {
-                if (c instanceof ErrnoException)
-                    return errno.get(((ErrnoException) c).errno);
+                if (p instanceof ErrnoException)
+                    return errno.get(((ErrnoException) p).errno);
             } else {
                 try {
                     Class klass = Class.forName("libcore.io.ErrnoException");
                     Field f = klass.getDeclaredField("errno");
-                    if (klass.isInstance(c))
-                        return errno.get(f.getInt(c));
+                    if (klass.isInstance(p))
+                        return errno.get(f.getInt(p));
                 } catch (Exception ignore) {
                 }
             }
@@ -844,7 +844,7 @@ public class FilesFragment extends Fragment {
         public void deleteError(Throwable e) {
             switch (op.check(e).iterator().next()) {
                 case SKIP:
-                    Log.d(TAG, "skip", e);
+                    Log.e(TAG, "skip", e);
                     op.filesIndex++;
                     op.cancel();
                     op.post();
@@ -1042,7 +1042,7 @@ public class FilesFragment extends Fragment {
                     } catch (RuntimeException e) {
                         switch (check(e).iterator().next()) {
                             case SKIP:
-                                Log.d(TAG, "skip", e);
+                                Log.e(TAG, "skip", e);
                                 filesIndex++;
                                 cancel();
                                 post();
@@ -1361,7 +1361,7 @@ public class FilesFragment extends Fragment {
                         });
                         menu.show();
                     } catch (RuntimeException e) {
-                        Log.d(TAG, "io", e);
+                        Log.e(TAG, "io", e);
                         error.setText(SuperUser.toMessage(e));
                         error.setVisibility(View.VISIBLE);
                     } finally {
@@ -1380,7 +1380,7 @@ public class FilesFragment extends Fragment {
                             selected.add(f);
                         openSelection();
                     } catch (RuntimeException e) {
-                        Log.d(TAG, "io", e);
+                        Log.e(TAG, "io", e);
                         error.setText(SuperUser.toMessage(e));
                         error.setVisibility(View.VISIBLE);
                     } finally {
@@ -1738,7 +1738,7 @@ public class FilesFragment extends Fragment {
                 }
             };
         } catch (RuntimeException e) {
-            Log.d(TAG, "io", e);
+            Log.e(TAG, "io", e);
             error.setText(SuperUser.toMessage(e));
             error.setVisibility(View.VISIBLE);
         } finally {
@@ -2204,7 +2204,7 @@ public class FilesFragment extends Fragment {
                 } catch (IOException | RuntimeException e) {
                     switch (check(e).iterator().next()) {
                         case SKIP:
-                            Log.d(TAG, "skip", e);
+                            Log.e(TAG, "skip", e);
                             filesIndex++;
                             cancel();
                             post();
