@@ -38,7 +38,6 @@ import java.util.Collections;
 
 public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
     public Toolbar toolbar;
-    public Storage storage;
     Storage.Nodes nodes;
     ViewPager pager;
     PagerAdapter adapter;
@@ -213,11 +212,12 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
 
         Uri uri = getIntent().getParcelableExtra("uri");
 
-        storage = new Storage(this);
+        Storage storage = new Storage(this);
         final Uri p = Storage.getParent(this, uri);
         ArrayList<Storage.Node> nn = storage.list(p);
         nodes = new Storage.Nodes(nn, false);
         Collections.sort(nodes, new FilesFragment.SortByName());
+        storage.closeSu();
 
         pager = (ViewPager) findViewById(R.id.pager);
         adapter = new PagerAdapter(getSupportFragmentManager(), uri);
@@ -266,7 +266,7 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
 
     void update() {
         Uri uri = nodes.get(adapter.getIndex(pager.getCurrentItem())).uri;
-        title.setText(storage.getName(uri));
+        title.setText(Storage.getName(this, uri));
         count.setText((nodes.find(uri) + 1) + "/" + nodes.size());
         Animation a = panel.getAnimation();
         if (a != null)
@@ -291,6 +291,5 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        storage.closeSu();
     }
 }
