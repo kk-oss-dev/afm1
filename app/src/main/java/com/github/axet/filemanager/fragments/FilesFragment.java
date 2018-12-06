@@ -155,14 +155,11 @@ public class FilesFragment extends Fragment {
         return ss[0];
     }
 
-    public static boolean isThumbnail(Storage.Node d) { // do not open every file, show thumbnnails only for correct file extension
-        return isThumbnail(d.name);
-    }
-
-    public static boolean isThumbnail(String name) {
-        String[] ss = new String[]{"png", "jpg", "jpeg", "gif", "bmp"};
+    public static boolean isThumbnail(String name) { // do not open every file, show thumbnnails only for correct file extension
+        name = name.toLowerCase();
+        String[] ss = new String[]{"webp", "png", "jpg", "jpeg", "gif", "bmp"};
         for (String s : ss) {
-            if (name.toLowerCase().endsWith("." + s))
+            if (name.endsWith("." + s))
                 return true;
         }
         return false;
@@ -1285,7 +1282,7 @@ public class FilesFragment extends Fragment {
                 h.icon.setColorFilter(h.accent);
                 h.size.setVisibility(View.GONE);
             } else {
-                if (isThumbnail(f)) {
+                if (isThumbnail(f.name)) {
                     downloadTask(f, h.itemView);
                 } else {
                     downloadTaskClean(h.itemView);
