@@ -807,7 +807,18 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     @Override
     public String getDisplayName(Uri uri) {
-        String d = super.getDisplayName(uri);
+        String d;
+        String s = uri.getScheme();
+        if (Build.VERSION.SDK_INT >= 21 && s.startsWith(ContentResolver.SCHEME_CONTENT)) { // saf folder for content
+            d = DocumentsContract.getTreeDocumentId(uri);
+            d += "://";
+            if (DocumentsContract.isDocumentUri(context, uri))
+                d += Storage.getDocumentChildPath(uri);
+        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) { // full destionation for files
+            d = getFile(uri).getPath();
+        } else {
+            throw new UnknownUri();
+        }
         String p = uri.getQueryParameter("p");
         if (p != null)
             d += "/" + p;
@@ -848,8 +859,12 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     @Override
     public boolean ejected(Uri uri) {
         String s = uri.getScheme();
-        if (s.equals(ContentResolver.SCHEME_FILE) && getRoot())
+        if (s.equals(ContentResolver.SCHEME_FILE) && getRoot()) {
+            File f = getFile(uri);
+            if (!SuperUser.exists(getSu(), f))
+                return true; // ejected
             return false;
+        }
         return super.ejected(uri);
     }
 }
