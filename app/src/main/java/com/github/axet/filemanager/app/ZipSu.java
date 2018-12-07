@@ -31,8 +31,12 @@ public class ZipSu extends NativeStorage {
 
         @Override
         public void readFully(byte[] buf, int off, int len) throws IOException {
-            int r = read(buf, off, len);
-            if (r != len)
+            int r;
+            while ((r = read(buf, off, len)) > 0) {
+                off += r;
+                len -= r;
+            }
+            if (len > 0)
                 throw new IOException("bad read");
         }
 
@@ -53,10 +57,7 @@ public class ZipSu extends NativeStorage {
 
         @Override
         public void close() throws IOException {
-            if (r != null) {
-                r.close();
-                r = null;
-            }
+            r.close();
         }
 
         @Override
@@ -66,7 +67,7 @@ public class ZipSu extends NativeStorage {
 
         @Override
         public void write(byte[] b, int off, int len) throws IOException {
-            throw new IOException("unsupported");
+            r.write(b, off, len);
         }
     }
 

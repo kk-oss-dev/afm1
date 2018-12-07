@@ -35,7 +35,15 @@ public class RarSu extends NativeStorage {
 
         @Override
         public int readFully(byte[] buf, int len) throws IOException {
-            return read(buf, 0, len);
+            int r;
+            int off = 0;
+            while ((r = read(buf, off, len)) > 0) {
+                off += r;
+                len -= r;
+            }
+            if (len > 0)
+                throw new IOException("bad read");
+            return r;
         }
 
         @Override
@@ -45,10 +53,7 @@ public class RarSu extends NativeStorage {
 
         @Override
         public void close() throws IOException {
-            if (r != null) {
-                r.close();
-                r = null;
-            }
+            r.close();
         }
     }
 

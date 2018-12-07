@@ -1,19 +1,23 @@
 package com.github.axet.filemanager.activities;
 
 import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.hardware.usb.UsbManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.internal.NavigationMenuItemView;
@@ -87,6 +91,21 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     Menu bookmarksMenu;
     ViewPager.OnPageChangeListener onPageChangeListener;
     String oldSearch;
+    Handler handler = new Handler();
+    BroadcastReceiver mounted = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "meida" + intent);
+            for (int i = 0; i < 5; i++) {
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        reloadMenu();
+                    }
+                }, i * 1000);
+            }
+        }
+    };
 
     public static void start(Context context) {
         Intent intent = new Intent(context, MainActivity.class);
@@ -443,6 +462,23 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         openIntent(getIntent());
 
         update();
+
+        IntentFilter ff = new IntentFilter();
+        ff.addAction(Intent.ACTION_MEDIA_MOUNTED);
+        ff.addAction(Intent.ACTION_MEDIA_UNMOUNTED);
+        ff.addAction(UsbManager.ACTION_USB_ACCESSORY_ATTACHED);
+        ff.addAction(UsbManager.ACTION_USB_ACCESSORY_DETACHED);
+        ff.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
+        ff.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
+        ff.addAction(Intent.ACTION_EXTERNAL_APPLICATIONS_AVAILABLE);
+        ff.addAction("android.hardware.usb.action.USB_STATE");
+        registerReceiver(mounted, ff);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(mounted);
     }
 
     @Override
@@ -720,7 +756,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setData(u);
             m.setIntent(intent);
-            m.setIcon(R.drawable.ic_storage_black_24dp);
+            m.setIcon(storage.ejected(u) ? R.drawable.ic_block_black_24dp : R.drawable.ic_storage_black_24dp);
             AppCompatImageButton b = new AppCompatImageButton(this);
             b.setColorFilter(accent);
             b.setImageResource(R.drawable.ic_delete_black_24dp);

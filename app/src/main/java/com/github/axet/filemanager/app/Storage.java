@@ -844,4 +844,12 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         }
         return false;
     }
+
+    @Override
+    public boolean ejected(Uri uri) {
+        String s = uri.getScheme();
+        if (s.equals(ContentResolver.SCHEME_FILE) && getRoot())
+            return false;
+        return super.ejected(uri);
+    }
 }
