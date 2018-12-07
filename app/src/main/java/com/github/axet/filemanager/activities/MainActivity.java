@@ -92,18 +92,20 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     ViewPager.OnPageChangeListener onPageChangeListener;
     String oldSearch;
     Handler handler = new Handler();
+    Runnable reload = new Runnable() {
+        @Override
+        public void run() {
+            reloadMenu();
+            getActiveFragment().reload();
+        }
+    };
     BroadcastReceiver mounted = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "meida" + intent);
-            for (int i = 0; i < 5; i++) {
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        reloadMenu();
-                    }
-                }, i * 1000);
-            }
+            Log.d(TAG, "media" + intent);
+            handler.removeCallbacks(reload);
+            for (int i = 0; i < 3; i++)
+                handler.postDelayed(reload, i * 1000);
         }
     };
 
