@@ -620,7 +620,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 return null;
             Uri u = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getDocumentId(uri));
             DocumentFile f = DocumentFile.fromSingleUri(context, u);
-            if (f.isDirectory())
+            if (!f.exists() || f.isDirectory())
                 return null;
             String t = f.getType();
             String rel = uri.getQueryParameter("p");
