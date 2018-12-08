@@ -97,7 +97,6 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         public void run() {
             reloadMenu();
             getActiveFragment().reload();
-            storage.closeSu();
         }
     };
     BroadcastReceiver mounted = new BroadcastReceiver() {
@@ -461,8 +460,6 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         MenuItem add = settingsMenu.add(R.string.add_bookmark);
         add.setIntent(new Intent(ADD_BOOKMARK));
         add.setIcon(R.drawable.ic_add_black_24dp);
-        reloadMenu();
-        storage.closeSu();
 
         SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
         mViewPager.setCurrentItem(shared.getInt(FilesApplication.PREF_ACTIVE, 0));
@@ -591,7 +588,6 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                     app.bookmarks.add(uri);
                     app.bookmarks.save();
                     reloadMenu();
-                    storage.closeSu();
                 }
 
                 @Override
@@ -634,7 +630,6 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                     app.bookmarks.add(uri);
                     app.bookmarks.save();
                     reloadMenu();
-                    storage.closeSu();
                 }
             };
             choicer.setStorageAccessFramework(this, RESULT_ADDBOOKMARK);
@@ -705,8 +700,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     @Override
     protected void onResume() {
         super.onResume();
-        reloadMenu(); // trash folder
-        storage.closeSu();
+        reloadMenu(); // trash folder and ejected usb drives
     }
 
     @Override
@@ -830,6 +824,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             });
             MenuItemCompat.setActionView(m, b);
         }
+        storage.closeSu();
     }
 
     public void update() {
