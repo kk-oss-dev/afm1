@@ -101,7 +101,7 @@ public class MediaFragment extends Fragment {
         InputStream is = null;
         try {
             is = storage.open(uri);
-            byte[] buf = new byte[1024]; // optimal detect size
+            byte[] buf = new byte[FileTypeDetector.BUF_SIZE]; // optimal detect size
             int len = is.read(buf);
             is.close();
             is = null;
