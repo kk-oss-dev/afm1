@@ -57,7 +57,7 @@ public class SearchFragment extends FilesFragment {
                     handler.post(this);
                     if (old == null)
                         old = Snackbar.make(getActivity().findViewById(android.R.id.content), "", Snackbar.LENGTH_LONG);
-                    old.setText(storage.getDisplayName(search.files.get(search.files.size() - 1).uri));
+                    old.setText(Storage.getDisplayName(getContext(), search.files.get(search.files.size() - 1).uri));
                     old.show();
                     process.run();
                     return;
