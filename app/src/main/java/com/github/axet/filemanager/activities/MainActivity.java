@@ -97,6 +97,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         public void run() {
             reloadMenu();
             getActiveFragment().reload();
+            storage.closeSu();
         }
     };
     BroadcastReceiver mounted = new BroadcastReceiver() {
