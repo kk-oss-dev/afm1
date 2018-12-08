@@ -563,7 +563,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             final File k = getFile(uri);
-            byte[] buf = new byte[1024];
+            byte[] buf = new byte[FileTypeDetector.BUF_SIZE];
             FileTypeDetector.FileRar rar = new FileTypeDetector.FileRar();
             FileTypeDetector.FileZip zip = new FileTypeDetector.FileZip();
             if (getRoot()) {
@@ -691,11 +691,13 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         }
     }
 
-    public boolean touch(Uri uri, String name) {
+    public Uri touch(Uri uri, String name) {
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             File k = Storage.getFile(uri);
             File m = new File(k, name);
-            return SuperUser.touch(getSu(), m, System.currentTimeMillis()).ok();
+            if(SuperUser.touch(getSu(), m, System.currentTimeMillis()).ok())
+                return uri;
+            return null;
         }
         return super.touch(uri, name);
     }
@@ -811,6 +813,8 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         String s = uri.getScheme();
         if (Build.VERSION.SDK_INT >= 21 && s.startsWith(ContentResolver.SCHEME_CONTENT)) { // saf folder for content
             d = DocumentsContract.getTreeDocumentId(uri);
+            if (d.endsWith(COLON))
+                d = d.substring(0, d.length() - 1);
             d += "://";
             if (DocumentsContract.isDocumentUri(context, uri))
                 d += Storage.getDocumentChildPath(uri);

@@ -56,6 +56,7 @@ import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.androidlibrary.widgets.Toast;
+import com.github.axet.androidlibrary.widgets.TopSnappedSmoothScroller;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.FullscreenActivity;
 import com.github.axet.filemanager.activities.MainActivity;
@@ -567,11 +568,7 @@ public class FilesFragment extends Fragment {
         }
 
         public EnumSet<OPERATION> check(Throwable e) { // ask user for confirmations?
-            Throwable p = null;
-            while (e != null) {
-                p = e;
-                e = e.getCause();
-            }
+            Throwable p = SuperUser.getCause(e);
             if (Build.VERSION.SDK_INT >= 21) {
                 if (p instanceof ErrnoException)
                     return errno.get(((ErrnoException) p).errno);
@@ -1537,7 +1534,14 @@ public class FilesFragment extends Fragment {
         };
         path.setUri(uri);
 
-        layout = new LinearLayoutManager(getContext());
+        layout = new LinearLayoutManager(getContext()) {
+            @Override
+            public void smoothScrollToPosition(RecyclerView recyclerView, RecyclerView.State state, int position) {
+                RecyclerView.SmoothScroller smoothScroller = new TopSnappedSmoothScroller(recyclerView.getContext());
+                smoothScroller.setTargetPosition(position);
+                startSmoothScroll(smoothScroller);
+            }
+        };
 
         list = (RecyclerView) rootView.findViewById(R.id.list);
         list.setLayoutManager(layout);
@@ -2200,7 +2204,7 @@ public class FilesFragment extends Fragment {
                         getContext().sendBroadcast(new Intent(MOVE_UPDATE));
                     } else {
                         reload();
-                        select(to);
+                        highlight(to);
                     }
                 } catch (IOException | RuntimeException e) {
                     switch (check(e).iterator().next()) {
@@ -2273,28 +2277,46 @@ public class FilesFragment extends Fragment {
         updateSelection();
     }
 
-    public void select(Uri uri) {
+    public void highlight(Uri uri) {
         for (int i = 0; i < adapter.files.size(); i++) {
             Storage.Node n = adapter.files.get(i);
             if (n.uri.equals(uri)) {
-                layout.scrollToPositionWithOffset(i, 0);
+                list.smoothScrollToPosition(i);
                 final int p = i;
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        RecyclerView.ViewHolder h = list.findViewHolderForAdapterPosition(p);
-                        if (h == null) {
+                        final RecyclerView.ViewHolder h = list.findViewHolderForAdapterPosition(p);
+                        if (h == null || list.getScrollState() != RecyclerView.SCROLL_STATE_IDLE) {
                             handler.post(this);
                             return;
                         }
-                        AlphaAnimation anim = new AlphaAnimation(1.0f, 0.3f);
+                        final View v = new View(getContext());
+                        v.setBackgroundColor(Color.YELLOW);
+                        ((ViewGroup) h.itemView).addView(v, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                        AlphaAnimation anim = new AlphaAnimation(0f, 0.5f);
                         anim.setInterpolator(new AccelerateDecelerateInterpolator());
                         anim.setRepeatMode(Animation.REVERSE);
-                        anim.setRepeatCount(3);
-                        anim.setDuration(200);
-                        h.itemView.startAnimation(anim);
+                        anim.setRepeatCount(1);
+                        anim.setDuration(250);
+                        anim.setAnimationListener(new Animation.AnimationListener() {
+                            @Override
+                            public void onAnimationStart(Animation animation) {
+                            }
+
+                            @Override
+                            public void onAnimationEnd(Animation animation) {
+                                ((ViewGroup) h.itemView).removeView(v);
+                            }
+
+                            @Override
+                            public void onAnimationRepeat(Animation animation) {
+                            }
+                        });
+                        v.startAnimation(anim);
                     }
                 });
+                return;
             }
         }
     }

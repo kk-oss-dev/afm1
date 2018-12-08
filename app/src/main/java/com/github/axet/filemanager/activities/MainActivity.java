@@ -339,11 +339,13 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         String s = edit.getText();
-                        FilesFragment f = getActiveFragment();
+                        final FilesFragment f = getActiveFragment();
                         try {
-                            if (storage.mkdir(f.getUri(), s) == null)
+                            final Uri uri = storage.mkdir(f.getUri(), s);
+                            if (uri == null)
                                 throw new RuntimeException("unable to create " + s);
                             f.reload();
+                            f.highlight(uri);
                         } catch (RuntimeException e) {
                             Log.d(TAG, "create folder", e);
                             Toast.makeText(MainActivity.this, R.string.not_permitted, Toast.LENGTH_SHORT).show();
@@ -369,9 +371,11 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                         String s = edit.getText();
                         FilesFragment f = getActiveFragment();
                         try {
-                            if (!storage.touch(f.getUri(), s))
+                            Uri uri = storage.touch(f.getUri(), s);
+                            if (uri == null)
                                 throw new RuntimeException("unable to create file");
                             f.reload();
+                            f.highlight(uri);
                         } catch (RuntimeException e) {
                             Log.d(TAG, "create file", e);
                             Toast.makeText(MainActivity.this, R.string.not_permitted, Toast.LENGTH_SHORT).show();
