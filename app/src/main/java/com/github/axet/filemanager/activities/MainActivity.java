@@ -462,6 +462,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         add.setIntent(new Intent(ADD_BOOKMARK));
         add.setIcon(R.drawable.ic_add_black_24dp);
         reloadMenu();
+        storage.closeSu();
 
         SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
         mViewPager.setCurrentItem(shared.getInt(FilesApplication.PREF_ACTIVE, 0));
@@ -590,6 +591,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                     app.bookmarks.add(uri);
                     app.bookmarks.save();
                     reloadMenu();
+                    storage.closeSu();
                 }
 
                 @Override
@@ -632,6 +634,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                     app.bookmarks.add(uri);
                     app.bookmarks.save();
                     reloadMenu();
+                    storage.closeSu();
                 }
             };
             choicer.setStorageAccessFramework(this, RESULT_ADDBOOKMARK);
@@ -703,6 +706,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     protected void onResume() {
         super.onResume();
         reloadMenu(); // trash folder
+        storage.closeSu();
     }
 
     @Override
