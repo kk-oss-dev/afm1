@@ -51,6 +51,7 @@ import android.widget.TextView;
 
 import com.github.axet.androidlibrary.widgets.CacheImagesAdapter;
 import com.github.axet.androidlibrary.widgets.CacheImagesRecyclerAdapter;
+import com.github.axet.androidlibrary.widgets.ErrorDialog;
 import com.github.axet.androidlibrary.widgets.OpenChoicer;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
@@ -193,7 +194,7 @@ public class FilesFragment extends Fragment {
         View p = LayoutInflater.from(paste.getContext()).inflate(R.layout.paste_error, null);
         View sp = p.findViewById(R.id.skip_panel);
         TextView t = (TextView) p.findViewById(R.id.text);
-        t.setText(SuperUser.toMessage(e));
+        t.setText(ErrorDialog.toMessage(e));
         final View retry = p.findViewById(R.id.retry);
         final View s1 = p.findViewById(R.id.spacer1);
         final View del = p.findViewById(R.id.delete);
@@ -568,7 +569,7 @@ public class FilesFragment extends Fragment {
         }
 
         public EnumSet<OPERATION> check(Throwable e) { // ask user for confirmations?
-            Throwable p = SuperUser.getCause(e);
+            Throwable p = ErrorDialog.getCause(e);
             if (Build.VERSION.SDK_INT >= 21) {
                 if (p instanceof ErrnoException)
                     return errno.get(((ErrnoException) p).errno);
@@ -1356,7 +1357,7 @@ public class FilesFragment extends Fragment {
                         menu.show();
                     } catch (RuntimeException e) {
                         Log.e(TAG, "io", e);
-                        error.setText(SuperUser.toMessage(e));
+                        error.setText(ErrorDialog.toMessage(e));
                         error.setVisibility(View.VISIBLE);
                     } finally {
                         storage.closeSu();
@@ -1375,7 +1376,7 @@ public class FilesFragment extends Fragment {
                         openSelection();
                     } catch (RuntimeException e) {
                         Log.e(TAG, "io", e);
-                        error.setText(SuperUser.toMessage(e));
+                        error.setText(ErrorDialog.toMessage(e));
                         error.setVisibility(View.VISIBLE);
                     } finally {
                         storage.closeSu();
@@ -1740,7 +1741,7 @@ public class FilesFragment extends Fragment {
             };
         } catch (RuntimeException e) {
             Log.e(TAG, "io", e);
-            error.setText(SuperUser.toMessage(e));
+            error.setText(ErrorDialog.toMessage(e));
             error.setVisibility(View.VISIBLE);
         } finally {
             storage.closeSu();
@@ -2048,9 +2049,7 @@ public class FilesFragment extends Fragment {
                                     OutputStream os = storage.open(uri, Storage.getName(context, to));
                                     archive(to, os);
                                 } catch (IOException e) {
-                                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                                    builder.setTitle("Error");
-                                    builder.setMessage(SuperUser.toMessage(e));
+                                    ErrorDialog builder = new ErrorDialog(context, e);
                                     builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                                         @Override
                                         public void onClick(DialogInterface dialog, int which) {

@@ -735,7 +735,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
 
     public String getDrawerName(Uri u) {
         String s = u.getScheme();
-        if (s.startsWith(ContentResolver.SCHEME_FILE)) {
+        if (s.equals(ContentResolver.SCHEME_FILE)) {
             File f = Storage.getFile(u);
             if (f.equals(Environment.getExternalStorageDirectory()))
                 return f.getPath();

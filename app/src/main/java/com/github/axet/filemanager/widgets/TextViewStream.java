@@ -19,7 +19,6 @@ import java.util.Scanner;
 public class TextViewStream extends RecyclerView {
     public static final String TAG = TextViewStream.class.getSimpleName();
 
-    InputStream is;
     Adapter adapter;
     Typeface tf = Typeface.MONOSPACE;
     float sp = 10;
@@ -42,11 +41,11 @@ public class TextViewStream extends RecyclerView {
         Scanner scanner;
         ArrayList<String> ll = new ArrayList<>();
 
-        public Adapter() {
-            create();
+        public Adapter(InputStream is) {
+            create(is);
         }
 
-        public void create() {
+        public void create(InputStream is) {
             scanner = new Scanner(is);
         }
 
@@ -129,8 +128,7 @@ public class TextViewStream extends RecyclerView {
 
     public void setText(InputStream is) {
         close();
-        this.is = is;
-        adapter = new Adapter();
+        adapter = new Adapter(is);
         setAdapter(adapter);
         adapter.load();
     }
@@ -145,14 +143,6 @@ public class TextViewStream extends RecyclerView {
         if (adapter != null) {
             adapter.close();
             adapter = null;
-        }
-        try {
-            if (is != null) {
-                is.close();
-                is = null;
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "close", e);
         }
     }
 

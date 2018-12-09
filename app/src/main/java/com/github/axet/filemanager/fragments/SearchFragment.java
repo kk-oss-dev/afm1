@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.github.axet.androidlibrary.services.StorageProvider;
+import com.github.axet.androidlibrary.widgets.ErrorDialog;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.MainActivity;
 import com.github.axet.filemanager.app.Storage;
@@ -155,7 +156,7 @@ public class SearchFragment extends FilesFragment {
             calc.run();
         } catch (RuntimeException e) {
             Log.d(TAG, "io", e);
-            error.setText(SuperUser.toMessage(e));
+            error.setText(ErrorDialog.toMessage(e));
             error.setVisibility(View.VISIBLE);
         }
     }
