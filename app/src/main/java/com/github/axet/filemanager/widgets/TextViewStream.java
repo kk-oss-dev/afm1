@@ -6,10 +6,12 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -38,10 +40,12 @@ public class TextViewStream extends RecyclerView {
     }
 
     public class Adapter extends RecyclerView.Adapter<Holder> {
+        InputStream is;
         Scanner scanner;
         ArrayList<String> ll = new ArrayList<>();
 
         public Adapter(InputStream is) {
+            this.is = is;
             scanner = new Scanner(is);
         }
 
@@ -49,6 +53,14 @@ public class TextViewStream extends RecyclerView {
             if (scanner != null) {
                 scanner.close();
                 scanner = null;
+            }
+            try {
+                if (is != null) {
+                    is.close(); // scanner does not close broken streams
+                    is = null;
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "close", e);
             }
         }
 
