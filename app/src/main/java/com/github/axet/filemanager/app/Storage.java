@@ -81,7 +81,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             d = DocumentsContract.getTreeDocumentId(uri);
             if (d.endsWith(COLON))
                 d = d.substring(0, d.length() - 1);
-            d += "://";
+            d += CSS;
             if (DocumentsContract.isDocumentUri(context, uri))
                 d += Storage.getDocumentChildPath(uri);
         } else if (s.equals(ContentResolver.SCHEME_FILE)) { // full destionation for files
@@ -93,6 +93,15 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         if (p != null)
             d += "/" + p;
         return d;
+    }
+
+    public static String getRarFileName(de.innosystec.unrar.rarfile.FileHeader header) {
+        String s = header.getFileNameW();
+        if (s == null || s.isEmpty())
+            s = header.getFileNameString();
+        if (header.getHostOS().equals(HostSystem.win32))
+            s = s.replaceAll("\\\\", "/");
+        return s;
     }
 
     public static class Nodes extends ArrayList<Node> {
@@ -238,15 +247,6 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     public static class RarNode extends ArchiveNode {
         public Archive rar;
         public de.innosystec.unrar.rarfile.FileHeader h;
-
-        public static String getRarFileName(de.innosystec.unrar.rarfile.FileHeader header) {
-            String s = header.getFileNameW();
-            if (s == null || s.isEmpty())
-                s = header.getFileNameString();
-            if (header.getHostOS().equals(HostSystem.win32))
-                s = s.replaceAll("\\\\", "/");
-            return s;
-        }
 
         @Override
         public String getPath() {
