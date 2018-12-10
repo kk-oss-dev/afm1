@@ -187,7 +187,7 @@ public class MediaFragment extends Fragment {
             }
             storage.closeSu();
             return error(ErrorDialog.toMessage(e));
-        } // no finally keep 'is'
+        } // no 'finally' section keep 'is'
         try {
             if (g.detected) {
                 supported = true;

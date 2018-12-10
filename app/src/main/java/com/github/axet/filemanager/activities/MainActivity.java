@@ -700,7 +700,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     @Override
     protected void onResume() {
         super.onResume();
-        reloadMenu(); // trash folder and ejected usb drives
+        reloadMenu(); // trash folder
     }
 
     @Override
@@ -747,6 +747,15 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         }
     }
 
+    public boolean ejected(Uri u) { // do not show IO popups for every bookmark
+        try {
+            return storage.ejected(u);
+        } catch (RuntimeException e) {
+            Log.e(TAG, "ejected", e);
+            return true;
+        }
+    }
+
     public void reloadMenu() {
         int accent = ThemeUtils.getThemeColor(this, R.attr.colorAccent);
         bookmarksMenu.clear();
@@ -761,7 +770,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setData(u);
             m.setIntent(intent);
-            m.setIcon(storage.ejected(u) ? R.drawable.ic_block_black_24dp : R.drawable.ic_storage_black_24dp);
+            m.setIcon(ejected(u) ? R.drawable.ic_block_black_24dp : R.drawable.ic_storage_black_24dp);
             AppCompatImageButton b = new AppCompatImageButton(this);
             b.setColorFilter(accent);
             b.setImageResource(R.drawable.ic_delete_black_24dp);
@@ -868,7 +877,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     @Override
     public void supportInvalidateOptionsMenu() {
         if (search != null)
-            return;
+            return; // prevent update options, we need SearchView visible
         super.supportInvalidateOptionsMenu();
     }
 
