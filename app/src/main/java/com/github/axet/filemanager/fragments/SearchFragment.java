@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.github.axet.androidlibrary.services.StorageProvider;
+import com.github.axet.androidlibrary.widgets.ErrorDialog;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.MainActivity;
 import com.github.axet.filemanager.app.Storage;
@@ -57,7 +58,7 @@ public class SearchFragment extends FilesFragment {
                     handler.post(this);
                     if (old == null)
                         old = Snackbar.make(getActivity().findViewById(android.R.id.content), "", Snackbar.LENGTH_LONG);
-                    old.setText(storage.getDisplayName(search.files.get(search.files.size() - 1).uri));
+                    old.setText(Storage.getDisplayName(getContext(), search.files.get(search.files.size() - 1).uri));
                     old.show();
                     process.run();
                     return;
@@ -155,7 +156,7 @@ public class SearchFragment extends FilesFragment {
             calc.run();
         } catch (RuntimeException e) {
             Log.d(TAG, "io", e);
-            error.setText(SuperUser.toMessage(e));
+            error.setText(ErrorDialog.toMessage(e));
             error.setVisibility(View.VISIBLE);
         }
     }

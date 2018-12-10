@@ -6,12 +6,10 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -19,10 +17,11 @@ import java.util.Scanner;
 public class TextViewStream extends RecyclerView {
     public static final String TAG = TextViewStream.class.getSimpleName();
 
-    InputStream is;
     Adapter adapter;
+    LinearLayoutManager layout = new LinearLayoutManager(getContext());
     Typeface tf = Typeface.MONOSPACE;
     float sp = 10;
+    int min;
 
     public static class Holder extends RecyclerView.ViewHolder {
         TextView text;
@@ -42,11 +41,7 @@ public class TextViewStream extends RecyclerView {
         Scanner scanner;
         ArrayList<String> ll = new ArrayList<>();
 
-        public Adapter() {
-            create();
-        }
-
-        public void create() {
+        public Adapter(InputStream is) {
             scanner = new Scanner(is);
         }
 
@@ -91,6 +86,9 @@ public class TextViewStream extends RecyclerView {
             h.text.setTypeface(tf, Typeface.NORMAL);
             h.text.setText(ll.get(position));
             h.text.setTextSize(sp);
+            h.itemView.measure(0, 0);
+            min = Math.max(min, h.itemView.getMeasuredWidth());
+            TextViewStream.this.setMinimumWidth(min);
         }
 
         @Override
@@ -115,7 +113,7 @@ public class TextViewStream extends RecyclerView {
     }
 
     public void create() {
-        setLayoutManager(new LinearLayoutManager(getContext()));
+        setLayoutManager(layout);
     }
 
     public void setTypeface(Typeface tf) {
@@ -129,8 +127,7 @@ public class TextViewStream extends RecyclerView {
 
     public void setText(InputStream is) {
         close();
-        this.is = is;
-        adapter = new Adapter();
+        adapter = new Adapter(is);
         setAdapter(adapter);
         adapter.load();
     }
@@ -145,14 +142,6 @@ public class TextViewStream extends RecyclerView {
         if (adapter != null) {
             adapter.close();
             adapter = null;
-        }
-        try {
-            if (is != null) {
-                is.close();
-                is = null;
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "close", e);
         }
     }
 

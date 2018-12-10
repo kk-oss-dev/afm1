@@ -220,7 +220,7 @@ public class HexDialogFragment extends DialogFragment {
         adapter.update(uri);
         if (old == null)
             old = Snackbar.make(pager, "", Toast.LENGTH_SHORT);
-        old.setText(storage.getName(uri) + " (" + (nodes.find(uri) + 1) + "/" + nodes.size() + ")");
+        old.setText(Storage.getName(getContext(), uri) + " (" + (nodes.find(uri) + 1) + "/" + nodes.size() + ")");
         old.show();
     }
 

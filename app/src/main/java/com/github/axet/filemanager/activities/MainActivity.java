@@ -187,9 +187,9 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         public CharSequence getPageTitle(int position) {
             switch (position) {
                 case 0:
-                    return storage.getDisplayName(left.getUri()) + " "; // prevent PathMax eat last slash
+                    return Storage.getDisplayName(MainActivity.this, left.getUri()) + " "; // prevent PathMax eat last slash
                 case 1:
-                    return storage.getDisplayName(right.getUri()) + " "; // prevent PathMax eat last slash
+                    return Storage.getDisplayName(MainActivity.this, right.getUri()) + " "; // prevent PathMax eat last slash
             }
             return null;
         }
@@ -222,7 +222,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
 
                 @Override
                 public String formatStart() {
-                    return storage.getDisplayName(Uri.fromFile(storage.getTrash())) + "/*";
+                    return Storage.getDisplayName(context, Uri.fromFile(storage.getTrash())) + "/*";
                 }
 
                 @Override
@@ -460,7 +460,6 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         MenuItem add = settingsMenu.add(R.string.add_bookmark);
         add.setIntent(new Intent(ADD_BOOKMARK));
         add.setIcon(R.drawable.ic_add_black_24dp);
-        reloadMenu();
 
         SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
         mViewPager.setCurrentItem(shared.getInt(FilesApplication.PREF_ACTIVE, 0));
@@ -736,7 +735,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
 
     public String getDrawerName(Uri u) {
         String s = u.getScheme();
-        if (s.startsWith(ContentResolver.SCHEME_FILE)) {
+        if (s.equals(ContentResolver.SCHEME_FILE)) {
             File f = Storage.getFile(u);
             if (f.equals(Environment.getExternalStorageDirectory()))
                 return f.getPath();
@@ -744,7 +743,16 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                 return f.getPath();
             return ".../" + f.getName();
         } else {
-            return storage.getDisplayName(u);
+            return Storage.getDisplayName(MainActivity.this, u);
+        }
+    }
+
+    public boolean ejected(Uri u) { // do not show IO popups for every bookmark
+        try {
+            return storage.ejected(u);
+        } catch (RuntimeException e) {
+            Log.e(TAG, "ejected", e);
+            return true;
         }
     }
 
@@ -762,7 +770,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setData(u);
             m.setIntent(intent);
-            m.setIcon(storage.ejected(u) ? R.drawable.ic_block_black_24dp : R.drawable.ic_storage_black_24dp);
+            m.setIcon(ejected(u) ? R.drawable.ic_block_black_24dp : R.drawable.ic_storage_black_24dp);
             AppCompatImageButton b = new AppCompatImageButton(this);
             b.setColorFilter(accent);
             b.setImageResource(R.drawable.ic_delete_black_24dp);
@@ -825,6 +833,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             });
             MenuItemCompat.setActionView(m, b);
         }
+        storage.closeSu();
     }
 
     public void update() {
@@ -868,7 +877,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     @Override
     public void supportInvalidateOptionsMenu() {
         if (search != null)
-            return;
+            return; // prevent update options, we need SearchView visible
         super.supportInvalidateOptionsMenu();
     }
 

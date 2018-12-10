@@ -16,6 +16,7 @@ import android.widget.TextView;
 
 import com.github.axet.androidlibrary.app.FileTypeDetector;
 import com.github.axet.androidlibrary.app.SuperUser;
+import com.github.axet.androidlibrary.widgets.ErrorDialog;
 import com.github.axet.androidlibrary.widgets.WebViewCustom;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.app.Storage;
@@ -93,7 +94,7 @@ public class MediaFragment extends Fragment {
         } catch (Exception e) {
             Log.e(TAG, "length", e);
             storage.closeSu();
-            return error(SuperUser.toMessage(e));
+            return error(ErrorDialog.toMessage(e));
         }
         FileTypeDetector.FileTxt f = new FileTypeDetector.FileTxt();
         FileTypeDetector.FileHTML h = new FileTypeDetector.FileHTML();
@@ -125,7 +126,7 @@ public class MediaFragment extends Fragment {
                 Log.d(TAG, "unable to close", e1);
             }
             storage.closeSu();
-            return error(SuperUser.toMessage(e));
+            return error(ErrorDialog.toMessage(e));
         }
         try {
             if (h.detected) {
@@ -150,7 +151,7 @@ public class MediaFragment extends Fragment {
                 Log.d(TAG, "unable to close", e1);
             }
             storage.closeSu();
-            return error(SuperUser.toMessage(e));
+            return error(ErrorDialog.toMessage(e));
         }
         try {
             if (f.detected) {
@@ -185,8 +186,8 @@ public class MediaFragment extends Fragment {
                 Log.e(TAG, "close", e1);
             }
             storage.closeSu();
-            return error(SuperUser.toMessage(e));
-        } // no finally keep 'is'
+            return error(ErrorDialog.toMessage(e));
+        } // no 'finally' section keep 'is'
         try {
             if (g.detected) {
                 supported = true;

@@ -74,6 +74,36 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         return ss[ss.length - 1];
     }
 
+    public static String getDisplayName(Context context, Uri uri) {
+        String d;
+        String s = uri.getScheme();
+        if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) { // saf folder for content
+            d = DocumentsContract.getTreeDocumentId(uri);
+            if (d.endsWith(COLON))
+                d = d.substring(0, d.length() - 1);
+            d += CSS;
+            if (DocumentsContract.isDocumentUri(context, uri))
+                d += Storage.getDocumentChildPath(uri);
+        } else if (s.equals(ContentResolver.SCHEME_FILE)) { // full destionation for files
+            d = getFile(uri).getPath();
+        } else {
+            throw new UnknownUri();
+        }
+        String p = uri.getQueryParameter("p");
+        if (p != null)
+            d += "/" + p;
+        return d;
+    }
+
+    public static String getRarFileName(de.innosystec.unrar.rarfile.FileHeader header) {
+        String s = header.getFileNameW();
+        if (s == null || s.isEmpty())
+            s = header.getFileNameString();
+        if (header.getHostOS().equals(HostSystem.win32))
+            s = s.replaceAll("\\\\", "/");
+        return s;
+    }
+
     public static class Nodes extends ArrayList<Node> {
         public Nodes() {
         }
@@ -217,15 +247,6 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     public static class RarNode extends ArchiveNode {
         public Archive rar;
         public de.innosystec.unrar.rarfile.FileHeader h;
-
-        public static String getRarFileName(de.innosystec.unrar.rarfile.FileHeader header) {
-            String s = header.getFileNameW();
-            if (s == null || s.isEmpty())
-                s = header.getFileNameString();
-            if (header.getHostOS().equals(HostSystem.win32))
-                s = s.replaceAll("\\\\", "/");
-            return s;
-        }
 
         @Override
         public String getPath() {
@@ -668,7 +689,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 return new FileOutputStream(m);
             }
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
-            Uri doc = createFile(uri, name);
+            Uri doc = createFile(context, uri, name);
             return resolver.openOutputStream(doc, "rwt");
         } else {
             throw new UnknownUri();
@@ -695,14 +716,13 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             File k = Storage.getFile(uri);
             File m = new File(k, name);
-            if(SuperUser.touch(getSu(), m, System.currentTimeMillis()).ok())
+            if (SuperUser.touch(getSu(), m, System.currentTimeMillis()).ok())
                 return uri;
             return null;
         }
-        return super.touch(uri, name);
+        return super.touch(context, uri, name);
     }
 
-    @Override
     public boolean delete(Uri t) { // default Storage.delete() uses 'rm -rf'
         String s = t.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
@@ -727,10 +747,9 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             if (SuperUser.mkdir(getSu(), m).ok())
                 return Uri.fromFile(m);
         }
-        return super.mkdir(to, name);
+        return super.mkdir(context, to, name);
     }
 
-    @Override
     public Uri rename(Uri f, String t) {
         if (f.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             File k = getFile(f);
@@ -740,20 +759,18 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 return null;
             return Uri.fromFile(m);
         }
-        return super.rename(f, t);
+        return super.rename(context, f, t);
     }
 
-    @Override
     public long getLength(Uri uri) {
         ArchiveReader r = fromArchive(uri, false);
         if (r != null)
             return r.length();
         if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot())
             return SuperUser.length(getSu(), Storage.getFile(uri));
-        return super.getLength(uri);
+        return super.getLength(context, uri);
     }
 
-    @Override
     public ArrayList<Node> list(Uri uri) {
         ArchiveReader r = fromArchive(uri, true);
         if (r != null)
@@ -769,11 +786,10 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             }
             return files;
         }
-        return super.list(uri);
+        return super.list(context, uri);
     }
 
-    @Override
-    public ArrayList<Node> walk(Uri root, Uri uri) {
+     public ArrayList<Node> walk(Uri root, Uri uri) {
         ArchiveReader a = fromArchive(uri, true);
         if (a != null)
             return a.walk(root);
@@ -789,7 +805,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             }
             return files;
         }
-        return super.walk(root, uri);
+        return super.walk(context, root, uri);
     }
 
     public boolean symlink(SymlinkNode f, Uri uri) {
@@ -805,28 +821,6 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         } else {
             throw new UnknownUri();
         }
-    }
-
-    @Override
-    public String getDisplayName(Uri uri) {
-        String d;
-        String s = uri.getScheme();
-        if (Build.VERSION.SDK_INT >= 21 && s.startsWith(ContentResolver.SCHEME_CONTENT)) { // saf folder for content
-            d = DocumentsContract.getTreeDocumentId(uri);
-            if (d.endsWith(COLON))
-                d = d.substring(0, d.length() - 1);
-            d += "://";
-            if (DocumentsContract.isDocumentUri(context, uri))
-                d += Storage.getDocumentChildPath(uri);
-        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) { // full destionation for files
-            d = getFile(uri).getPath();
-        } else {
-            throw new UnknownUri();
-        }
-        String p = uri.getQueryParameter("p");
-        if (p != null)
-            d += "/" + p;
-        return d;
     }
 
     public boolean mv(Uri f, Uri tp, String tn) {
@@ -860,7 +854,6 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         return false;
     }
 
-    @Override
     public boolean ejected(Uri uri) {
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE) && getRoot()) {
@@ -869,6 +862,6 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 return true; // ejected
             return false;
         }
-        return super.ejected(uri);
+        return super.ejected(context, uri);
     }
 }
