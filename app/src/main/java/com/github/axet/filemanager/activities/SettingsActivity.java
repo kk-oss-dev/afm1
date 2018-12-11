@@ -5,9 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBar;
-import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
 import android.view.MenuItem;
@@ -71,10 +69,15 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity {
                     if ((boolean) newValue) {
                         SuperUser.Result r = SuperUser.rootTest();
                         if (!r.ok()) {
-                            Toast.makeText(getContext(), r.errno().getMessage(), Toast.LENGTH_LONG).show();
+                            Toast.Error(getContext(), r.errno());
                             return false;
                         } else {
                             SuperUser.exitTest(); // second su invoke
+                            if (SuperUser.binSuio(getContext()) == null) {
+                                Toast.Error(getContext(), "no libsuio.so found");
+                                return false;
+                            }
+                            return true;
                         }
                     }
                     return true;

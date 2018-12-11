@@ -29,4 +29,4 @@
 -keep class com.github.axet.androidlibrary.widgets.SearchView {*;}
 -keep class com.github.axet.filemanager.widgets.SelectView {*;}
 
--keep public class android.support.v7.widget.** { *; }
+-keep public class android.support.v7.widget.AppCompatButton {*;} # bugged AppCompatButton with final variables crash api 25.3.1
