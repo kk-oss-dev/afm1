@@ -399,7 +399,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                 SharedPreferences.Editor edit = shared.edit();
                 edit.remove(FilesApplication.PREF_ROOT);
                 edit.commit();
-                Toast.Error(this, "no libsuio.so found");
+                Toast.Error(this, SettingsActivity.SUIO_ERROR);
             }
         }
         storage.closeSu();

@@ -18,6 +18,8 @@ import com.github.axet.filemanager.app.SuperUser;
 
 public class SettingsActivity extends AppCompatSettingsThemeActivity {
 
+    public static final String SUIO_ERROR = "no libsuio.so found";
+
     public static void start(Context context) {
         Intent intent = new Intent(context, SettingsActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -74,7 +76,7 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity {
                         } else {
                             SuperUser.exitTest(); // second su invoke
                             if (SuperUser.binSuio(getContext()) == null) {
-                                Toast.Error(getContext(), "no libsuio.so found");
+                                Toast.Error(getContext(), SUIO_ERROR);
                                 return false;
                             }
                             return true;
