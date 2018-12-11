@@ -28,3 +28,5 @@
 
 -keep class com.github.axet.androidlibrary.widgets.SearchView {*;}
 -keep class com.github.axet.filemanager.widgets.SelectView {*;}
+
+-keep public class android.support.v7.widget.** { *; }
