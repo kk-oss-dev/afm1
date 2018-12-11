@@ -48,7 +48,6 @@ import android.view.animation.Transformation;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.github.axet.androidlibrary.widgets.AboutPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.AppCompatThemeActivity;
@@ -57,6 +56,7 @@ import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.PathMax;
 import com.github.axet.androidlibrary.widgets.SearchView;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
+import com.github.axet.androidlibrary.widgets.Toast;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.app.FilesApplication;
 import com.github.axet.filemanager.app.Storage;
@@ -393,8 +393,15 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         app = FilesApplication.from(this);
 
         storage = new Storage(this);
-        if (storage.getRoot())
-            SuperUser.sudoTest(this); // run once per app restart, only when user already enabled root
+        if (storage.getRoot()) {
+            if (!SuperUser.sudoTest(this)) { // run once per app restart, only when user already enabled root
+                SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
+                SharedPreferences.Editor edit = shared.edit();
+                edit.remove(FilesApplication.PREF_ROOT);
+                edit.commit();
+                Toast.Error(this, SettingsActivity.SUIO_ERROR);
+            }
+        }
         storage.closeSu();
 
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());

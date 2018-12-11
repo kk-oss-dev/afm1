@@ -24,9 +24,9 @@ import java.util.ArrayList;
 public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     public static String BIN_SUIO;
 
-    public static void sudoTest(Context context) {
+    public static boolean sudoTest(Context context) {
         exitTest();
-        binSuio(context);
+        return binSuio(context) != null;
     }
 
     public static String binSuio(Context context) {
