@@ -96,9 +96,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         @Override
         public void run() {
             reloadMenu();
-            FilesFragment f = getActiveFragment();
-            if (f != null)
-                f.reload();
+            sendBroadcast(new Intent(FilesFragment.MOVE_UPDATE));
         }
     };
     BroadcastReceiver mounted = new BroadcastReceiver() {
