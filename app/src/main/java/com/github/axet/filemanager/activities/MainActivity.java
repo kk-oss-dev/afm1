@@ -77,8 +77,8 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     public static final int RESULT_ADDBOOKMARK = 1;
 
     public static final String ADD_BOOKMARK = "ADDBOOKMARK";
-
     public static final Uri EXIT = Uri.parse("");
+    public static final String ACTION_USB_STATE = "android.hardware.usb.action.USB_STATE"; // UsbManager.ACTION_USB_STATE
 
     public SectionsPagerAdapter mSectionsPagerAdapter;
     public ViewPager mViewPager;
@@ -96,7 +96,9 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         @Override
         public void run() {
             reloadMenu();
-            getActiveFragment().reload();
+            FilesFragment f = getActiveFragment();
+            if (f != null)
+                f.reload();
         }
     };
     BroadcastReceiver mounted = new BroadcastReceiver() {
@@ -483,7 +485,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         ff.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
         ff.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
         ff.addAction(Intent.ACTION_EXTERNAL_APPLICATIONS_AVAILABLE);
-        ff.addAction("android.hardware.usb.action.USB_STATE");
+        ff.addAction(ACTION_USB_STATE);
         registerReceiver(mounted, ff);
     }
 
