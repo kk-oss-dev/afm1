@@ -78,7 +78,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
 
     public static final String ADD_BOOKMARK = "ADDBOOKMARK";
     public static final Uri EXIT = Uri.parse("");
-    public static final String ACTION_USB_STATE = "android.hardware.usb.action.USB_STATE"; // UsbManager.ACTION_USB_STATE
+    public static final String ACTION_USB_STATE = "android.hardware.usb.action.USB_STATE"; // UsbManager.ACTION_USB_STATE@hide
 
     public SectionsPagerAdapter mSectionsPagerAdapter;
     public ViewPager mViewPager;
