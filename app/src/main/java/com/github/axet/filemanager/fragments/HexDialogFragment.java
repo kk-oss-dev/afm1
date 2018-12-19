@@ -12,7 +12,6 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
-import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
@@ -23,6 +22,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.github.axet.androidlibrary.widgets.DialogFragmentCompat;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.FullscreenActivity;
 import com.github.axet.filemanager.app.Storage;
@@ -30,14 +30,12 @@ import com.github.axet.filemanager.app.Storage;
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class HexDialogFragment extends DialogFragment {
+public class HexDialogFragment extends DialogFragmentCompat {
     public static final String CHANGED = HexDialogFragment.class.getCanonicalName() + ".CHANGED";
 
     Uri uri;
     ViewPager pager;
-    View v;
     PagerAdapter adapter;
-    AlertDialog d;
     Storage storage;
     Storage.Nodes nodes;
     Snackbar old;
@@ -119,9 +117,8 @@ public class HexDialogFragment extends DialogFragment {
     public void onDismiss(DialogInterface dialog) {
         super.onDismiss(dialog);
         final Activity activity = getActivity();
-        if (activity instanceof DialogInterface.OnDismissListener) {
+        if (activity instanceof DialogInterface.OnDismissListener)
             ((DialogInterface.OnDismissListener) activity).onDismiss(dialog);
-        }
     }
 
     @Override
@@ -143,8 +140,8 @@ public class HexDialogFragment extends DialogFragment {
     }
 
     @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+    public void onCreateDialog(AlertDialog.Builder builder, Bundle savedInstanceState) {
+        super.onCreateDialog(builder, savedInstanceState);
         builder.setPositiveButton(getContext().getString(R.string.close),
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
@@ -152,9 +149,11 @@ public class HexDialogFragment extends DialogFragment {
                     }
                 }
         );
-        builder.setView(createView(LayoutInflater.from(getContext()), null, savedInstanceState));
+    }
 
-        d = builder.create();
+    @Override
+    public AlertDialog onCreateDialog(Bundle savedInstanceState) {
+        AlertDialog d = super.onCreateDialog(savedInstanceState);
 
         d.setOnShowListener(new DialogInterface.OnShowListener() {
             @Override
@@ -176,20 +175,9 @@ public class HexDialogFragment extends DialogFragment {
         getContext().unregisterReceiver(receiver);
     }
 
-    @Nullable
     @Override
-    public View getView() {
-        return null;
-    }
-
-    @Nullable
-    @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return v;
-    }
-
     public View createView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        v = inflater.inflate(R.layout.hex_dialog, container, false);
+        View v = inflater.inflate(R.layout.hex_dialog, container, false);
 
         pager = (ViewPager) v.findViewById(R.id.pager);
         adapter = new PagerAdapter(getContext(), getChildFragmentManager(), uri);
@@ -200,12 +188,6 @@ public class HexDialogFragment extends DialogFragment {
 
         pager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
         return v;
-    }
-
-    @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        d.setView(view); // with out setView api10 crash due to wrapping of child view
     }
 
     @Override
