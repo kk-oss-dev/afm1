@@ -12,7 +12,6 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
-import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
@@ -153,8 +152,8 @@ public class HexDialogFragment extends DialogFragmentCompat {
     }
 
     @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
-        super.onCreateDialog(savedInstanceState);
+    public AlertDialog onCreateDialog(Bundle savedInstanceState) {
+        AlertDialog d = super.onCreateDialog(savedInstanceState);
 
         d.setOnShowListener(new DialogInterface.OnShowListener() {
             @Override
@@ -178,7 +177,7 @@ public class HexDialogFragment extends DialogFragmentCompat {
 
     @Override
     public View createView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        v = inflater.inflate(R.layout.hex_dialog, container, false);
+        View v = inflater.inflate(R.layout.hex_dialog, container, false);
 
         pager = (ViewPager) v.findViewById(R.id.pager);
         adapter = new PagerAdapter(getContext(), getChildFragmentManager(), uri);
