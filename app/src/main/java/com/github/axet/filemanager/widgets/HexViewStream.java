@@ -7,6 +7,7 @@ import android.support.v7.widget.AppCompatTextView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,6 +20,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class HexViewStream extends RecyclerView {
+    public static final String TAG = HexViewStream.class.getSimpleName();
+    
     Adapter adapter;
 
     public static String formatSize(int c) {
@@ -150,7 +153,8 @@ public class HexViewStream extends RecyclerView {
                         break;
                     }
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    Log.e(TAG, "bad read", e);
+                    break;
                 }
             }
 

@@ -98,8 +98,6 @@ public class FilesFragment extends Fragment {
     public static final int RESULT_PERMS = 1;
     public static final int RESULT_ARCHIVE = 2;
 
-    public static final int COVER_SIZE = 128;
-
     public static final String PASTE_UPDATE = FilesFragment.class.getCanonicalName() + ".PASTE_UPDATE";
     public static final String MOVE_UPDATE = FilesFragment.class.getCanonicalName() + ".MOVE_UPDATE";
 
@@ -155,16 +153,6 @@ public class FilesFragment extends Fragment {
     public static String getFirst(String name) {
         String[] ss = Storage.splitPath(name);
         return ss[0];
-    }
-
-    public static boolean isThumbnail(String name) { // do not open every file, show thumbnnails only for correct file extension
-        name = name.toLowerCase();
-        String[] ss = new String[]{"webp", "png", "jpg", "jpeg", "gif", "bmp"};
-        for (String s : ss) {
-            if (name.endsWith("." + s))
-                return true;
-        }
-        return false;
     }
 
     public static void hideMenu(Menu m, int id) {
@@ -1280,7 +1268,7 @@ public class FilesFragment extends Fragment {
                 h.icon.setColorFilter(h.accent);
                 h.size.setVisibility(View.GONE);
             } else {
-                if (isThumbnail(f.name)) {
+                if (CacheImagesAdapter.isImage(f.name)) {
                     downloadTask(f, h.itemView);
                 } else {
                     downloadTaskClean(h.itemView);
@@ -1434,17 +1422,13 @@ public class FilesFragment extends Fragment {
                 try {
                     if (!cover.exists() || cover.length() == 0) {
                         InputStream is = storage.open(n.uri);
-                        Bitmap bm = BitmapFactory.decodeStream(is);
+                        Bitmap bm = CacheImagesAdapter.createThumbnail(is);
                         is.close();
-                        float ratio = COVER_SIZE / (float) bm.getWidth();
-                        Bitmap sbm = Bitmap.createScaledBitmap(bm, (int) (bm.getWidth() * ratio), (int) (bm.getHeight() * ratio), true);
-                        if (sbm != bm)
-                            bm.recycle();
                         OutputStream os = new FileOutputStream(cover);
                         os = new BufferedOutputStream(os);
-                        sbm.compress(Bitmap.CompressFormat.PNG, 100, os);
+                        bm.compress(Bitmap.CompressFormat.PNG, 100, os);
                         os.close();
-                        return sbm;
+                        return bm;
                     }
                     return BitmapFactory.decodeStream(new FileInputStream(cover));
                 } catch (IOException e) {
@@ -1765,7 +1749,7 @@ public class FilesFragment extends Fragment {
             try {
                 Uri uri = item.getIntent().getData();
                 String name = Storage.getName(getContext(), uri);
-                if (isThumbnail(name)) {
+                if (CacheImagesAdapter.isImage(name)) {
                     FullscreenActivity.start(getContext(), uri);
                     return true;
                 }
