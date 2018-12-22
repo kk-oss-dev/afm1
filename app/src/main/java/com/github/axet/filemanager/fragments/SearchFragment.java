@@ -17,6 +17,7 @@ import android.view.ViewGroup;
 
 import com.github.axet.androidlibrary.services.StorageProvider;
 import com.github.axet.androidlibrary.widgets.ErrorDialog;
+import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.MainActivity;
 import com.github.axet.filemanager.app.Storage;
@@ -170,6 +171,8 @@ public class SearchFragment extends FilesFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         list = new RecyclerView(getContext());
+        int dp10 = ThemeUtils.dp2px(getContext(), 10);
+        list.setPadding(dp10, 0, dp10, 0);
         list.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         list.setLayoutManager(new LinearLayoutManager(getContext()));
         list.setAdapter(adapter);
