@@ -3,8 +3,8 @@
     android:id="@+id/constraintLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin">
+    android:paddingLeft="10dp"
+    android:paddingRight="10dp">
 
     <com.github.axet.filemanager.widgets.PathView
         android:id="@+id/path"
