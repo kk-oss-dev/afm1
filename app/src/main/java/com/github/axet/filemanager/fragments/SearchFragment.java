@@ -20,7 +20,6 @@ import com.github.axet.androidlibrary.widgets.ErrorDialog;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.MainActivity;
 import com.github.axet.filemanager.app.Storage;
-import com.github.axet.filemanager.app.SuperUser;
 
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -54,7 +53,7 @@ public class SearchFragment extends FilesFragment {
         @Override
         public void run() {
             try {
-                if (search.calc()) {
+                if (search.calcIndex < search.calcs.size() && search.calc()) {
                     handler.post(this);
                     if (old == null)
                         old = Snackbar.make(getActivity().findViewById(android.R.id.content), "", Snackbar.LENGTH_LONG);
