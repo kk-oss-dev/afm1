@@ -406,7 +406,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
 
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
 
-        mViewPager = (ViewPager) findViewById(R.id.container);
+        mViewPager = (ViewPager) findViewById(R.id.pagerContainer);
         mViewPager.setAdapter(mSectionsPagerAdapter);
         onPageChangeListener = new ViewPager.OnPageChangeListener() {
             @Override
