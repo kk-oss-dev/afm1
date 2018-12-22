@@ -171,8 +171,6 @@ public class SearchFragment extends FilesFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         list = new RecyclerView(getContext());
-        int dp10 = ThemeUtils.dp2px(getContext(), 10);
-        list.setPadding(dp10, 0, dp10, 0);
         list.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         list.setLayoutManager(new LinearLayoutManager(getContext()));
         list.setAdapter(adapter);
