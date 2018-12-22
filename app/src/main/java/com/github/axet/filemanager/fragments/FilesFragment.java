@@ -1215,7 +1215,7 @@ public class FilesFragment extends Fragment {
         }
     }
 
-    public class Holder extends RecyclerView.ViewHolder {
+    public static class Holder extends RecyclerView.ViewHolder {
         int accent;
         int primary;
         public ImageView icon;
@@ -1230,8 +1230,8 @@ public class FilesFragment extends Fragment {
 
         public Holder(View itemView) {
             super(itemView);
-            accent = ThemeUtils.getThemeColor(getContext(), R.attr.colorAccent);
-            primary = ThemeUtils.getThemeColor(getContext(), R.attr.colorPrimary);
+            accent = ThemeUtils.getThemeColor(itemView.getContext(), R.attr.colorAccent);
+            primary = ThemeUtils.getThemeColor(itemView.getContext(), R.attr.colorPrimary);
             icon = (ImageView) itemView.findViewById(R.id.icon);
             icon.setColorFilter(accent);
             progress = (ProgressBar) itemView.findViewById(R.id.progress);
