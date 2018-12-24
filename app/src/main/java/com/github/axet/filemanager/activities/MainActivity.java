@@ -105,7 +105,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             Log.d(TAG, "media" + intent);
             handler.removeCallbacks(reload);
             for (int i = 0; i < 3; i++)
-                handler.postDelayed(reload, i * 1000);
+                handler.postDelayed(reload, i * 2000);
         }
     };
 
