@@ -15,7 +15,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.github.axet.androidlibrary.app.FileTypeDetector;
-import com.github.axet.androidlibrary.app.SuperUser;
 import com.github.axet.androidlibrary.widgets.ErrorDialog;
 import com.github.axet.androidlibrary.widgets.WebViewCustom;
 import com.github.axet.filemanager.R;
@@ -41,7 +40,8 @@ public class MediaFragment extends Fragment {
     TextViewStream text;
     boolean supported;
 
-    View image;
+    public ImageView image;
+    public Bitmap bm;
 
     public MediaFragment() {
     }
@@ -76,6 +76,10 @@ public class MediaFragment extends Fragment {
         if (text != null) {
             text.close();
             text = null;
+        }
+        if (bm != null) {
+            bm.recycle();
+            bm = null;
         }
         storage.closeSu();
     }
@@ -193,13 +197,13 @@ public class MediaFragment extends Fragment {
                 supported = true;
                 return new GifView(getContext(), is = storage.open(uri));
             }
-            Bitmap bm = BitmapFactory.decodeStream(is = storage.open(uri));
+            bm = BitmapFactory.decodeStream(is = storage.open(uri));
             if (bm != null) {
                 supported = true;
-                image = inflater.inflate(R.layout.fragment_media_image, container, false);
-                ImageView i = (ImageView) image.findViewById(R.id.image);
-                i.setImageBitmap(bm);
-                return image;
+                View view = inflater.inflate(R.layout.fragment_media_image, container, false);
+                image = (ImageView) view.findViewById(R.id.image);
+                image.setImageBitmap(bm);
+                return view;
             }
         } catch (Exception e) {
             Log.d(TAG, "Unable to read", e);

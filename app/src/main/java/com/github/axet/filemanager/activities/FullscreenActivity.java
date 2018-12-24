@@ -3,29 +3,28 @@ package com.github.axet.filemanager.activities;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Rect;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.ViewPager;
-import android.support.v7.app.ActionBar;
 import android.support.v7.view.WindowCallbackWrapper;
 import android.support.v7.widget.Toolbar;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
-import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.TextView;
 
 import com.github.axet.androidlibrary.widgets.AppCompatFullscreenThemeActivity;
-import com.github.axet.androidlibrary.widgets.AppCompatThemeActivity;
+import com.github.axet.androidlibrary.widgets.PinchGesture;
+import com.github.axet.androidlibrary.widgets.PinchView;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.app.FilesApplication;
 import com.github.axet.filemanager.app.Storage;
@@ -35,12 +34,20 @@ import com.github.axet.filemanager.fragments.MediaFragment;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
     public Toolbar toolbar;
     Storage.Nodes nodes;
     ViewPager pager;
     PagerAdapter adapter;
+    TextView title;
+    TextView count;
+    View left;
+    View right;
+    View panel;
+    PinchGesture gesture;
+
     Runnable update = new Runnable() {
         @Override
         public void run() {
@@ -64,12 +71,6 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
         }
     };
 
-    TextView title;
-    TextView count;
-    View left;
-    View right;
-    View panel;
-
     public static void start(Context context, Uri uri) {
         Intent intent = new Intent(context, FullscreenActivity.class);
         intent.putExtra("uri", uri);
@@ -80,11 +81,26 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
 
     public class PagerAdapter extends FragmentPagerAdapter {
         int index;
+        FragmentManager fm;
+        MediaFragment current;
 
         public PagerAdapter(FragmentManager fm, Uri uri) {
             super(fm);
+            this.fm = fm;
             index = nodes.find(uri);
             update();
+        }
+
+        void idle() {
+            if (getCount() == 3)
+                index += pager.getCurrentItem() - 1;
+            else if (getCount() == 2) {
+                if (index == 0)
+                    index += pager.getCurrentItem();
+                else
+                    index += pager.getCurrentItem() - 1;
+            }
+            current = findCurrentFragment();
         }
 
         void update() {
@@ -111,7 +127,7 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
         }
 
         @Override
-        public Fragment getItem(int i) {
+        public MediaFragment getItem(int i) {
             int k = getIndex(i);
             Uri uri = nodes.get(k).uri;
             return MediaFragment.newInstance(uri);
@@ -149,6 +165,20 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
                 count++;
             return count;
         }
+
+        @SuppressLint("RestrictedApi")
+        public MediaFragment findCurrentFragment() {
+            int i = pager.getCurrentItem();
+            MediaFragment m = getItem(i);
+            List<Fragment> ff = fm.getFragments();
+            for (Fragment f : ff) {
+                if (f instanceof MediaFragment) {
+                    if (((MediaFragment) f).getUri().equals(m.getUri()))
+                        return (MediaFragment) f;
+                }
+            }
+            return null;
+        }
     }
 
     @Override
@@ -156,9 +186,29 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_fullscreen);
 
+        final ViewGroup v = (ViewGroup) findViewById(R.id.content);
+
+        gesture = new PinchGesture(this) {
+            @Override
+            public void onScaleBegin(float x, float y) {
+                super.onScaleBegin(x, y);
+                Rect rect = PinchView.getImageBounds(adapter.current.image);
+                pinchOpen(rect, adapter.current.bm);
+                v.addView(pinch, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            }
+
+            @Override
+            public void pinchClose() { // do not call super, keep 'bm'
+                if (pinch != null) {
+                    v.removeView(pinch);
+                    pinch = null;
+                }
+            }
+        };
+
         Window.Callback callback = w.getCallback();
         w.setCallback(new WindowCallbackWrapper(callback) {
-            GestureDetectorCompat gestures = new GestureDetectorCompat(FullscreenActivity.this, new GestureDetector.OnGestureListener() {
+            GestureDetectorCompat tap = new GestureDetectorCompat(FullscreenActivity.this, new GestureDetector.OnGestureListener() {
                 @Override
                 public boolean onDown(MotionEvent e) {
                     return false;
@@ -170,7 +220,7 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
 
                 @Override
                 public boolean onSingleTapUp(MotionEvent e) {
-                    update();
+                    updateToolbar();
                     return true;
                 }
 
@@ -192,7 +242,9 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
             @SuppressLint("RestrictedApi")
             @Override
             public boolean dispatchTouchEvent(MotionEvent event) {
-                gestures.onTouchEvent(event);
+                if (adapter.current != null && adapter.current.bm != null)
+                    gesture.onTouchEvent(event);
+                tap.onTouchEvent(event);
                 return super.dispatchTouchEvent(event);
             }
         });
@@ -235,20 +287,13 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
             @Override
             public void onPageScrollStateChanged(int state) {
                 if (state == ViewPager.SCROLL_STATE_IDLE) {
-                    if (adapter.getCount() == 3)
-                        adapter.index += pager.getCurrentItem() - 1;
-                    else if (adapter.getCount() == 2) {
-                        if (adapter.index == 0)
-                            adapter.index += pager.getCurrentItem();
-                        else
-                            adapter.index += pager.getCurrentItem() - 1;
-                    }
+                    adapter.idle();
                     adapter.update();
                 }
             }
         });
         adapter.update();
-        update();
+        updateToolbar();
 
         left.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -262,9 +307,16 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
                 pager.setCurrentItem(pager.getCurrentItem() + 1);
             }
         });
+
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                adapter.idle(); // update 'current'
+            }
+        });
     }
 
-    void update() {
+    void updateToolbar() {
         Uri uri = nodes.get(adapter.getIndex(pager.getCurrentItem())).uri;
         title.setText(Storage.getName(this, uri));
         count.setText((nodes.find(uri) + 1) + "/" + nodes.size());
