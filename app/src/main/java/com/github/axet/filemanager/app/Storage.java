@@ -95,15 +95,6 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         return d;
     }
 
-    public static String getRarFileName(de.innosystec.unrar.rarfile.FileHeader header) {
-        String s = header.getFileNameW();
-        if (s == null || s.isEmpty())
-            s = header.getFileNameString();
-        if (header.getHostOS().equals(HostSystem.win32))
-            s = s.replaceAll("\\\\", "/");
-        return s;
-    }
-
     public static class Nodes extends ArrayList<Node> {
         public Nodes() {
         }
@@ -237,7 +228,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         @Override
         public InputStream open() {
             try {
-                return new ZipInputStreamSafe(zip.getInputStream(h));
+                return new ZipSAF.ZipInputStreamSafe(zip.getInputStream(h));
             } catch (ZipException e) {
                 throw new RuntimeException(e);
             }
@@ -250,7 +241,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
         @Override
         public String getPath() {
-            String s = getRarFileName(h);
+            String s = RarSAF.getRarFileName(h);
             if (s == null || s.isEmpty())
                 s = h.getFileNameString();
             if (s.startsWith(OpenFileDialog.ROOT))
@@ -292,29 +283,6 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     public class ArchiveCache {
         public Uri uri; // archive uri
         public ArrayList<ArchiveNode> all;
-    }
-
-    public static class ZipInputStreamSafe extends InputStream {
-        ZipInputStream is;
-
-        public ZipInputStreamSafe(ZipInputStream is) {
-            this.is = is;
-        }
-
-        @Override
-        public int read() throws IOException {
-            return is.read();
-        }
-
-        @Override
-        public int read(@NonNull byte[] b, int off, int len) throws IOException {
-            return is.read(b, off, len);
-        }
-
-        @Override
-        public void close() throws IOException {
-            is.close(true);
-        }
     }
 
     public class ArchiveReader extends ArchiveCache {

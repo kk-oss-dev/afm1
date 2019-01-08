@@ -5,6 +5,7 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.github.axet.androidlibrary.app.Natives;
+import com.github.axet.androidlibrary.services.StorageProvider;
 
 import org.apache.commons.io.IOUtils;
 
@@ -347,15 +348,6 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
 
         SuIO su;
 
-        public static FileNotFoundException fnfe(final Throwable e) {
-            return (FileNotFoundException) new FileNotFoundException() {
-                @Override
-                public String getMessage() {
-                    return e.getMessage();
-                }
-            }.initCause(e);
-        }
-
         public RandomAccessFile(File f, String mode) throws FileNotFoundException {
             try {
                 su = new SuIO();
@@ -367,9 +359,9 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             } catch (final IOException e) {
                 su.valid = false;
                 if (su != null)
-                    throw fnfe(new Result(su.cmd, su.su, e).errno());
+                    throw StorageProvider.fnfe(new Result(su.cmd, su.su, e).errno());
                 else
-                    throw fnfe(e);
+                    throw StorageProvider.fnfe(e);
             }
         }
 

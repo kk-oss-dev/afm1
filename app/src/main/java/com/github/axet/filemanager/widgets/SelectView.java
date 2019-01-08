@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.graphics.Color;
+import android.support.annotation.Keep;
 import android.support.v4.view.GravityCompat;
 import android.support.v7.view.CollapsibleActionView;
 import android.support.v7.view.menu.MenuBuilder;
@@ -18,6 +19,7 @@ import android.view.Window;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.fragments.FilesFragment;
 
+@Keep
 public class SelectView extends LinearLayoutCompat implements CollapsibleActionView {
     public MenuBuilder menu;
     public CollapsibleActionView listener;
