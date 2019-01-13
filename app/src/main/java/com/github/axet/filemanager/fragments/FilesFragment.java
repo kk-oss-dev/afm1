@@ -174,7 +174,7 @@ public class FilesFragment extends Fragment {
         return s;
     }
 
-    public static void pasteError(final OperationBuilder paste, final PendingOperation op, final Throwable e, boolean move) {
+    public static void pasteError(final OperationBuilder paste, final PendingOperation op, final Throwable e, final boolean move) {
         Log.e(TAG, "paste", e);
         AlertDialog.Builder builder = new AlertDialog.Builder(paste.getContext());
         builder.setCancelable(false);
@@ -253,7 +253,13 @@ public class FilesFragment extends Fragment {
         del.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                op.storage.delete(op.f.uri);
+                if (op.f != null) {
+                    if (!op.storage.delete(op.f.uri)) {
+                        pasteError(paste, op, new RuntimeException("unable to delete: " + op.f.name), move);
+                        d.dismiss();
+                        return;
+                    }
+                }
                 op.filesIndex++;
                 op.cancel();
                 op.run();
@@ -810,16 +816,17 @@ public class FilesFragment extends Fragment {
 
         public void deleteProcess() {
             int old = op.filesIndex;
-            Storage.Node f = op.files.get(op.filesIndex);
-            if (!op.storage.delete(f.uri))
-                throw new RuntimeException("Unable to delete: " + f.name);
-            if (!f.dir)
-                op.processed += f.size;
+            op.f = op.files.get(op.filesIndex);
+            if (!op.storage.delete(op.f.uri))
+                throw new RuntimeException("Unable to delete: " + op.f.name);
+            if (!op.f.dir)
+                op.processed += op.f.size;
             op.filesIndex++;
+            op.f = null;
             from.setText(op.context.getString(R.string.files_deleting) + ": " + op.formatStart());
-            update(op, old, f);
+            update(op, old, op.f);
             progressFile.setVisibility(View.GONE);
-            from.setText(Storage.getDisplayName(getContext(), f.uri));
+            from.setText(Storage.getDisplayName(getContext(), op.f.uri));
             to.setVisibility(View.GONE);
             op.post();
         }
