@@ -253,12 +253,10 @@ public class FilesFragment extends Fragment {
         del.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (op.f != null) {
-                    if (!op.storage.delete(op.f.uri)) {
-                        pasteError(paste, op, new RuntimeException("unable to delete: " + op.f.name), move);
-                        d.dismiss();
-                        return;
-                    }
+                if (!op.storage.delete(op.f.uri)) {
+                    pasteError(paste, op, new RuntimeException("unable to delete: " + op.f.name), move);
+                    d.dismiss();
+                    return;
                 }
                 op.filesIndex++;
                 op.cancel();
