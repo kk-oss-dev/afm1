@@ -70,7 +70,6 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity {
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
                     if ((boolean) newValue) {
                         SuperUser.trapTest();
-                        SuperUser.exitTest();
                         SuperUser.Result r = SuperUser.rootTest();
                         if (!r.ok()) {
                             Toast.Error(getContext(), r.errno());
