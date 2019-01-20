@@ -49,6 +49,4 @@ dependencies {
     implementation('net.i2p.android.ext:floatingactionbutton:1.10.1') { exclude group: 'com.android.support' }
     implementation('com.github.axet:wget:1.4.3') { exclude group: 'com.thoughtworks.xstream', module: 'xstream' }
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 }
