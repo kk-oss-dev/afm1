@@ -20,7 +20,7 @@ void exitn(int code, const char *msg, ...) {
     va_start(args, msg);
     vfprintf(stderr, msg, args);
     va_end(args);
-    fprintf(stderr, " (%d)", code);
+    fprintf(stderr, ", %s", strerror(errno));
     fflush(stderr);
     exit(code);
 }
@@ -103,7 +103,7 @@ bool isdir(char *buf) {
         return false;
     struct stat st;
     if (stat(buf, &st) != 0)
-        exitn(errno, "isdir unable to stat '%s'", buf);
+        exitn(errno, "isdir unable to stat %s", buf);
     return S_ISDIR(st.st_mode);
 }
 
@@ -112,7 +112,7 @@ bool islink(char *buf) {
         return false;
     struct stat st;
     if (stat(buf, &st) != 0)
-        exitn(errno, "islink unable to stat '%s'", buf);
+        exitn(errno, "islink unable to stat %s", buf);
     return S_ISLNK(st.st_mode);
 }
 
@@ -120,7 +120,7 @@ char *getlink(char *name) {
     char *buf = (char *) malloc(PATH_MAX + 1);
     ssize_t len = readlink(name, buf, PATH_MAX);
     if (len == -1)
-        exitn(errno, "unable to readlink '%s'", name);
+        exitn(errno, "unable to readlink %s", name);
     buf[len] = 0; // readlink does not append a null byte to buf
     return buf;
 }
@@ -146,7 +146,7 @@ long long getsize(char *buf) {
     }
     struct stat st;
     if (stat(buf, &st) != 0)
-        exitn(errno, "getsize unable to stat '%s'", buf);
+        exitn(errno, "getsize unable to stat %s", buf);
     if (f != NULL)
         free(f);
     return st.st_size;
@@ -163,7 +163,7 @@ long getlast(char *buf) {
     }
     struct stat st;
     if (stat(buf, &st) != 0)
-        exitn(errno, "getlast unable to stat '%s'", buf);
+        exitn(errno, "getlast unable to stat %s", buf);
     if (f != NULL)
         free(f);
     return st.st_mtime * 1000;
@@ -179,11 +179,11 @@ void touch(char *buf, time_t time) {
     struct stat st = {0};
     struct utimbuf new_times = {0};
     if (stat(buf, &st) != 0)
-        exitn(errno, "touch unable to stat '%s'", buf);
+        exitn(errno, "touch unable to stat %s", buf);
     new_times.actime = st.st_atime;
     new_times.modtime = time;
     if (utime(buf, &new_times) != 0)
-        exitn(errno, "touch unable to utime '%s'", buf);
+        exitn(errno, "touch unable to utime %s", buf);
 }
 
 int main(int argc, char *argv[]) {
@@ -237,7 +237,7 @@ int main(int argc, char *argv[]) {
                     closedir(dp);
                     writestring("EOF");
                 } else {
-                    exitn(errno, "Couldn't open the directory '%s'", str.buf);
+                    exitn(errno, "Couldn't open the directory %s", str.buf);
                 }
             }
             continue;
@@ -251,10 +251,10 @@ int main(int argc, char *argv[]) {
                         fclose(f);
                     f = fopen(target, str.buf);
                     if (f == NULL)
-                        exitn(errno, "unable to open '%s'", target);
+                        exitn(errno, "unable to open %s", target);
                     if (strcmp(str.buf, "rb") == 0) {
                         if (fseek(f, 0, SEEK_END) != 0)
-                            exitf(f, "unable to seek '%s'", str.buf);
+                            exitf(f, "unable to seek for '%s', '%s'", str.buf);
                         writestringf("%li", ftell(f));
                     } else {
                         writestring("ok");
@@ -351,7 +351,7 @@ int main(int argc, char *argv[]) {
         if (strcmp(str.buf, "delete") == 0) {
             if (readstring(&str) > 0) {
                 if (remove(str.buf) != 0)
-                    exitn(errno, "unable remove %s", str.buf);
+                    exitn(errno, "fm failed for %s", str.buf);
                 else
                     writestring("ok");
             }
@@ -360,7 +360,7 @@ int main(int argc, char *argv[]) {
         if (strcmp(str.buf, "mkdir") == 0) {
             if (readstring(&str) > 0) {
                 if (mkdir(str.buf, 0755) != 0)
-                    exitn(errno, "unable mkdir %s", str.buf);
+                    exitn(errno, "mkdir failed for %s", str.buf);
                 else
                     writestring("ok");
             }
@@ -381,7 +381,7 @@ int main(int argc, char *argv[]) {
                 char *target = strdup(str.buf);
                 if (readstring(&str) > 0) {
                     if (rename(target, str.buf) != 0)
-                        exitn(errno, "unable rename '%s' '%s'", target, str.buf);
+                        exitn(errno, "unable rename %s %s", target, str.buf);
                     else
                         writestring("ok");
                 }
@@ -394,7 +394,7 @@ int main(int argc, char *argv[]) {
                 char *target = strdup(str.buf);
                 if (readstring(&str) > 0) {
                     if (symlink(target, str.buf) != 0)
-                        exitn(errno, "unable ln '%s' '%s'", target, str.buf);
+                        exitn(errno, "unable ln %s", target, str.buf);
                     else
                         writestring("ok");
                 }

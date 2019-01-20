@@ -197,7 +197,7 @@ public class FilesFragment extends Fragment {
                 paste.dismiss();
             }
         });
-        if (!move) { // always hide del if "no move" operation
+        if (!move || op.f == null) { // always hide del if "no move" operation, or file is unkown
             del.setVisibility(View.GONE);
             s2.setVisibility(View.GONE);
         }

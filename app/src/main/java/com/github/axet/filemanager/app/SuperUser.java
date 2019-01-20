@@ -26,6 +26,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     public static String BIN_SUIO;
 
     public static boolean sudoTest(Context context) {
+        trapTest();
         exitTest();
         return binSuio(context) != null;
     }
