@@ -822,10 +822,10 @@ public class FilesFragment extends Fragment {
             op.filesIndex++;
             from.setText(op.context.getString(R.string.files_deleting) + ": " + op.formatStart());
             update(op, old, op.f);
-            op.f = null;
             progressFile.setVisibility(View.GONE);
             from.setText(Storage.getDisplayName(getContext(), op.f.uri));
             to.setVisibility(View.GONE);
+            op.f = null;
             op.post();
         }
 
