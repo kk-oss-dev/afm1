@@ -820,9 +820,9 @@ public class FilesFragment extends Fragment {
             if (!op.f.dir)
                 op.processed += op.f.size;
             op.filesIndex++;
-            op.f = null;
             from.setText(op.context.getString(R.string.files_deleting) + ": " + op.formatStart());
             update(op, old, op.f);
+            op.f = null;
             progressFile.setVisibility(View.GONE);
             from.setText(Storage.getDisplayName(getContext(), op.f.uri));
             to.setVisibility(View.GONE);
