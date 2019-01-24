@@ -171,6 +171,8 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
             int i = pager.getCurrentItem();
             MediaFragment m = getItem(i);
             List<Fragment> ff = fm.getFragments();
+            if (ff == null)
+                return null;
             for (Fragment f : ff) {
                 if (f instanceof MediaFragment) {
                     if (((MediaFragment) f).getUri().equals(m.getUri()))
