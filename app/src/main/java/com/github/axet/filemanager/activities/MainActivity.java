@@ -53,6 +53,7 @@ import com.github.axet.androidlibrary.widgets.AboutPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.AppCompatThemeActivity;
 import com.github.axet.androidlibrary.widgets.OpenChoicer;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
+import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.PathMax;
 import com.github.axet.androidlibrary.widgets.SearchView;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
@@ -176,6 +177,11 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                     return right;
             }
             return null;
+        }
+
+        @Override
+        public int getItemPosition(Object object) {
+            return POSITION_NONE;
         }
 
         @Override
@@ -681,9 +687,12 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             String a = intent.getAction();
             if (a.equals(ADD_BOOKMARK)) {
                 PopupMenu menu = new PopupMenu(this, findView(navigationView, item));
-                getMenuInflater().inflate(R.menu.menu_add, menu.getMenu());
-                if (Build.VERSION.SDK_INT < 21) {
-                    onOptionsItemSelected(menu.getMenu().findItem(R.id.action_addstorage));
+                Menu m = menu.getMenu();
+                getMenuInflater().inflate(R.menu.menu_add, m);
+                if (Build.VERSION.SDK_INT < 21)
+                    m.removeItem(R.id.action_addsaf);
+                if (m.size() == 1) {
+                    onOptionsItemSelected(m.getItem(0));
                 } else {
                     menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                         @Override
@@ -692,8 +701,8 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                         }
                     });
                     menu.show();
-                    return true;
                 }
+                return true;
             }
             if (a.equals(Intent.ACTION_VIEW)) {
                 onOptionsItemSelected(item);
