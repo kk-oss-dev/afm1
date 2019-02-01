@@ -53,7 +53,6 @@ import com.github.axet.androidlibrary.widgets.AboutPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.AppCompatThemeActivity;
 import com.github.axet.androidlibrary.widgets.OpenChoicer;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
-import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.PathMax;
 import com.github.axet.androidlibrary.widgets.SearchView;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
@@ -150,33 +149,63 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     }
 
     public class SectionsPagerAdapter extends FragmentPagerAdapter {
-        FilesFragment left;
-        FilesFragment right;
+        SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+        Uri left;
+        Uri right;
+        String leftTag;
+        String rightTag;
 
         public SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
-            SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
-            left = FilesFragment.newInstance(Uri.parse(shared.getString(FilesApplication.PREF_LEFT, getDefault(MainActivity.this))));
-            right = FilesFragment.newInstance(Uri.parse(shared.getString(FilesApplication.PREF_RIGHT, getDefault(MainActivity.this))));
+            left = Uri.parse(shared.getString(FilesApplication.PREF_LEFT, getDefault(MainActivity.this)));
+            right = Uri.parse(shared.getString(FilesApplication.PREF_RIGHT, getDefault(MainActivity.this)));
         }
 
         public void save() {
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
             SharedPreferences.Editor editor = shared.edit();
-            editor.putString(FilesApplication.PREF_LEFT, left.getUri().toString());
-            editor.putString(FilesApplication.PREF_RIGHT, right.getUri().toString());
+            FilesFragment left = getLeft();
+            if (left != null)
+                editor.putString(FilesApplication.PREF_LEFT, left.getUri().toString());
+            FilesFragment right = getRight();
+            if (right != null)
+                editor.putString(FilesApplication.PREF_RIGHT, right.getUri().toString());
             editor.commit();
+        }
+
+        FilesFragment getLeft() {
+            FragmentManager fm = getSupportFragmentManager();
+            return (FilesFragment) fm.findFragmentByTag(leftTag);
+        }
+
+        FilesFragment getRight() {
+            FragmentManager fm = getSupportFragmentManager();
+            return (FilesFragment) fm.findFragmentByTag(rightTag);
         }
 
         @Override
         public Fragment getItem(int position) {
             switch (position) {
                 case 0:
-                    return left;
+                    return FilesFragment.newInstance(left);
                 case 1:
-                    return right;
+                    return FilesFragment.newInstance(right);
             }
             return null;
+        }
+
+        @Override
+        public Object instantiateItem(ViewGroup container, int position) {
+            FilesFragment f = (FilesFragment) super.instantiateItem(container, position);
+            switch (position) {
+                case 0:
+                    leftTag = f.getTag();
+                    break;
+                case 1:
+                    rightTag = f.getTag();
+                    break;
+            }
+            return f;
         }
 
         @Override
@@ -193,9 +222,11 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         public CharSequence getPageTitle(int position) {
             switch (position) {
                 case 0:
-                    return Storage.getDisplayName(MainActivity.this, left.getUri()) + " "; // prevent PathMax eat last slash
+                    FilesFragment left = getLeft();
+                    return Storage.getDisplayName(MainActivity.this, left == null ? this.left : left.getUri()) + " "; // prevent PathMax eat last slash
                 case 1:
-                    return Storage.getDisplayName(MainActivity.this, right.getUri()) + " "; // prevent PathMax eat last slash
+                    FilesFragment right = getRight();
+                    return Storage.getDisplayName(MainActivity.this, right == null ? this.right : right.getUri()) + " "; // prevent PathMax eat last slash
             }
             return null;
         }
@@ -862,9 +893,9 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     public void clearCache() {
         for (Uri u : new TreeSet<>(Storage.CACHE.keySet())) {
             String p = u.getPath();
-            if (Storage.relative(p, mSectionsPagerAdapter.left.getUri().getPath()) != null)
+            if (Storage.relative(p, mSectionsPagerAdapter.getLeft().getUri().getPath()) != null)
                 continue;
-            if (Storage.relative(p, mSectionsPagerAdapter.right.getUri().getPath()) != null)
+            if (Storage.relative(p, mSectionsPagerAdapter.getRight().getUri().getPath()) != null)
                 continue;
             Storage.CACHE.remove(u);
         }
