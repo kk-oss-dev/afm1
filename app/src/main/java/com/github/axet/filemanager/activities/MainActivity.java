@@ -171,6 +171,10 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             return (FilesFragment) instantiateItem(mViewPager, 1);
         }
 
+        public FilesFragment getActiveFragment() {
+            return (FilesFragment) instantiateItem(mViewPager, mViewPager.getCurrentItem());
+        }
+
         @Override
         public Fragment getItem(int position) {
             switch (position) {
@@ -348,7 +352,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         String s = edit.getText();
-                        final FilesFragment f = getActiveFragment();
+                        final FilesFragment f = mSectionsPagerAdapter.getActiveFragment();
                         try {
                             final Uri uri = storage.mkdir(f.getUri(), s);
                             if (uri == null)
@@ -378,7 +382,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         String s = edit.getText();
-                        FilesFragment f = getActiveFragment();
+                        FilesFragment f = mSectionsPagerAdapter.getActiveFragment();
                         try {
                             Uri uri = storage.touch(f.getUri(), s);
                             if (uri == null)
@@ -526,7 +530,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     }
 
     public void open(Uri uri) {
-        FilesFragment f = getActiveFragment();
+        FilesFragment f = mSectionsPagerAdapter.getActiveFragment();
         f.load(uri);
         searchClose();
     }
@@ -631,7 +635,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                 }
             };
             choicer.setPermissionsDialog(this, Storage.PERMISSIONS_RW, RESULT_ADDBOOKMARK);
-            Uri old = getActiveFragment().getUri();
+            Uri old = mSectionsPagerAdapter.getActiveFragment().getUri();
             if (!old.getScheme().equals(ContentResolver.SCHEME_FILE))
                 old = null;
             choicer.show(old);
@@ -873,13 +877,9 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         }
     }
 
-    FilesFragment getActiveFragment() {
-        return (FilesFragment) mSectionsPagerAdapter.getItem(mViewPager.getCurrentItem());
-    }
-
     @Override
     public void onBackPressed() {
-        FilesFragment f = getActiveFragment();
+        FilesFragment f = mSectionsPagerAdapter.getActiveFragment();
         if (f.old == null) {
             f.old = EXIT;
             Toast.makeText(this, R.string.back_exit, Toast.LENGTH_SHORT).show();
@@ -901,7 +901,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     }
 
     public void searchOpen(String q) {
-        FilesFragment f = getActiveFragment();
+        FilesFragment f = mSectionsPagerAdapter.getActiveFragment();
         search = SearchFragment.newInstance(f.getUri(), q);
         View v = findViewById(R.id.searchContainer);
         v.setVisibility(View.VISIBLE);
