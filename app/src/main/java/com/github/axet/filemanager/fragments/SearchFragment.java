@@ -17,7 +17,6 @@ import android.view.ViewGroup;
 
 import com.github.axet.androidlibrary.services.StorageProvider;
 import com.github.axet.androidlibrary.widgets.ErrorDialog;
-import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.MainActivity;
 import com.github.axet.filemanager.app.Storage;
@@ -145,9 +144,9 @@ public class SearchFragment extends FilesFragment {
         adapter.files = nodes;
         String q = getArguments().getString("q");
         if (q.contains("*"))
-            pattern = Pattern.compile(Storage.wildcard(q));
+            pattern = Pattern.compile(Storage.wildcard(q), Pattern.CASE_INSENSITIVE);
         else
-            pattern = Pattern.compile(q);
+            pattern = Pattern.compile(q, Pattern.CASE_INSENSITIVE);
         try {
             search = new PendingOperation(getContext());
             search.calcUri = uri;
