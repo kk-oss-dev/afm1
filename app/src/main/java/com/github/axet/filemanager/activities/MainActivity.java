@@ -65,6 +65,7 @@ import com.github.axet.filemanager.fragments.FilesFragment;
 import com.github.axet.filemanager.fragments.HexDialogFragment;
 import com.github.axet.filemanager.fragments.SearchFragment;
 import com.github.axet.filemanager.services.StorageProvider;
+import com.github.axet.filemanager.widgets.SelectView;
 
 import net.i2p.android.ext.floatingactionbutton.FloatingActionButton;
 import net.i2p.android.ext.floatingactionbutton.FloatingActionsMenu;
@@ -91,6 +92,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     Menu bookmarksMenu;
     ViewPager.OnPageChangeListener onPageChangeListener;
     String oldSearch;
+    public SelectView.CollapseListener collapseListener;
     Handler handler = new Handler();
     Runnable reload = new Runnable() {
         @Override
@@ -329,6 +331,8 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        collapseListener = new SelectView.CollapseListener(getSupportActionBar());
+
         navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
@@ -546,6 +550,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         getMenuInflater().inflate(R.menu.menu_main, menu);
         MenuItem search = menu.findItem(R.id.action_search);
         final SearchView searchView = (SearchView) MenuItemCompat.getActionView(search);
+        collapseListener.addItem(search);
         searchView.setOnQueryTextListener(new android.support.v7.widget.SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
