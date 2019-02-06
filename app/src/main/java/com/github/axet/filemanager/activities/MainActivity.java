@@ -163,16 +163,22 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             editor.commit();
         }
 
+        FilesFragment getFragment(int i) {
+            FilesFragment f = (FilesFragment) instantiateItem(mViewPager, i);
+            finishUpdate(mViewPager);
+            return f;
+        }
+
         FilesFragment getLeft() {
-            return (FilesFragment) instantiateItem(mViewPager, 0);
+            return getFragment(0);
         }
 
         FilesFragment getRight() {
-            return (FilesFragment) instantiateItem(mViewPager, 1);
+            return getFragment(1);
         }
 
         public FilesFragment getActiveFragment() {
-            return (FilesFragment) instantiateItem(mViewPager, mViewPager.getCurrentItem());
+            return getFragment(mViewPager.getCurrentItem());
         }
 
         @Override

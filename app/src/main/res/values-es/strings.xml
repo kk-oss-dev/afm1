@@ -1,0 +1,81 @@
+<resources>
+    <string name="app_name">Gestor de archivos</string>
+    <string name="action_settings">Ajustes</string>
+    <string name="navigation_drawer_open">Abrir caja de navegación</string>
+    <string name="navigation_drawer_close">Cerrar caja de navegación</string>
+    <string name="title_activity_settings">Ajustes</string>
+
+    <string-array name="themes_text">
+        <item>Tema claro</item>
+        <item>Tema oscuro</item>
+    </string-array>
+
+    <string name="copy_from">Desde:</string>
+    <string name="copy_to">Hacia:</string>
+    <string name="copy_pause">Pausar</string>
+    <string name="copy_resume">Reanudar</string>
+    <string name="copy_retry">Reintentar</string>
+    <string name="copy_overwrite">Sobreescribir:</string>
+    <string name="copy_overwrite_with">Con:</string>
+
+    <string name="size_bytes">bytes</string>
+    <string name="add_bookmark">Añadir Marcador</string>
+    <string name="bookmarks">Marcador</string>
+    <string name="empty_list">Vacío</string>
+    <string name="delete_bookmark">Borrar Marcador</string>
+    <string name="create_folder">Crear Carpeta</string>
+    <string name="create_file">Crear Archivo</string>
+    <string name="toast_files_copied">Copiar %1$d archivo(s)</string>
+    <string name="toast_files_cut">Cortar %1$d archivo(s)</string>
+    <string name="files_delete">Eliminar</string>
+    <string name="toast_files_deleted">%1$d archivo(s) eliminados</string>
+    <string name="toast_files_archived">Archivado \'%1$s\' con %2$d archivo(s)</string>
+    <string name="files_rename">Renombrar</string>
+    <string name="files_deleting">Eliminando</string>
+    <string name="files_calculating">Calculando</string>
+    <string name="files_copying">Copiando</string>
+    <string name="files_archiving">Archivando</string>
+    <string name="files_moving">Moviendo</string>
+    <string name="files_conflict">Conflicto</string>
+    <string name="unsupported">Formato no soportado</string>
+    <string name="add_bookmark_from_saf">... desde SAF</string>
+    <string name="add_bookmark_from_from_storage">... desde almacenamiento</string>
+    <string name="file_open">Abrir</string>
+    <string name="file_open_as">Abrir como ...</string>
+    <string name="open_as_text">Texto</string>
+    <string name="open_as_image">Imagen</string>
+    <string name="open_as_audio">Audio</string>
+    <string name="file_view">Ver</string>
+    <string name="files_paste">Pegar</string>
+    <string name="files_cancel_paste">Cancelar pegado</string>
+    <string name="refresh">Actualizar</string>
+    <string name="search">Buscar</string>
+    <string name="button_overwrite">Sobreescribir</string>
+    <string name="button_skip">Saltar</string>
+    <string name="button_overwrite_all">Sobreescribir todo</string>
+    <string name="button_skip_all">Saltar todo</string>
+    <string name="button_permissions">Obtener permisos</string>
+    <string name="button_new_file">Nuevo Archivo</string>
+    <string name="per_second">/s</string>
+    <string name="pref_theme_title">Tema</string>
+    <string name="pref_root_title">Explorado Root</string>
+    <string name="pref_root_summary">Explorar archivos usando root</string>
+    <string name="menu_rename">Renombrar</string>
+    <string name="menu_copy">Copiar</string>
+    <string name="menu_cut">Cortar</string>
+    <string name="menu_delete">Eliminar</string>
+    <string name="menu_archive">Archivar</string>
+    <string name="save_to">Guardar archivo como</string>
+    <string name="back_exit">Presione la tecla atras para salir</string>
+    <string name="action_folder">Abrir Archivo</string>
+    <string name="pref_recycle_title">Papelera</string>
+    <string name="pref_recycle_summary">Activa la papelera para archivos eliminados</string>
+    <string name="recyclebin_folder">Ir a la papelera</string>
+    <string name="empty_recyclebin">Vaciar papelera</string>
+    <string name="duplicate_folder">Duplicar</string>
+    <string name="delete_permanently">Permanentemente</string>
+    <string name="preview">Previsualizar</string>
+    <string name="file_viewas">Ver como ...</string>
+    <string name="action_fullscreen">Pantalla completa</string>
+    <string name="viewas_hex">Hex</string>
+</resources>
