@@ -6,7 +6,10 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.graphics.Color;
 import android.support.annotation.Keep;
+import android.support.v4.internal.view.SupportMenuItem;
 import android.support.v4.view.GravityCompat;
+import android.support.v4.view.MenuItemCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.view.CollapsibleActionView;
 import android.support.v7.view.menu.MenuBuilder;
 import android.support.v7.widget.AppCompatImageButton;
@@ -30,6 +33,35 @@ public class SelectView extends LinearLayoutCompat implements CollapsibleActionV
         if (context instanceof ContextWrapper)
             return from(((ContextWrapper) context).getBaseContext());
         throw new RuntimeException("unknown context");
+    }
+
+    public static class CollapseListener implements MenuItemCompat.OnActionExpandListener {
+        MenuItem current = null;
+        ActionBar appbar;
+
+        public CollapseListener(final ActionBar appbar) {
+            this.appbar = appbar;
+        }
+
+        @SuppressLint("RestrictedApi")
+        public void addItem(MenuItem search) {
+            ((SupportMenuItem) search).setSupportOnActionExpandListener(this);
+        }
+
+        @SuppressLint("RestrictedApi")
+        @Override
+        public boolean onMenuItemActionExpand(MenuItem item) {
+            if (current != item) {
+                current = item;
+                appbar.collapseActionView();
+            }
+            return true;
+        }
+
+        @Override
+        public boolean onMenuItemActionCollapse(MenuItem item) {
+            return true;
+        }
     }
 
     public SelectView(Context context) {

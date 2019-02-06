@@ -1707,6 +1707,8 @@ public class FilesFragment extends Fragment {
         super.onCreateOptionsMenu(menu, inflater);
         try {
             toolbar = menu.findItem(R.id.action_selected);
+            MainActivity main = (MainActivity) getActivity();
+            main.collapseListener.addItem(toolbar);
             pasteMenu = menu.findItem(R.id.action_paste);
             pasteCancel = menu.findItem(R.id.action_paste_cancel);
             updatePaste();
