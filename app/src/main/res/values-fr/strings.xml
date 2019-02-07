@@ -1,0 +1,81 @@
+<resources>
+    <string name="app_name">Gestionnaire de fichiers</string>
+    <string name="action_settings">Paramètres</string>
+    <string name="navigation_drawer_open">Ouvrir la barre de navigation</string>
+    <string name="navigation_drawer_close">Fermer la barre de navigation</string>
+    <string name="title_activity_settings">Paramètres</string>
+
+    <string-array name="themes_text">
+        <item>Theme Clair</item>
+        <item>Theme Sombre</item>
+    </string-array>
+
+    <string name="copy_from">De:</string>
+    <string name="copy_to">À:</string>
+    <string name="copy_pause">Pause</string>
+    <string name="copy_resume">Continuer</string>
+    <string name="copy_retry">Réessayer</string>
+    <string name="copy_overwrite">Écraser:</string>
+    <string name="copy_overwrite_with">Avec:</string>
+
+    <string name="size_bytes">octets</string>
+    <string name="add_bookmark">Ajouter un favori</string>
+    <string name="bookmarks">Favoris</string>
+    <string name="empty_list">Vide</string>
+    <string name="delete_bookmark">Supprimer un favori</string>
+    <string name="create_folder">Créer un Dossier</string>
+    <string name="create_file">Créer un Fichier</string>
+    <string name="toast_files_copied">%1$d fichier(s) copié(s)</string>
+    <string name="toast_files_cut">%1$d fichier(s) coupé(s)</string>
+    <string name="files_delete">Suppression</string>
+    <string name="toast_files_deleted">%1$d fichier(s) supprimé(s)</string>
+    <string name="toast_files_archived">Archivé \'%1$s\' avec %2$d fichier(s)</string>
+    <string name="files_rename">Renommer</string>
+    <string name="files_deleting">Suppression</string>
+    <string name="files_calculating">Calcul en cours</string>
+    <string name="files_copying">Copie en cours</string>
+    <string name="files_archiving">Archivage en cours</string>
+    <string name="files_moving">Déplacement en cours</string>
+    <string name="files_conflict">Conflit</string>
+    <string name="unsupported">Format non supporté</string>
+    <string name="add_bookmark_from_saf">... depuis SAF</string>
+    <string name="add_bookmark_from_from_storage">... depuis la mémoire</string>
+    <string name="file_open">Ouvrir</string>
+    <string name="file_open_as">Ouvrir en tant que ...</string>
+    <string name="open_as_text">Texte</string>
+    <string name="open_as_image">Image</string>
+    <string name="open_as_audio">Audio</string>
+    <string name="file_view">Vue</string>
+    <string name="files_paste">Coller</string>
+    <string name="files_cancel_paste">Annuler Paste</string>
+    <string name="refresh">Rafraîchir</string>
+    <string name="search">Chercher</string>
+    <string name="button_overwrite">Écraser</string>
+    <string name="button_skip">Ignorer</string>
+    <string name="button_overwrite_all">Écraser pour tous</string>
+    <string name="button_skip_all">Ignorer pour tous</string>
+    <string name="button_permissions">Obtenir les permissions</string>
+    <string name="button_new_file">Nouveau Fichier</string>
+    <string name="per_second">/s</string>
+    <string name="pref_theme_title">Theme</string>
+    <string name="pref_root_title">Navigation Root</string>
+    <string name="pref_root_summary">Naviguer avec les droits root</string>
+    <string name="menu_rename">Renommer</string>
+    <string name="menu_copy">Copier</string>
+    <string name="menu_cut">Couper</string>
+    <string name="menu_delete">Supprimer</string>
+    <string name="menu_archive">Archiver</string>
+    <string name="save_to">Sauver dans l'archive</string>
+    <string name="back_exit">Cliquez encore pour quitter</string>
+    <string name="action_folder">Ouvrir le dossier</string>
+    <string name="pref_recycle_title">Corbeille</string>
+    <string name="pref_recycle_summary">Déplacer dans la corbeille au lieu de supprimer</string>
+    <string name="recyclebin_folder">Corbeille</string>
+    <string name="empty_recyclebin">Vider la corbeille</string>
+    <string name="duplicate_folder">Dupliquer</string>
+    <string name="delete_permanently">de façon permanente</string>
+    <string name="preview">Aperçu</string>
+    <string name="file_viewas">Ouvrir comme ...</string>
+    <string name="action_fullscreen">Plein écran</string>
+    <string name="viewas_hex">Hex</string>
+</resources>
