@@ -11,8 +11,6 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,7 +20,6 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.provider.DocumentFile;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewCompat;
@@ -57,6 +54,7 @@ import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.androidlibrary.widgets.Toast;
+import com.github.axet.androidlibrary.widgets.ToolbarActionView;
 import com.github.axet.androidlibrary.widgets.TopSnappedSmoothScroller;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.FullscreenActivity;
@@ -66,7 +64,6 @@ import com.github.axet.filemanager.app.Storage;
 import com.github.axet.filemanager.app.SuperUser;
 import com.github.axet.filemanager.services.StorageProvider;
 import com.github.axet.filemanager.widgets.PathView;
-import com.github.axet.filemanager.widgets.SelectView;
 import com.github.axet.wget.SpeedInfo;
 
 import java.io.BufferedOutputStream;
@@ -129,10 +126,10 @@ public class FilesFragment extends Fragment {
     PathView path;
     View button;
     TextView error;
-    MenuItem toolbar;
+    MenuItem toolbar; // toolbar select
     MenuItem pasteMenu;
     MenuItem pasteCancel;
-    SelectView select;
+    ToolbarActionView select;
     Storage.Nodes selected = new Storage.Nodes();
     HashMap<Uri, Pos> offsets = new HashMap<>();
     BroadcastReceiver receiver = new BroadcastReceiver() {
@@ -153,19 +150,6 @@ public class FilesFragment extends Fragment {
     public static String getFirst(String name) {
         String[] ss = Storage.splitPath(name);
         return ss[0];
-    }
-
-    public static void hideMenu(Menu m, int id) {
-        MenuItem item = m.findItem(id);
-        item.setVisible(false);
-    }
-
-    public static void setTint(MenuItem item, int color) {
-        Drawable d = item.getIcon();
-        d = DrawableCompat.wrap(d);
-        d.mutate();
-        d.setColorFilter(color, PorterDuff.Mode.SRC_ATOP); // DrawableCompat.setTint(d, color);
-        item.setIcon(d);
     }
 
     public static String stripRight(String s, String right) {
@@ -1304,7 +1288,7 @@ public class FilesFragment extends Fragment {
                     } else {
                         PopupMenu menu = new PopupMenu(getContext(), v);
                         menu.inflate(R.menu.menu_file);
-                        hideMenu(menu.getMenu(), R.id.action_folder);
+                        ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_folder);
                         menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                             @Override
                             public boolean onMenuItemClick(MenuItem item) {
@@ -1331,10 +1315,10 @@ public class FilesFragment extends Fragment {
                         menu.inflate(R.menu.menu_select);
                         Storage.ArchiveReader r = storage.fromArchive(uri, true);
                         if (r != null) {
-                            hideMenu(menu.getMenu(), R.id.action_archive);
-                            hideMenu(menu.getMenu(), R.id.action_rename);
-                            hideMenu(menu.getMenu(), R.id.action_cut);
-                            hideMenu(menu.getMenu(), R.id.action_delete);
+                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_archive);
+                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_rename);
+                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_cut);
+                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_delete);
                         }
                         menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                             @Override
@@ -1557,11 +1541,9 @@ public class FilesFragment extends Fragment {
             pasteCancel.setVisible(true);
             Storage.ArchiveReader r = storage.fromArchive(uri, true);
             if (r != null) {
-                pasteMenu.setEnabled(false);
-                setTint(pasteMenu, Color.GRAY);
+                ToolbarActionView.setEnable(pasteMenu, false);
             } else {
-                pasteMenu.setEnabled(true);
-                setTint(pasteMenu, Color.WHITE);
+                ToolbarActionView.setEnable(pasteMenu, true);
             }
         } else {
             pasteMenu.setVisible(false);
@@ -1712,7 +1694,7 @@ public class FilesFragment extends Fragment {
             pasteMenu = menu.findItem(R.id.action_paste);
             pasteCancel = menu.findItem(R.id.action_paste_cancel);
             updatePaste();
-            select = (SelectView) MenuItemCompat.getActionView(toolbar);
+            select = (ToolbarActionView) MenuItemCompat.getActionView(toolbar);
             select.listener = new CollapsibleActionView() {
                 @Override
                 public void onActionViewExpanded() {
@@ -1730,6 +1712,8 @@ public class FilesFragment extends Fragment {
                     selected.clear();
                 }
             };
+            select.create(menu, R.menu.menu_select);
+            select.hide(R.id.action_rename);
         } catch (RuntimeException e) {
             Log.e(TAG, "io", e);
             error.setText(ErrorDialog.toMessage(e));
@@ -1806,7 +1790,31 @@ public class FilesFragment extends Fragment {
         }
         if (id == R.id.action_share) {
             Intent intent = item.getIntent();
-            Intent share = StorageProvider.getProvider().shareIntent(intent.getData(), intent.getType(), intent.getStringExtra("name"));
+            Intent share;
+            if (intent != null) {
+                share = StorageProvider.getProvider().shareIntent(intent.getData(), intent.getType(), intent.getStringExtra("name"));
+            } else {
+                if (selected.size() == 1) {
+                    Storage.Node n = selected.get(0);
+                    share = StorageProvider.getProvider().shareIntent(n.uri, Storage.getTypeByName(n.name), Storage.getNameNoExt(n.name));
+                } else {
+                    String name = "";
+                    TreeMap<String, Integer> nn = new TreeMap<>();
+                    ArrayList<Uri> ll = new ArrayList<>();
+                    for (Storage.Node n : selected) {
+                        ll.add(n.uri);
+                        String e = Storage.getExt(n.name);
+                        Integer old = nn.get(e);
+                        if (old == null)
+                            old = 0;
+                        nn.put(e, old + 1);
+                    }
+                    for (String key : nn.keySet())
+                        name += "(" + nn.get(key) + ") ." + key + ", ";
+                    name = stripRight(name, ", ");
+                    share = StorageProvider.getProvider().shareIntent(ll, "*/*", name); // need smart type? image/* || image/gif || */*
+                }
+            }
             if (OptimizationPreferenceCompat.isCallable(getContext(), share))
                 startActivity(share);
             else
@@ -2259,6 +2267,14 @@ public class FilesFragment extends Fragment {
     }
 
     public void updateSelection() {
+        boolean dir = false;
+        for (Storage.Node n : selected) {
+            if (n.dir) {
+                dir = true;
+                break;
+            }
+        }
+        select.setEnable(R.id.action_share, !dir);
         adapter.notifyDataSetChanged();
     }
 

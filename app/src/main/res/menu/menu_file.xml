@@ -26,8 +26,4 @@
     <item
         android:id="@+id/action_folder"
         android:title="@string/action_folder" />
-    <item
-        android:id="@+id/action_share"
-        android:title="@string/ShareAction"
-        app:showAsAction="never" />
 </menu>
