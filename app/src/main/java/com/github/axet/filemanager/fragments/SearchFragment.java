@@ -17,6 +17,7 @@ import android.view.ViewGroup;
 
 import com.github.axet.androidlibrary.services.StorageProvider;
 import com.github.axet.androidlibrary.widgets.ErrorDialog;
+import com.github.axet.androidlibrary.widgets.ToolbarActionView;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.MainActivity;
 import com.github.axet.filemanager.app.Storage;
@@ -88,10 +89,10 @@ public class SearchFragment extends FilesFragment {
                     PopupMenu menu = new PopupMenu(getContext(), v);
                     menu.inflate(R.menu.menu_file);
                     if (f.dir) {
-                        hideMenu(menu.getMenu(), R.id.action_open);
-                        hideMenu(menu.getMenu(), R.id.action_share);
-                        hideMenu(menu.getMenu(), R.id.action_view);
-                        hideMenu(menu.getMenu(), R.id.action_openas);
+                        ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_open);
+                        ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_share);
+                        ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_view);
+                        ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openas);
                     }
                     menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                         @Override

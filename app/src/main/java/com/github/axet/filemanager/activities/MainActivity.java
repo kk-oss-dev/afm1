@@ -8,8 +8,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.hardware.usb.UsbManager;
@@ -65,7 +63,6 @@ import com.github.axet.filemanager.fragments.FilesFragment;
 import com.github.axet.filemanager.fragments.HexDialogFragment;
 import com.github.axet.filemanager.fragments.SearchFragment;
 import com.github.axet.filemanager.services.StorageProvider;
-import com.github.axet.filemanager.widgets.SelectView;
 
 import net.i2p.android.ext.floatingactionbutton.FloatingActionButton;
 import net.i2p.android.ext.floatingactionbutton.FloatingActionsMenu;
@@ -92,7 +89,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     Menu bookmarksMenu;
     ViewPager.OnPageChangeListener onPageChangeListener;
     String oldSearch;
-    public SelectView.CollapseListener collapseListener;
+    public SearchView.CollapseListener collapseListener;
     Handler handler = new Handler();
     Runnable reload = new Runnable() {
         @Override
@@ -331,7 +328,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        collapseListener = new SelectView.CollapseListener(getSupportActionBar());
+        collapseListener = new SearchView.CollapseListener(getSupportActionBar());
 
         navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
@@ -343,13 +340,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
 
         View navigationHeader = navigationView.getHeaderView(0);
         TextView ver = (TextView) navigationHeader.findViewById(R.id.nav_version);
-        try {
-            PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-            String version = "v" + pInfo.versionName;
-            ver.setText(version);
-        } catch (PackageManager.NameNotFoundException e) {
-            ver.setVisibility(View.GONE);
-        }
+        AboutPreferenceCompat.setVersion(ver);
 
         final FloatingActionsMenu fab = (FloatingActionsMenu) findViewById(R.id.fab);
         FloatingActionButton fabFolder = (FloatingActionButton) findViewById(R.id.fab_create_folder);

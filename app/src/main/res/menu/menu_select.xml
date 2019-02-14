@@ -3,30 +3,39 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.github.axet.filemanager.activities.MainActivity">
     <item
-        android:id="@+id/action_archive"
-        android:icon="@drawable/ic_archive_black_24dp"
-        android:orderInCategory="100"
-        android:title="@string/menu_archive" />
-    <item
         android:id="@+id/action_rename"
         android:icon="@drawable/ic_edit_black_24dp"
-        android:orderInCategory="000"
-        android:title="@string/menu_rename" />
+        android:orderInCategory="100"
+        android:title="@string/menu_rename"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_archive"
+        android:icon="@drawable/ic_archive_black_24dp"
+        android:orderInCategory="200"
+        android:title="@string/menu_archive"
+        app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_copy"
         android:icon="@drawable/ic_content_copy_black_24dp"
         android:orderInCategory="300"
-        android:title="@string/menu_copy" />
+        android:title="@string/menu_copy"
+        app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_cut"
         android:icon="@drawable/ic_content_cut_black_24dp"
         android:orderInCategory="400"
         android:title="@string/menu_cut"
-        app:showAsAction="never" />
+        app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_delete"
         android:icon="@drawable/ic_delete_black_24dp"
-        android:orderInCategory="400"
+        android:orderInCategory="500"
         android:title="@string/menu_delete"
-        app:showAsAction="never" />
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_share"
+        android:icon="@drawable/ic_share_black_24dp"
+        android:orderInCategory="600"
+        android:title="@string/ShareAction"
+        app:showAsAction="ifRoom" />
 </menu>

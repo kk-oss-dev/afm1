@@ -1,7 +1,6 @@
 package com.github.axet.filemanager.widgets;
 
 import android.content.Context;
-import android.graphics.Paint;
 
 import com.github.axet.androidlibrary.app.FileTypeDetector;
 import com.github.axet.androidlibrary.app.MediaPlayerCompat;
@@ -12,8 +11,6 @@ public class GifView extends MediaPlayerCompat.MovieView {
     public static final String TAG = GifView.class.getSimpleName();
 
     public static final String EXT = "gif";
-
-    Paint p = new Paint();
 
     public static class FileGif89a extends FileTypeDetector.ExtDetector.Handler {
         public FileGif89a(String ext) {
