@@ -71,31 +71,4 @@ public class StorageProvider extends com.github.axet.androidlibrary.services.Sto
             return new AssetFileDescriptor(openRootFile(Storage.getFile(f), mode), 0, AssetFileDescriptor.UNKNOWN_LENGTH);
         return super.openAssetFile(uri, mode);
     }
-
-    @Override
-    public Intent shareIntent(Uri uri, String name, String type, String subject) {
-        if (isExternal(uri)) { // gmail unable to open file:// links
-            if (name == null)
-                uri = share(uri);
-            else
-                uri = share(uri, name);
-        }
-        return shareIntent23(getContext(), uri, type, subject);
-    }
-
-    @Override
-    public Intent shareIntent(ArrayList<Uri> uris, String name, String type, String subject) {
-        for (int i = 0; i < uris.size(); i++) {
-            Uri uri = uris.get(i);
-            String s = uri.getScheme();
-            if (s.equals(ContentResolver.SCHEME_FILE)) { // gmail unable to open file:// links
-                if (name == null)
-                    uri = share(uri);
-                else
-                    uri = share(uri, name);
-            }
-            uris.set(i, uri);
-        }
-        return shareIntent23(getContext(), uris, type, subject);
-    }
 }
