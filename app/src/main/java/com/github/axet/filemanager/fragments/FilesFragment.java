@@ -114,6 +114,7 @@ public class FilesFragment extends Fragment {
     RecyclerView list;
     LinearLayoutManager layout;
     Storage storage;
+    TextView free;
 
     OperationBuilder delete;
     PasteBuilder paste;
@@ -1521,6 +1522,8 @@ public class FilesFragment extends Fragment {
         list.setLayoutManager(layout);
         list.setAdapter(adapter);
 
+        free = (TextView) rootView.findViewById(R.id.space_left);
+
         error = (TextView) rootView.findViewById(R.id.error);
         error.setVisibility(View.GONE);
 
@@ -1640,6 +1643,8 @@ public class FilesFragment extends Fragment {
 
     public void reload() {
         error.setVisibility(View.GONE);
+
+        updateHeader();
 
         adapter.files.clear();
         try {
@@ -2094,9 +2099,8 @@ public class FilesFragment extends Fragment {
             public void run() {
                 try {
                     if (calcIndex < calcs.size()) {
-                        if (!calc()) {
+                        if (!calc())
                             os = zip = new ZipOutputStream(new BufferedOutputStream(fos));
-                        }
                         archive.title.setGravity(Gravity.NO_GRAVITY);
                         archive.title.setText(getString(R.string.files_calculating) + ": " + formatCalc());
                         archive.update(this);
@@ -2325,5 +2329,10 @@ public class FilesFragment extends Fragment {
                 return;
             }
         }
+    }
+
+    void updateHeader() {
+        long f = Storage.getFree(getContext(), uri);
+        free.setText(getString(R.string.free_space, FilesApplication.formatSize(getContext(), f)));
     }
 }
