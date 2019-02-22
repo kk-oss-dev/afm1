@@ -2,6 +2,7 @@ package com.github.axet.filemanager.widgets;
 
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.support.annotation.Nullable;
 import android.support.v4.view.ViewCompat;
@@ -15,12 +16,15 @@ import android.widget.TextView;
 
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
+import com.github.axet.filemanager.R;
+import com.github.axet.filemanager.app.FilesApplication;
 import com.github.axet.filemanager.app.Storage;
 
 public class PathView extends HorizontalScrollView {
     Uri uri;
     LinearLayoutCompat ll;
     public Listener listener;
+    TextView free;
 
     public interface Listener {
         void onUriSelected(Uri u);
@@ -67,10 +71,10 @@ public class PathView extends HorizontalScrollView {
     }
 
     void add(Uri uri) {
+        int p15 = ThemeUtils.dp2px(getContext(), 15);
+        int p10 = ThemeUtils.dp2px(getContext(), 10);
         while (uri != null) {
             AppCompatTextView b = new AppCompatTextView(getContext());
-            int p15 = ThemeUtils.dp2px(getContext(), 15);
-            int p10 = ThemeUtils.dp2px(getContext(), 10);
             b.setPadding(p10, p15, p10, p15);
             String n = Storage.getName(getContext(), uri);
             if (n.isEmpty())
@@ -92,5 +96,15 @@ public class PathView extends HorizontalScrollView {
                 ll.addView(p, 0);
             }
         }
+        free = new TextView(getContext());
+        free.setPadding(p10, p15, p10, p15);
+        ViewCompat.setAlpha(free, 0.5f);
+        ll.addView(free);
+        updateHeader();
+    }
+
+    public void updateHeader() {
+        long f = Storage.getFree(getContext(), uri);
+        free.setText("[" + getContext().getString(R.string.free_space, FilesApplication.formatSize(getContext(), f)) + "]");
     }
 }

@@ -4,20 +4,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/space_left"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:paddingTop="3dp"
-        android:text="50 Gb"
-        android:textStyle="italic" />
-
     <com.github.axet.filemanager.widgets.PathView
         android:id="@+id/path"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingTop="9dp" />
+        android:layout_height="wrap_content" />
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/list"
