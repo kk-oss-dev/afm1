@@ -1,0 +1,82 @@
+<resources>
+    <string name="app_name">Файловый менеджер</string>
+    <string name="action_settings">Настройки</string>
+    <string name="navigation_drawer_open">Открыть навигацию</string>
+    <string name="navigation_drawer_close">Закрыть навигацию</string>
+    <string name="title_activity_settings">Настройки</string>
+
+    <string-array name="themes_text">
+        <item>Тема светлая</item>
+        <item>Тема темная</item>
+    </string-array>
+
+    <string name="copy_from">Из:</string>
+    <string name="copy_to">В:</string>
+    <string name="copy_pause">Пауза</string>
+    <string name="copy_resume">Продолжить</string>
+    <string name="copy_retry">Повторить</string>
+    <string name="copy_overwrite">Перезаписать:</string>
+    <string name="copy_overwrite_with">С:</string>
+
+    <string name="size_bytes">байт</string>
+    <string name="add_bookmark">Добавить закладку</string>
+    <string name="bookmarks">Закладки</string>
+    <string name="empty_list">Пусто</string>
+    <string name="delete_bookmark">Удалить закладку</string>
+    <string name="create_folder">Создать папку</string>
+    <string name="create_file">Создать файл</string>
+    <string name="toast_files_copied">Скопировано %1$d файл(ов)</string>
+    <string name="toast_files_cut">Вырезано %1$d файл(ов)</string>
+    <string name="files_delete">Удалить</string>
+    <string name="toast_files_deleted">Удалено %1$d файл(ов)</string>
+    <string name="toast_files_archived">Архив \'%1$s\' с %2$d файл(ов)</string>
+    <string name="files_rename">Переименовать</string>
+    <string name="files_deleting">Удаление</string>
+    <string name="files_calculating">Вычисление</string>
+    <string name="files_copying">Копирование</string>
+    <string name="files_archiving">Архивирование</string>
+    <string name="files_moving">Перемещение</string>
+    <string name="files_conflict">Конфликт</string>
+    <string name="unsupported">Не поддерживаемый формат</string>
+    <string name="add_bookmark_from_saf">... из САФ</string>
+    <string name="add_bookmark_from_from_storage">... из карты памяти</string>
+    <string name="file_open">Открыть</string>
+    <string name="file_open_as">Открыть как ...</string>
+    <string name="open_as_text">Текст</string>
+    <string name="open_as_image">Изображение</string>
+    <string name="open_as_audio">Аудио</string>
+    <string name="file_view">Просмотр</string>
+    <string name="files_paste">Вставить</string>
+    <string name="files_cancel_paste">Отменить вставку</string>
+    <string name="refresh">Обновить</string>
+    <string name="search">Поиск</string>
+    <string name="button_overwrite">Перезаписать</string>
+    <string name="button_skip">Пропустить</string>
+    <string name="button_overwrite_all">Перезаписать все</string>
+    <string name="button_skip_all">Пропустить все</string>
+    <string name="button_permissions">Получить разрешение</string>
+    <string name="button_new_file">Новый файл</string>
+    <string name="per_second">/с</string>
+    <string name="pref_theme_title">Тема</string>
+    <string name="pref_root_title">Root режит</string>
+    <string name="pref_root_summary">Работать с файлами в режиме root</string>
+    <string name="menu_rename">Переименовать</string>
+    <string name="menu_copy">Копировать</string>
+    <string name="menu_cut">Вырезать</string>
+    <string name="menu_delete">Удалить</string>
+    <string name="menu_archive">Архивировать</string>
+    <string name="save_to">Сохранить архив в</string>
+    <string name="back_exit">Нажмите назад чтобы выйти</string>
+    <string name="action_folder">Открыть папку</string>
+    <string name="pref_recycle_title">Корзина</string>
+    <string name="pref_recycle_summary">Включить корзину для удаленных файлов</string>
+    <string name="recyclebin_folder">Корзина</string>
+    <string name="empty_recyclebin">Очистить корзину</string>
+    <string name="duplicate_folder">Дублировать</string>
+    <string name="delete_permanently">Без корзины</string>
+    <string name="preview">Посмотреть</string>
+    <string name="file_viewas">Посмотреть как ...</string>
+    <string name="action_fullscreen">Полныйэкран</string>
+    <string name="viewas_hex">Hex</string>
+    <string name="free_space">%1$s свободно</string>
+</resources>

@@ -40,6 +40,13 @@
             </intent-filter>
         </activity>
 
+        <receiver android:name=".services.OnUpgradeReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_REPLACED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name=".services.StorageProvider"
             android:authorities="com.github.axet.filemanager"

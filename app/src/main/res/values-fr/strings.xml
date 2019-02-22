@@ -78,4 +78,5 @@
     <string name="file_viewas">Ouvrir comme ...</string>
     <string name="action_fullscreen">Plein écran</string>
     <string name="viewas_hex">Hex</string>
+    <string name="free_space">%1$s libre</string>
 </resources>

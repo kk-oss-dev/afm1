@@ -1,5 +1,6 @@
 package com.github.axet.filemanager.app;
 
+import android.app.PendingIntent;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -11,12 +12,17 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.github.axet.androidlibrary.app.MainApplication;
+import com.github.axet.androidlibrary.app.NotificationManagerCompat;
 import com.github.axet.androidlibrary.app.Storage;
+import com.github.axet.androidlibrary.widgets.NotificationChannelCompat;
+import com.github.axet.androidlibrary.widgets.RemoteNotificationCompat;
 import com.github.axet.filemanager.R;
+import com.github.axet.filemanager.activities.MainActivity;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Locale;
 
 public class FilesApplication extends MainApplication {
     public static final String PREF_LEFT = "left";
@@ -29,6 +35,8 @@ public class FilesApplication extends MainApplication {
     public static final String PREF_THEME = "theme";
     public static final String PREF_ROOT = "root";
     public static final String PREF_RECYCLE = "recycle";
+
+    public static final String PREFERENCE_VERSION = "version";
 
     public Bookmarks bookmarks;
     public ArrayList<Storage.Node> copy; // selected files
@@ -57,6 +65,10 @@ public class FilesApplication extends MainApplication {
 
     public static FilesApplication from(Context context) {
         return (FilesApplication) MainApplication.from(context);
+    }
+
+    public static int getTheme(Context context, int light, int dark) {
+        return MainApplication.getTheme(context, PREF_THEME, light, dark, context.getString(R.string.Theme_Dark));
     }
 
     public class Bookmarks extends ArrayList<Uri> {
@@ -110,5 +122,43 @@ public class FilesApplication extends MainApplication {
     public void onCreate() {
         super.onCreate();
         bookmarks = new Bookmarks();
+
+        switch (getVersion(PREFERENCE_VERSION, R.xml.pref_general)) {
+            case -1:
+                SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
+                SharedPreferences.Editor edit = shared.edit();
+                edit.putInt(PREFERENCE_VERSION, 1);
+                edit.commit();
+                break;
+            case 0:
+                version_0_to_1();
+                break;
+        }
+    }
+
+    public void show(String title, String text) {
+        PendingIntent main = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
+        RemoteNotificationCompat.Default builder = new RemoteNotificationCompat.Default(this, R.drawable.ic_launcher_foreground);
+        builder.setTheme(FilesApplication.getTheme(this, R.style.AppThemeLight, R.style.AppThemeDark))
+                .setTitle(title)
+                .setText(text)
+                .setMainIntent(main)
+                .setChannel(new NotificationChannelCompat(this, "status", "Status", NotificationManagerCompat.IMPORTANCE_DEFAULT))
+                .setSmallIcon(R.drawable.ic_launcher_notification);
+        NotificationManagerCompat nm = NotificationManagerCompat.from(this);
+        nm.notify((int) System.currentTimeMillis(), builder.build());
+    }
+
+    void version_0_to_1() {
+        Locale locale = Locale.getDefault();
+        if (locale.toString().startsWith("ru")) {
+            String title = "Приложение переименовано";
+            String text = "'File Manager' -> '" + getString(R.string.app_name) + "'";
+            show(text, title);
+        }
+        SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor edit = shared.edit();
+        edit.putInt(PREFERENCE_VERSION, 1);
+        edit.commit();
     }
 }

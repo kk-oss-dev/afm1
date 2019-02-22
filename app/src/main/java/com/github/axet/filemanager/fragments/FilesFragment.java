@@ -1641,6 +1641,8 @@ public class FilesFragment extends Fragment {
     public void reload() {
         error.setVisibility(View.GONE);
 
+        path.updateHeader();
+
         adapter.files.clear();
         try {
             adapter.files.addAll(storage.list(uri));
@@ -2094,9 +2096,8 @@ public class FilesFragment extends Fragment {
             public void run() {
                 try {
                     if (calcIndex < calcs.size()) {
-                        if (!calc()) {
+                        if (!calc())
                             os = zip = new ZipOutputStream(new BufferedOutputStream(fos));
-                        }
                         archive.title.setGravity(Gravity.NO_GRAVITY);
                         archive.title.setText(getString(R.string.files_calculating) + ": " + formatCalc());
                         archive.update(this);
