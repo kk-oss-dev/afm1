@@ -1,6 +1,7 @@
 package com.github.axet.filemanager.app;
 
 import android.content.Context;
+import android.os.Build;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
@@ -32,7 +33,10 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     }
 
     public static String binSuio(Context context) {
-        return BIN_SUIO = Natives.search(context, "libsuio.so");
+        if (Build.VERSION.SDK_INT >= 21)
+            return BIN_SUIO = Natives.search(context, "libsuio-pie.so");
+        else
+            return BIN_SUIO = Natives.search(context, "libsuio.so");
     }
 
     public static void skipAll(InputStream is) throws IOException {
