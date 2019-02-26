@@ -8,7 +8,7 @@ add_executable(${PROJECT_NAME} ${SRC})
 
 if (${ANDROID_ABI} MATCHES "arm64-v8a" OR ${ANDROID_ABI} MATCHES "x86_64")
   add_executable(lib${PROJECT_NAME}.so ${SRC})
-else()
+elseif(DEFINED ANDROID_ABI)
   add_executable(lib${PROJECT_NAME}.so ${SRC})
   set_target_properties(lib${PROJECT_NAME}.so PROPERTIES LINK_FLAGS -nopie)
   add_executable(lib${PROJECT_NAME}-pie.so ${SRC})
