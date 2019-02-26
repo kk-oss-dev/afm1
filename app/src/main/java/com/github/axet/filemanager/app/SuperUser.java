@@ -26,6 +26,10 @@ import java.util.ArrayList;
 public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     public static String BIN_SUIO;
 
+    public static boolean isCPU64() {
+        return Build.CPU_ABI.equals("arm64-v8a") || Build.CPU_ABI.equals("x86_64");
+    }
+
     public static boolean sudoTest(Context context) {
         trapTest();
         exitTest();
@@ -33,7 +37,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     }
 
     public static String binSuio(Context context) {
-        if (Build.VERSION.SDK_INT >= 21)
+        if (Build.VERSION.SDK_INT >= 21 && !isCPU64())
             return BIN_SUIO = Natives.search(context, "libsuio-pie.so");
         else
             return BIN_SUIO = Natives.search(context, "libsuio.so");
