@@ -37,10 +37,10 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     }
 
     public static String binSuio(Context context) {
-        if (Build.VERSION.SDK_INT >= 21 && !isCPU64())
-            return BIN_SUIO = Natives.search(context, "libsuio-pie.so");
-        else
+        if (Build.VERSION.SDK_INT >= 16 || isCPU64()) // cmake ANDROID_PIE
             return BIN_SUIO = Natives.search(context, "libsuio.so");
+        else
+            return BIN_SUIO = Natives.search(context, "libsuio-nopie.so");
     }
 
     public static void skipAll(InputStream is) throws IOException {
