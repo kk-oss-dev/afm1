@@ -948,7 +948,7 @@ public class FilesFragment extends Fragment {
                             try {
                                 if (f.dir) {
                                     if (!(target.uri != null && target.dir) && storage.mkdir(uri, target.name) == null)
-                                        throw new RuntimeException("unable create dir: " + target);
+                                        throw new RuntimeException("Unable create dir: " + target);
                                     filesIndex++;
                                     if (move) {
                                         delete.add(f);
@@ -1320,6 +1320,8 @@ public class FilesFragment extends Fragment {
                             ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_cut);
                             ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_delete);
                         }
+                        if (dir)
+                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_share);
                         menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                             @Override
                             public boolean onMenuItemClick(MenuItem item) {
@@ -1472,7 +1474,6 @@ public class FilesFragment extends Fragment {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         app = FilesApplication.from(getContext());
-        uri = getUri();
         storage = new Storage(getContext());
         adapter = new Adapter(getContext());
         specials = new Specials(getContext());
@@ -1490,6 +1491,8 @@ public class FilesFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        uri = getUri(); // set uri after view created
+
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
         path = (PathView) rootView.findViewById(R.id.path);
@@ -1540,11 +1543,10 @@ public class FilesFragment extends Fragment {
             pasteMenu.setVisible(true);
             pasteCancel.setVisible(true);
             Storage.ArchiveReader r = storage.fromArchive(uri, true);
-            if (r != null) {
+            if (r != null)
                 ToolbarActionView.setEnable(pasteMenu, false);
-            } else {
+            else
                 ToolbarActionView.setEnable(pasteMenu, true);
-            }
         } else {
             pasteMenu.setVisible(false);
             pasteCancel.setVisible(false);
