@@ -19,32 +19,55 @@ import com.github.axet.filemanager.app.SuperUser;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 
 public class StorageProvider extends com.github.axet.androidlibrary.services.StorageProvider {
     public static String TAG = StorageProvider.class.getCanonicalName();
 
     Storage storage;
+    int counter;
 
     public static StorageProvider getProvider() {
         return (StorageProvider) infos.get(StorageProvider.class);
     }
 
     public ParcelFileDescriptor openRootFile(final File f, String mode) throws FileNotFoundException {
+        counter++;
         return openInputStream(new InputStreamWriter(new SuperUser.FileInputStream(f)) {
             @Override
             public long getSize() {
                 return SuperUser.length(f);
             }
+
+            @Override
+            public void close() throws IOException {
+                super.close();
+                counter--;
+                freeFiles();
+            }
         }, mode);
     }
 
     public ParcelFileDescriptor openArchiveFile(final Storage.ArchiveReader r, String mode) throws FileNotFoundException {
+        counter++;
         return openInputStream(new InputStreamWriter(r.open()) {
             @Override
             public long getSize() {
                 return r.length();
             }
+
+            @Override
+            public void close() throws IOException {
+                super.close();
+                counter--;
+                freeFiles();
+            }
         }, mode);
+    }
+
+    public void freeFiles() {
+        if (counter <= 0)
+            storage.closeSu();
     }
 
     @Override
@@ -78,6 +101,7 @@ public class StorageProvider extends com.github.axet.androidlibrary.services.Sto
         values = FileProvider.copyOf(values, i);
         final MatrixCursor cursor = new MatrixCursor(projection, 1);
         cursor.addRow(values);
+        freeFiles();
         return cursor;
     }
 
