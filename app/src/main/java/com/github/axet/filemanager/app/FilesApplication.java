@@ -43,11 +43,10 @@ public class FilesApplication extends MainApplication {
     public Uri uri; // selected root
 
     public static String formatSize(Context context, long s) {
-        if (s < 1024) {
+        if (s < 1024)
             return s + " " + context.getString(R.string.size_bytes);
-        } else {
+        else
             return MainApplication.formatSize(context, s);
-        }
     }
 
     public static File getLocalTmp() {
@@ -78,9 +77,8 @@ public class FilesApplication extends MainApplication {
         public void save() {
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(FilesApplication.this);
             SharedPreferences.Editor editor = shared.edit();
-            for (int i = 0; i < size(); i++) {
+            for (int i = 0; i < size(); i++)
                 editor.putString(PREF_BOOKMARK_PREFIX + i, get(i).toString());
-            }
             editor.putInt(PREF_BOOKMARK_COUNT, size());
             editor.commit();
         }
