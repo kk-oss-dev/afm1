@@ -13,7 +13,6 @@ import android.util.Log;
 
 import com.github.axet.androidlibrary.app.MainApplication;
 import com.github.axet.androidlibrary.app.NotificationManagerCompat;
-import com.github.axet.androidlibrary.app.Storage;
 import com.github.axet.androidlibrary.widgets.NotificationChannelCompat;
 import com.github.axet.androidlibrary.widgets.RemoteNotificationCompat;
 import com.github.axet.filemanager.R;
@@ -39,16 +38,15 @@ public class FilesApplication extends MainApplication {
     public static final String PREFERENCE_VERSION = "version";
 
     public Bookmarks bookmarks;
-    public ArrayList<Storage.Node> copy; // selected files
-    public ArrayList<Storage.Node> cut; // selected files
+    public Storage.Nodes copy; // selected files
+    public Storage.Nodes cut; // selected files
     public Uri uri; // selected root
 
     public static String formatSize(Context context, long s) {
-        if (s < 1024) {
+        if (s < 1024)
             return s + " " + context.getString(R.string.size_bytes);
-        } else {
+        else
             return MainApplication.formatSize(context, s);
-        }
     }
 
     public static File getLocalTmp() {
@@ -79,9 +77,8 @@ public class FilesApplication extends MainApplication {
         public void save() {
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(FilesApplication.this);
             SharedPreferences.Editor editor = shared.edit();
-            for (int i = 0; i < size(); i++) {
+            for (int i = 0; i < size(); i++)
                 editor.putString(PREF_BOOKMARK_PREFIX + i, get(i).toString());
-            }
             editor.putInt(PREF_BOOKMARK_COUNT, size());
             editor.commit();
         }

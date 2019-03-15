@@ -1449,7 +1449,7 @@ public class FilesFragment extends Fragment {
         }
 
         public boolean pending(Storage.Node n) {
-            return app.copy != null && app.copy.contains(n) || app.cut != null && app.cut.contains(n);
+            return app.copy != null && app.copy.contains(n.uri) || app.cut != null && app.cut.contains(n.uri);
         }
 
         @Override
@@ -1904,7 +1904,7 @@ public class FilesFragment extends Fragment {
         }
         if (id == R.id.action_copy) {
             try {
-                app.copy = new ArrayList<>(selected);
+                app.copy = new Storage.Nodes(selected);
                 app.cut = null;
                 app.uri = uri;
                 updatePaste();
@@ -1922,7 +1922,7 @@ public class FilesFragment extends Fragment {
         if (id == R.id.action_cut) {
             try {
                 app.copy = null;
-                app.cut = new ArrayList<>(selected);
+                app.cut = new Storage.Nodes(selected);
                 app.uri = uri;
                 updatePaste();
                 closeSelection();
