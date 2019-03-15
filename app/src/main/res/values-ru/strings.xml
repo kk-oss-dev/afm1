@@ -38,7 +38,7 @@
     <string name="files_moving">Перемещение</string>
     <string name="files_conflict">Конфликт</string>
     <string name="unsupported">Не поддерживаемый формат</string>
-    <string name="add_bookmark_from_saf">... из САФ</string>
+    <string name="add_bookmark_from_saf">... из SAF</string>
     <string name="add_bookmark_from_from_storage">... из карты памяти</string>
     <string name="file_open">Открыть</string>
     <string name="file_open_as">Открыть как ...</string>
