@@ -13,7 +13,6 @@ import android.util.Log;
 
 import com.github.axet.androidlibrary.app.MainApplication;
 import com.github.axet.androidlibrary.app.NotificationManagerCompat;
-import com.github.axet.androidlibrary.app.Storage;
 import com.github.axet.androidlibrary.widgets.NotificationChannelCompat;
 import com.github.axet.androidlibrary.widgets.RemoteNotificationCompat;
 import com.github.axet.filemanager.R;
@@ -39,8 +38,8 @@ public class FilesApplication extends MainApplication {
     public static final String PREFERENCE_VERSION = "version";
 
     public Bookmarks bookmarks;
-    public ArrayList<Storage.Node> copy; // selected files
-    public ArrayList<Storage.Node> cut; // selected files
+    public Storage.Nodes copy; // selected files
+    public Storage.Nodes cut; // selected files
     public Uri uri; // selected root
 
     public static String formatSize(Context context, long s) {

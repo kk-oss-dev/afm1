@@ -105,9 +105,8 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
         public Nodes(ArrayList<Node> nn, boolean dir) {
             for (Node n : nn) {
-                if (n.dir == dir) {
+                if (n.dir == dir)
                     add(n);
-                }
             }
         }
 
