@@ -548,7 +548,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         }
     }
 
-    public ArchiveReader fromArchive(Uri uri, boolean root) {
+    public ArchiveReader fromArchive(Uri uri, boolean root) { // root - open archive root 'file.zip/'
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             final File k = getFile(uri);

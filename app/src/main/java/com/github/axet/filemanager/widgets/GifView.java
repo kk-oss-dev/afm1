@@ -3,7 +3,7 @@ package com.github.axet.filemanager.widgets;
 import android.content.Context;
 
 import com.github.axet.androidlibrary.app.FileTypeDetector;
-import com.github.axet.androidlibrary.app.MediaPlayerCompat;
+import com.github.axet.androidlibrary.sound.MediaPlayerCompat;
 
 import java.io.InputStream;
 
