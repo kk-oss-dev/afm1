@@ -598,9 +598,18 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         public static int XFS_SUPER_MAGIC = 0x58465342;
         public static int _XIAFS_SUPER_MAGIC = 0x012fd16d; /* Linux 2.0 and earlier */
 
+        public static final int S_IFMT = 0170000; //  bit mask for the file type bit field
+        public static final int S_IFSOCK = 0140000; // socket
+        public static final int S_IFLNK = 0120000; // symbolic link
+        public static final int S_IFREG = 0100000; // regular file
+        public static final int S_IFBLK = 0060000; // block device
+        public static final int S_IFDIR = 0040000; // directory
+        public static final int S_IFCHR = 0020000; //  character device
+        public static final int S_IFIFO = 0010000; // FIFO
+
         public String device; // 234:20
         public long inode; // inode number
-        public long mode; // mode
+        public int mode; // mode
         public long uid; // user id
         public long gid; // group id
         public long type; // file system type
@@ -627,7 +636,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                 String[] ss = str.split(" ");
                 device = ss[0];
                 inode = Long.valueOf(ss[1]);
-                mode = Long.valueOf(ss[2]);
+                mode = Integer.valueOf(ss[2]);
                 uid = Long.valueOf(ss[3]);
                 gid = Long.valueOf(ss[4]);
                 type = Long.valueOf(ss[5]);
@@ -641,8 +650,45 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
             }
         }
 
+        public String getMode8() {
+            return Long.toString(mode & 0777, 8);
+        }
+
         public String getMode() {
-            return Long.toString(mode, 8);
+            String text = "";
+            switch (mode & S_IFMT) {
+                case S_IFSOCK:
+                    text += "s";
+                    break;
+                case S_IFLNK:
+                    text += "l";
+                    break;
+                case S_IFREG:
+                    text += "-";
+                    break;
+                case S_IFBLK:
+                    text += "b";
+                    break;
+                case S_IFDIR:
+                    text += "d";
+                    break;
+                case S_IFCHR:
+                    text += "c";
+                    break;
+                case S_IFIFO:
+                    text += "f";
+                    break;
+            }
+            long m = mode & 0777;
+            String mm = "rwx";
+            for (int i = 0; i < 9; i++) {
+                if ((m & 256) == 256)
+                    text += mm.charAt(i % 3);
+                else
+                    text += "-";
+                m = m << 1;
+            }
+            return text;
         }
     }
 }
