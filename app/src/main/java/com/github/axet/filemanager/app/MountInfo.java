@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Scanner;
 
-public class Mounts extends ArrayList<Mounts.Info> {
+public class MountInfo extends ArrayList<MountInfo.Info> {
     public static class Info {
         public String device; // /dev/name
         public String dev_t; // 0:20, not unique
@@ -52,7 +52,7 @@ public class Mounts extends ArrayList<Mounts.Info> {
         }
     }
 
-    public Mounts() {
+    public MountInfo() {
         try {
             InputStreamReader is = new InputStreamReader(new FileInputStream("/proc/self/mountinfo"), Charset.defaultCharset());
             Scanner scanner = new Scanner(is);

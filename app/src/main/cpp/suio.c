@@ -11,11 +11,18 @@
 #include <stdbool.h>
 #include <linux/fs.h>
 #include <sys/statfs.h>
+#include <sys/system_properties.h>
 
 typedef struct {
     char *buf;
     size_t bufn;
 } string;
+
+int SDK_INT() {
+    char sdk_ver_str[PROP_NAME_MAX] = "0";
+    __system_property_get("ro.build.version.sdk", sdk_ver_str);
+    return atoi(sdk_ver_str);
+}
 
 void exitn(int code, const char *msg, ...) {
     va_list args;
@@ -426,7 +433,7 @@ int main(int argc, char *argv[]) {
         }
         if (strcmp(str.buf, "df") == 0) { // get device info from file path
             if (readstring(&str) > 0) {
-#ifdef ANDROID_PIE
+#ifdef ANDROID_PIE // API16+
                 struct stat64 st = {0};
                 stat64(str.buf, &st);
                 struct statfs64 fs = {0};
@@ -437,9 +444,9 @@ int main(int argc, char *argv[]) {
                 struct statfs fs = {0};
                 statfs(str.buf, &fs);
 #endif
-                writestringf("%li:%li %li %li %li %li %li %li %li %li %li %li",
-                        major(st.st_dev), minor(st.st_dev), st.st_ino, st.st_mode, st.st_uid, st.st_gid,
-                        fs.f_type, fs.f_bsize, fs.f_blocks, fs.f_bfree, fs.f_files, fs.f_ffree);
+                writestringf("%i:%i %i %i %i %i %i %i %i %i %i %i",
+                    (int) major(st.st_dev), (int) minor(st.st_dev), (int) st.st_ino, (int) st.st_mode, (int) st.st_uid, (int) st.st_gid,
+                    (int) fs.f_type, (int) fs.f_bsize, (int) fs.f_blocks, (int) fs.f_bfree, (int) fs.f_files, (int) fs.f_ffree);
             }
             continue;
         }

@@ -14,9 +14,11 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import com.github.axet.androidlibrary.services.StorageProvider;
 import com.github.axet.androidlibrary.widgets.ErrorDialog;
+import com.github.axet.androidlibrary.widgets.Toast;
 import com.github.axet.androidlibrary.widgets.ToolbarActionView;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.MainActivity;
@@ -148,17 +150,6 @@ public class SearchFragment extends FilesFragment {
             pattern = Pattern.compile(Storage.wildcard(q), Pattern.CASE_INSENSITIVE);
         else
             pattern = Pattern.compile(q, Pattern.CASE_INSENSITIVE);
-        try {
-            search = new PendingOperation(getContext());
-            search.calcUri = uri;
-            search.calcs = new ArrayList<>();
-            search.walk(uri);
-            calc.run();
-        } catch (RuntimeException e) {
-            Log.d(TAG, "io", e);
-            error.setText(ErrorDialog.toMessage(e));
-            error.setVisibility(View.VISIBLE);
-        }
     }
 
     @Override
@@ -170,10 +161,24 @@ public class SearchFragment extends FilesFragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        uri = getUri(); // set uri after view created
+
         list = new RecyclerView(getContext());
         list.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         list.setLayoutManager(new LinearLayoutManager(getContext()));
         list.setAdapter(adapter);
+
+        try {
+            search = new PendingOperation(getContext());
+            search.calcUri = uri;
+            search.calcs = new ArrayList<>();
+            search.walk(uri);
+            calc.run();
+        } catch (RuntimeException e) {
+            Log.e(TAG, "io", e);
+            Toast.Error(getContext(), ErrorDialog.toMessage(e));
+        }
+
         return list;
     }
 
