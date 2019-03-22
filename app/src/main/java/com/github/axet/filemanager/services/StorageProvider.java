@@ -1,5 +1,7 @@
 package com.github.axet.filemanager.services;
 
+import android.annotation.TargetApi;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
@@ -8,27 +10,66 @@ import android.net.Uri;
 import android.os.CancellationSignal;
 import android.os.ParcelFileDescriptor;
 import android.preference.PreferenceManager;
+import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import com.github.axet.androidlibrary.services.FileProvider;
+import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.filemanager.app.FilesApplication;
 import com.github.axet.filemanager.app.Storage;
 import com.github.axet.filemanager.app.SuperUser;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.regex.Matcher;
 
 public class StorageProvider extends com.github.axet.androidlibrary.services.StorageProvider {
     public static String TAG = StorageProvider.class.getCanonicalName();
+
+    public static final String OTG = "/mnt/media_rw/";
 
     Storage storage;
     int counter;
 
     public static StorageProvider getProvider() {
         return (StorageProvider) infos.get(StorageProvider.class);
+    }
+
+    public static ArrayList<File> getOTGList(Storage storage) { // otg usb's and portable's list
+        File otg = new File(OTG);
+        return SuperUser.ls(storage.getSu(), otg, new FileFilter() {
+            @Override
+            public boolean accept(File file) {
+                String name = file.getName();
+                Matcher m = OpenFileDialog.DEFAULT_STORAGE_PATTERN.matcher(name);
+                return m.matches();
+            }
+        });
+    }
+
+    @TargetApi(21)
+    public static Uri filterOTGFolderIntent(Storage storage, Uri uri) { // convert content:///primary to file://
+        Context context = storage.getContext();
+        String tree;
+        if (DocumentsContract.isDocumentUri(context, uri))
+            tree = DocumentsContract.getDocumentId(uri);
+        else
+            tree = DocumentsContract.getTreeDocumentId(uri);
+        String[] ss = tree.split(com.github.axet.androidlibrary.app.Storage.COLON, 2); // 1D13-0F08:folder_name
+        String id = ss[0];
+        ArrayList<File> ff = getOTGList(storage);
+        for (File f : ff) {
+            if (id.equals(f.getName())) {
+                File r = new File(f, ss[1]);
+                uri = Uri.fromFile(r);
+            }
+        }
+        return uri;
     }
 
     public ParcelFileDescriptor openRootFile(final File f, String mode) throws FileNotFoundException {

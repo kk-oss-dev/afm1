@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
     public static String BIN_SUIO;
@@ -237,9 +238,13 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         public boolean valid = true;
 
         public SuIO() {
+            this(BIN_SU);
+        }
+
+        public SuIO(String shell) {
             try {
                 cmd = new Commands(BIN_SUIO + ";" + BIN_EXIT).exit(true);
-                su = Runtime.getRuntime().exec(BIN_SU);
+                su = Runtime.getRuntime().exec(shell);
                 os = new BufferedOutputStream(su.getOutputStream());
                 if (cmd.exit && !EXITCODE)
                     SuperUser.writeString(BIN_TRAP + " '" + KILL_SELF + "' ERR" + EOL, os);
@@ -505,6 +510,185 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         @Override
         public void close() throws IOException {
             r.close();
+        }
+    }
+
+    public static class DF {
+        public static int ADFS_SUPER_MAGIC = 0xadf5;
+        public static int AFFS_SUPER_MAGIC = 0xadff;
+        public static int AFS_SUPER_MAGIC = 0x5346414f;
+        public static int ANON_INODE_FS_MAGIC = 0x09041934; /* Anonymous inode FS (for  pseudofiles that have no name; e.g., epoll, signalfd, bpf) */
+        public static int AUTOFS_SUPER_MAGIC = 0x0187;
+        public static int BDEVFS_MAGIC = 0x62646576;
+        public static int BEFS_SUPER_MAGIC = 0x42465331;
+        public static int BFS_MAGIC = 0x1badface;
+        public static int BINFMTFS_MAGIC = 0x42494e4d;
+        public static int BPF_FS_MAGIC = 0xcafe4a11;
+        public static int BTRFS_SUPER_MAGIC = 0x9123683e;
+        public static int BTRFS_TEST_MAGIC = 0x73727279;
+        public static int CGROUP_SUPER_MAGIC = 0x27e0eb; /* Cgroup pseudo FS */
+        public static int CGROUP2_SUPER_MAGIC = 0x63677270; /* Cgroup v2 pseudo FS */
+        public static int CIFS_MAGIC_NUMBER = 0xff534d42;
+        public static int CODA_SUPER_MAGIC = 0x73757245;
+        public static int COH_SUPER_MAGIC = 0x012ff7b7;
+        public static int CRAMFS_MAGIC = 0x28cd3d45;
+        public static int DEBUGFS_MAGIC = 0x64626720;
+        public static int DEVFS_SUPER_MAGIC = 0x1373; /* Linux 2.6.17 and earlier */
+        public static int DEVPTS_SUPER_MAGIC = 0x1cd1;
+        public static int ECRYPTFS_SUPER_MAGIC = 0xf15f;
+        public static int EFIVARFS_MAGIC = 0xde5e81e4;
+        public static int EFS_SUPER_MAGIC = 0x00414a53;
+        public static int EXT_SUPER_MAGIC = 0x137d; /* Linux 2.0 and earlier */
+        public static int EXT2_OLD_SUPER_MAGIC = 0xef51;
+        public static int EXT2_SUPER_MAGIC = 0xef53;
+        public static int EXT3_SUPER_MAGIC = 0xef53;
+        public static int EXT4_SUPER_MAGIC = 0xef53;
+        public static int F2FS_SUPER_MAGIC = 0xf2f52010;
+        public static int FUSE_SUPER_MAGIC = 0x65735546;
+        public static int FUTEXFS_SUPER_MAGIC = 0xbad1dea; /* Unused */
+        public static int HFS_SUPER_MAGIC = 0x4244;
+        public static int HOSTFS_SUPER_MAGIC = 0x00c0ffee;
+        public static int HPFS_SUPER_MAGIC = 0xf995e849;
+        public static int HUGETLBFS_MAGIC = 0x958458f6;
+        public static int ISOFS_SUPER_MAGIC = 0x9660;
+        public static int JFFS2_SUPER_MAGIC = 0x72b6;
+        public static int JFS_SUPER_MAGIC = 0x3153464a;
+        public static int MINIX_SUPER_MAGIC = 0x137f; /* original minix FS */
+        public static int MINIX_SUPER_MAGIC2 = 0x138f; /* 30 char minix FS */
+        public static int MINIX2_SUPER_MAGIC = 0x2468; /* minix V2 FS */
+        public static int MINIX2_SUPER_MAGIC2 = 0x2478; /* minix V2 FS, 30 char names */
+        public static int MINIX3_SUPER_MAGIC = 0x4d5a; /* minix V3 FS, 60 char names */
+        public static int MQUEUE_MAGIC = 0x19800202; /* POSIX message queue FS */
+        public static int MSDOS_SUPER_MAGIC = 0x4d44;
+        public static int MTD_INODE_FS_MAGIC = 0x11307854;
+        public static int NCP_SUPER_MAGIC = 0x564c;
+        public static int NFS_SUPER_MAGIC = 0x6969;
+        public static int NILFS_SUPER_MAGIC = 0x3434;
+        public static int NSFS_MAGIC = 0x6e736673;
+        public static int NTFS_SB_MAGIC = 0x5346544e;
+        public static int OCFS2_SUPER_MAGIC = 0x7461636f;
+        public static int OPENPROM_SUPER_MAGIC = 0x9fa1;
+        public static int OVERLAYFS_SUPER_MAGIC = 0x794c7630;
+        public static int PIPEFS_MAGIC = 0x50495045;
+        public static int PROC_SUPER_MAGIC = 0x9fa0; /* /proc FS */
+        public static int PSTOREFS_MAGIC = 0x6165676c;
+        public static int QNX4_SUPER_MAGIC = 0x002f;
+        public static int QNX6_SUPER_MAGIC = 0x68191122;
+        public static int RAMFS_MAGIC = 0x858458f6;
+        public static int REISERFS_SUPER_MAGIC = 0x52654973;
+        public static int ROMFS_MAGIC = 0x7275;
+        public static int SECURITYFS_MAGIC = 0x73636673;
+        public static int SELINUX_MAGIC = 0xf97cff8c;
+        public static int SMACK_MAGIC = 0x43415d53;
+        public static int SMB_SUPER_MAGIC = 0x517b;
+        public static int SOCKFS_MAGIC = 0x534f434b;
+        public static int SQUASHFS_MAGIC = 0x73717368;
+        public static int SYSFS_MAGIC = 0x62656572;
+        public static int SYSV2_SUPER_MAGIC = 0x012ff7b6;
+        public static int SYSV4_SUPER_MAGIC = 0x012ff7b5;
+        public static int TMPFS_MAGIC = 0x01021994;
+        public static int TRACEFS_MAGIC = 0x74726163;
+        public static int UDF_SUPER_MAGIC = 0x15013346;
+        public static int UFS_MAGIC = 0x00011954;
+        public static int USBDEVICE_SUPER_MAGIC = 0x9fa2;
+        public static int V9FS_MAGIC = 0x01021997;
+        public static int VXFS_SUPER_MAGIC = 0xa501fcf5;
+        public static int XENFS_SUPER_MAGIC = 0xabba1974;
+        public static int XENIX_SUPER_MAGIC = 0x012ff7b4;
+        public static int XFS_SUPER_MAGIC = 0x58465342;
+        public static int _XIAFS_SUPER_MAGIC = 0x012fd16d; /* Linux 2.0 and earlier */
+
+        public static final int S_IFMT = 0170000; //  bit mask for the file type bit field
+        public static final int S_IFSOCK = 0140000; // socket
+        public static final int S_IFLNK = 0120000; // symbolic link
+        public static final int S_IFREG = 0100000; // regular file
+        public static final int S_IFBLK = 0060000; // block device
+        public static final int S_IFDIR = 0040000; // directory
+        public static final int S_IFCHR = 0020000; //  character device
+        public static final int S_IFIFO = 0010000; // FIFO
+
+        public String device; // 234:20
+        public long inode; // inode number
+        public int mode; // mode
+        public long uid; // user id
+        public long gid; // group id
+        public long type; // file system type
+        public long bsize; // block size
+        public long blocks; // total blocks
+        public long bfree; // free blocks
+        public long nodes; // total inodes
+        public long nfree; // free inodes
+
+        public DF(File path) {
+            SuperUser.SuIO su = new SuperUser.SuIO(SuperUser.BIN_SH);
+            create(su, path);
+            su.close();
+        }
+
+        public DF(SuperUser.SuIO su, File path) {
+            create(su, path);
+        }
+
+        public void create(SuperUser.SuIO su, File path) {
+            try {
+                su.write("df", path.getAbsolutePath());
+                String str = su.readString();
+                String[] ss = str.split(" ");
+                device = ss[0];
+                inode = Long.valueOf(ss[1]);
+                mode = Integer.valueOf(ss[2]);
+                uid = Long.valueOf(ss[3]);
+                gid = Long.valueOf(ss[4]);
+                type = Long.valueOf(ss[5]);
+                bsize = Long.valueOf(ss[6]);
+                blocks = Long.valueOf(ss[7]);
+                bfree = Long.valueOf(ss[8]);
+                nodes = Long.valueOf(ss[9]);
+                nfree = Long.valueOf(ss[10]);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public String getMode8() {
+            return Long.toString(mode & 0777, 8);
+        }
+
+        public String getMode() {
+            String text = "";
+            switch (mode & S_IFMT) {
+                case S_IFSOCK:
+                    text += "s";
+                    break;
+                case S_IFLNK:
+                    text += "l";
+                    break;
+                case S_IFREG:
+                    text += "-";
+                    break;
+                case S_IFBLK:
+                    text += "b";
+                    break;
+                case S_IFDIR:
+                    text += "d";
+                    break;
+                case S_IFCHR:
+                    text += "c";
+                    break;
+                case S_IFIFO:
+                    text += "f";
+                    break;
+            }
+            long m = mode & 0777;
+            String mm = "rwx";
+            for (int i = 0; i < 9; i++) {
+                if ((m & 256) == 256)
+                    text += mm.charAt(i % 3);
+                else
+                    text += "-";
+                m = m << 1;
+            }
+            return text;
         }
     }
 }

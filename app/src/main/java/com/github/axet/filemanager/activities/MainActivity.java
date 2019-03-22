@@ -415,6 +415,8 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                 edit.commit();
                 Toast.Error(this, SettingsActivity.SUIO_ERROR);
             }
+        } else {
+            SuperUser.sudoTest(this); // we need suio binary for 'stat' operations
         }
         storage.closeSu();
 

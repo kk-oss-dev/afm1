@@ -9,11 +9,20 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdbool.h>
+#include <linux/fs.h>
+#include <sys/statfs.h>
+#include <sys/system_properties.h>
 
 typedef struct {
     char *buf;
     size_t bufn;
 } string;
+
+int SDK_INT() {
+    char sdk_ver_str[PROP_NAME_MAX] = "0";
+    __system_property_get("ro.build.version.sdk", sdk_ver_str);
+    return atoi(sdk_ver_str);
+}
 
 void exitn(int code, const char *msg, ...) {
     va_list args;
@@ -185,6 +194,14 @@ void touch(char *buf, time_t time) {
     if (utime(buf, &new_times) != 0)
         exitn(errno, "touch unable to utime %s", buf);
 }
+
+#if !defined(__LP64__)
+#define major(x)        ((int32_t)(((u_int32_t)(x) >> 8) & 0xff))
+#define minor(x)        ((int32_t)((x) & 0xff))
+#else
+#define major(x)        ((int64_t)(((u_int64_t)(x) >> 8) & 0xff))
+#define minor(x)        ((int64_t)((x) & 0xff))
+#endif
 
 int main(int argc, char *argv[]) {
     FILE *f = NULL;
@@ -411,6 +428,25 @@ int main(int argc, char *argv[]) {
                     writestring("ok");
                 }
                 free(target);
+            }
+            continue;
+        }
+        if (strcmp(str.buf, "df") == 0) { // get device info from file path
+            if (readstring(&str) > 0) {
+#ifdef ANDROID_PIE // API16+
+                struct stat64 st = {0};
+                stat64(str.buf, &st);
+                struct statfs64 fs = {0};
+                statfs64(str.buf, &fs);
+#else
+                struct stat st = {0};
+                stat(str.buf, &st);
+                struct statfs fs = {0};
+                statfs(str.buf, &fs);
+#endif
+                writestringf("%i:%i %i %i %i %i %i %i %i %i %i %i",
+                    (int) major(st.st_dev), (int) minor(st.st_dev), (int) st.st_ino, (int) st.st_mode, (int) st.st_uid, (int) st.st_gid,
+                    (int) fs.f_type, (int) fs.f_bsize, (int) fs.f_blocks, (int) fs.f_bfree, (int) fs.f_files, (int) fs.f_ffree);
             }
             continue;
         }
