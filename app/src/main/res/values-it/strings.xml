@@ -1,0 +1,82 @@
+<resources>
+    <string name="app_name">Gestore file</string>
+    <string name="action_settings">Impostazioni</string>
+    <string name="navigation_drawer_open">Aprire la panoramica della navigazione</string>
+    <string name="navigation_drawer_close">Chiudi la panoramica della navigazione</string>
+    <string name="title_activity_settings">Impostazioni</string>
+
+    <string-array name="themes_text">
+        <item>Motivo bianco</item>
+        <item>Motivo nero</item>
+    </string-array>
+
+    <string name="copy_from">Da:</string>
+    <string name="copy_to">Verso:</string>
+    <string name="copy_pause">Pausa</string>
+    <string name="copy_resume">Riprendi</string>
+    <string name="copy_retry">Riprova</string>
+    <string name="copy_overwrite">Sovrascrivere:</string>
+    <string name="copy_overwrite_with">Con:</string>
+
+    <string name="size_bytes">bytes</string>
+    <string name="add_bookmark">Aggiungere aif preferiti</string>
+    <string name="bookmarks">Preferiti</string>
+    <string name="empty_list">Vuoto</string>
+    <string name="delete_bookmark">Elimina preferito</string>
+    <string name="create_folder">Crea cartella</string>
+    <string name="create_file">Crea file</string>
+    <string name="toast_files_copied">Copiato %1$d documento/i</string>
+    <string name="toast_files_cut">Taglia %1$d documento/i</string>
+    <string name="files_delete">Cancella</string>
+    <string name="toast_files_deleted">Cancellato %1$d documento/i</string>
+    <string name="toast_files_archived">Archiviato \'%1$s\' con %2$d documento/i</string>
+    <string name="files_rename">Rinnomina</string>
+    <string name="files_deleting">Cancella</string>
+    <string name="files_calculating">Calcola</string>
+    <string name="files_copying">Copia</string>
+    <string name="files_archiving">Archivia</string>
+    <string name="files_moving">Sposta</string>
+    <string name="files_conflict">Conflitto</string>
+    <string name="unsupported">Formato non supportato</string>
+    <string name="add_bookmark_from_saf">... da SAF</string>
+    <string name="add_bookmark_from_from_storage">... da memoria</string>
+    <string name="file_open">Apri</string>
+    <string name="file_open_as">Apri come ...</string>
+    <string name="open_as_text">Testo</string>
+    <string name="open_as_image">Immagine</string>
+    <string name="open_as_audio">Audio</string>
+    <string name="file_view">Guarda</string>
+    <string name="files_paste">Incolla</string>
+    <string name="files_cancel_paste">Cancella l\'incollato</string>
+    <string name="refresh">Aggiorna</string>
+    <string name="search">Cerca</string>
+    <string name="button_overwrite">Sovrascrivi</string>
+    <string name="button_skip">Salta</string>
+    <string name="button_overwrite_all">Sovrascrivi tutto</string>
+    <string name="button_skip_all">Salta tutto</string>
+    <string name="button_permissions">Controlla permessi</string>
+    <string name="button_new_file">Nuovo documento</string>
+    <string name="per_second">/s</string>
+    <string name="pref_theme_title">Tema</string>
+    <string name="pref_root_title">Root browser</string>
+    <string name="pref_root_summary">Cerca con root</string>
+    <string name="menu_rename">Rinnomina</string>
+    <string name="menu_copy">Copia</string>
+    <string name="menu_cut">Taglia</string>
+    <string name="menu_delete">Cancella</string>
+    <string name="menu_archive">Archivia</string>
+    <string name="save_to">Salva l\'archivio come</string>
+    <string name="back_exit">Premere indietro di nuovo per lasciare</string>
+    <string name="action_folder">Apri cartella</string>
+    <string name="pref_recycle_title">Cestino</string>
+    <string name="pref_recycle_summary">Attiva il cestino per documenti cancellati</string>
+    <string name="recyclebin_folder">Spazzatura</string>
+    <string name="empty_recyclebin">Svuota cestino</string>
+    <string name="duplicate_folder">Doppio</string>
+    <string name="delete_permanently">Permanente</string>
+    <string name="preview">Anteprima</string>
+    <string name="file_viewas">Vedi come ...</string>
+    <string name="action_fullscreen">Schermo intero</string>
+    <string name="viewas_hex">Hex</string>
+    <string name="free_space">%1$s libero/i</string>
+</resources>
