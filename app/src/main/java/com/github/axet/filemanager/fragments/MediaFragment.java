@@ -1,5 +1,6 @@
 package com.github.axet.filemanager.fragments;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
@@ -7,6 +8,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,6 +17,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.github.axet.androidlibrary.app.FileTypeDetector;
+import com.github.axet.androidlibrary.widgets.CacheImagesAdapter;
 import com.github.axet.androidlibrary.widgets.ErrorDialog;
 import com.github.axet.androidlibrary.widgets.WebViewCustom;
 import com.github.axet.filemanager.R;
@@ -197,7 +200,7 @@ public class MediaFragment extends Fragment {
                 supported = true;
                 return new GifView(getContext(), is = storage.open(uri));
             }
-            bm = BitmapFactory.decodeStream(is = storage.open(uri));
+            bm = CacheImagesAdapter.createScaled(is = storage.open(uri), getResources().getDisplayMetrics().widthPixels);
             if (bm != null) {
                 supported = true;
                 View view = inflater.inflate(R.layout.fragment_media_image, container, false);

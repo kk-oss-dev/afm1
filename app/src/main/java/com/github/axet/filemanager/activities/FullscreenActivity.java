@@ -166,20 +166,16 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
             return count;
         }
 
+        MediaFragment getFragment(int i) {
+            MediaFragment f = (MediaFragment) instantiateItem(pager, i);
+            finishUpdate(pager);
+            return f;
+        }
+
         @SuppressLint("RestrictedApi")
         public MediaFragment findCurrentFragment() {
             int i = pager.getCurrentItem();
-            MediaFragment m = getItem(i);
-            List<Fragment> ff = fm.getFragments();
-            if (ff == null)
-                return null;
-            for (Fragment f : ff) {
-                if (f instanceof MediaFragment) {
-                    if (((MediaFragment) f).getUri().equals(m.getUri()))
-                        return (MediaFragment) f;
-                }
-            }
-            return null;
+            return getFragment(i);
         }
     }
 

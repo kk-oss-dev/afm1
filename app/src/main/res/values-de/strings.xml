@@ -1,0 +1,82 @@
+<resources>
+    <string name="app_name">Datei-Manager</string>
+    <string name="action_settings">Einstellungen</string>
+    <string name="navigation_drawer_open">Öffne Navigationsübersicht</string>
+    <string name="navigation_drawer_close">Schließe Navigationsübersicht</string>
+    <string name="title_activity_settings">Einstellungen</string>
+
+    <string-array name="themes_text">
+        <item>Weißes Motiv</item>
+        <item>Schwarzes Motiv</item>
+    </string-array>
+
+    <string name="copy_from">Von:</string>
+    <string name="copy_to">Nach:</string>
+    <string name="copy_pause">Pause</string>
+    <string name="copy_resume">Wiederaufnehmen</string>
+    <string name="copy_retry">Erneut versuchen</string>
+    <string name="copy_overwrite">Überschreiben:</string>
+    <string name="copy_overwrite_with">Mit:</string>
+
+    <string name="size_bytes">bytes</string>
+    <string name="add_bookmark">Zu Lesezeichen hinzufügen</string>
+    <string name="bookmarks">Lesezeichen</string>
+    <string name="empty_list">Leer</string>
+    <string name="delete_bookmark">Lesezeichen löschen</string>
+    <string name="create_folder">Erstelle Ordner</string>
+    <string name="create_file">Erstelle Datei</string>
+    <string name="toast_files_copied">Kopiert %1$d Datei(en)</string>
+    <string name="toast_files_cut">Ausschneiden %1$d Datei(en)</string>
+    <string name="files_delete">Löschen</string>
+    <string name="toast_files_deleted">Gelöscht %1$d Datei(en)</string>
+    <string name="toast_files_archived">Archiviert \'%1$s\' mit %2$d Datei(en)</string>
+    <string name="files_rename">Umbenennen</string>
+    <string name="files_deleting">Lösche</string>
+    <string name="files_calculating">Berechne</string>
+    <string name="files_copying">Kopiere</string>
+    <string name="files_archiving">Archiviere</string>
+    <string name="files_moving">Verschiebe</string>
+    <string name="files_conflict">Konflikt</string>
+    <string name="unsupported">Nicht unterstütztes Format</string>
+    <string name="add_bookmark_from_saf">... vom SAF</string>
+    <string name="add_bookmark_from_from_storage">... vom Speicher</string>
+    <string name="file_open">Öffnen</string>
+    <string name="file_open_as">Öffnen als ...</string>
+    <string name="open_as_text">Text</string>
+    <string name="open_as_image">Bild</string>
+    <string name="open_as_audio">Audio</string>
+    <string name="file_view">Ansehen</string>
+    <string name="files_paste">Einfügen</string>
+    <string name="files_cancel_paste">Lösche das Eingefügte</string>
+    <string name="refresh">Aktualisieren</string>
+    <string name="search">Suchen</string>
+    <string name="button_overwrite">Überschreibe</string>
+    <string name="button_skip">Überspringe</string>
+    <string name="button_overwrite_all">Überschreibe alles</string>
+    <string name="button_skip_all">Überspringe alles</string>
+    <string name="button_permissions">Berechtigungen abrufen</string>
+    <string name="button_new_file">Neue Datei</string>
+    <string name="per_second">/s</string>
+    <string name="pref_theme_title">Motiv</string>
+    <string name="pref_root_title">Root Browser</string>
+    <string name="pref_root_summary">Datei mit root durchsuchen</string>
+    <string name="menu_rename">Umbenennen</string>
+    <string name="menu_copy">Kopieren</string>
+    <string name="menu_cut">Ausschneiden</string>
+    <string name="menu_delete">Löschen</string>
+    <string name="menu_archive">Archivieren</string>
+    <string name="save_to">Speichere das Archiv unter</string>
+    <string name="back_exit">Drücke erneut zurück zum Verlassen</string>
+    <string name="action_folder">Öffne Ordner</string>
+    <string name="pref_recycle_title">Papierkorb</string>
+    <string name="pref_recycle_summary">Aktiviere den Papierkorb für gelöschte Dateien</string>
+    <string name="recyclebin_folder">Müll</string>
+    <string name="empty_recyclebin">Leere den Müll</string>
+    <string name="duplicate_folder">Doppelt</string>
+    <string name="delete_permanently">Permanent</string>
+    <string name="preview">Vorschau</string>
+    <string name="file_viewas">Ansehen als ...</string>
+    <string name="action_fullscreen">Vollbild</string>
+    <string name="viewas_hex">Hex</string>
+    <string name="free_space">%1$s frei</string>
+</resources>
