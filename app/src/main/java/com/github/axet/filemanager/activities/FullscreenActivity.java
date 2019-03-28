@@ -344,6 +344,15 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
     }
 
     @Override
+    public void onBackPressed() {
+        if (gesture.isPinch()) {
+            gesture.pinchClose();
+            return;
+        }
+        super.onBackPressed();
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
     }
