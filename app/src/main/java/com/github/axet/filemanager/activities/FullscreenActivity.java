@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.GestureDetectorCompat;
@@ -34,10 +33,8 @@ import com.github.axet.filemanager.fragments.MediaFragment;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
-    public Toolbar toolbar;
     Storage.Nodes nodes;
     ViewPager pager;
     PagerAdapter adapter;
@@ -239,11 +236,9 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
 
             @SuppressLint("RestrictedApi")
             @Override
-            public boolean dispatchTouchEvent(MotionEvent event) {
-                if (adapter.current != null && adapter.current.bm != null)
-                    gesture.onTouchEvent(event);
-                tap.onTouchEvent(event);
-                return super.dispatchTouchEvent(event);
+            public boolean dispatchTouchEvent(MotionEvent e) {
+                tap.onTouchEvent(e);
+                return super.dispatchTouchEvent(e);
             }
         });
 
@@ -272,6 +267,16 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
         pager = (ViewPager) findViewById(R.id.pager);
         adapter = new PagerAdapter(getSupportFragmentManager(), uri);
         pager.setAdapter(adapter);
+
+        pager.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent e) {
+                if (adapter.current != null && adapter.current.bm != null)
+                    if (gesture.onTouchEvent(e))
+                        return true;
+                return false;
+            }
+        });
 
         pager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
