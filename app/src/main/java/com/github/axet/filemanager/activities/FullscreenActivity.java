@@ -79,7 +79,6 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
     public class PagerAdapter extends FragmentPagerAdapter {
         int index;
         FragmentManager fm;
-        MediaFragment current;
 
         public PagerAdapter(FragmentManager fm, Uri uri) {
             super(fm);
@@ -97,7 +96,6 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
                 else
                     index += pager.getCurrentItem() - 1;
             }
-            current = findCurrentFragment();
         }
 
         void update() {
@@ -170,7 +168,7 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
         }
 
         @SuppressLint("RestrictedApi")
-        public MediaFragment findCurrentFragment() {
+        public MediaFragment getCurrentFragment() {
             int i = pager.getCurrentItem();
             return getFragment(i);
         }
@@ -187,8 +185,9 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
             @Override
             public void onScaleBegin(float x, float y) {
                 super.onScaleBegin(x, y);
-                Rect rect = PinchView.getImageBounds(adapter.current.image);
-                pinchOpen(rect, adapter.current.bm);
+                MediaFragment current = adapter.getCurrentFragment();
+                Rect rect = PinchView.getImageBounds(current.image);
+                pinchOpen(rect, current.bm);
                 v.addView(pinch, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             }
 
@@ -200,47 +199,6 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
                 }
             }
         };
-
-        Window.Callback callback = w.getCallback();
-        w.setCallback(new WindowCallbackWrapper(callback) {
-            GestureDetectorCompat tap = new GestureDetectorCompat(FullscreenActivity.this, new GestureDetector.OnGestureListener() {
-                @Override
-                public boolean onDown(MotionEvent e) {
-                    return false;
-                }
-
-                @Override
-                public void onShowPress(MotionEvent e) {
-                }
-
-                @Override
-                public boolean onSingleTapUp(MotionEvent e) {
-                    updateToolbar();
-                    return true;
-                }
-
-                @Override
-                public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-                    return false;
-                }
-
-                @Override
-                public void onLongPress(MotionEvent e) {
-                }
-
-                @Override
-                public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-                    return false;
-                }
-            });
-
-            @SuppressLint("RestrictedApi")
-            @Override
-            public boolean dispatchTouchEvent(MotionEvent e) {
-                tap.onTouchEvent(e);
-                return super.dispatchTouchEvent(e);
-            }
-        });
 
         title = (TextView) findViewById(R.id.title);
         left = findViewById(R.id.left);
@@ -268,10 +226,43 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
         adapter = new PagerAdapter(getSupportFragmentManager(), uri);
         pager.setAdapter(adapter);
 
+        final GestureDetectorCompat tap = new GestureDetectorCompat(FullscreenActivity.this, new GestureDetector.OnGestureListener() {
+            @Override
+            public boolean onDown(MotionEvent e) {
+                return false;
+            }
+
+            @Override
+            public void onShowPress(MotionEvent e) {
+            }
+
+            @Override
+            public boolean onSingleTapUp(MotionEvent e) {
+                updateToolbar();
+                return true;
+            }
+
+            @Override
+            public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+                return false;
+            }
+
+            @Override
+            public void onLongPress(MotionEvent e) {
+            }
+
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                return false;
+            }
+        });
+
         pager.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent e) {
-                if (adapter.current != null && adapter.current.bm != null)
+                tap.onTouchEvent(e);
+                MediaFragment current = adapter.getCurrentFragment();
+                if (current != null && current.bm != null)
                     if (gesture.onTouchEvent(e))
                         return true;
                 return false;
