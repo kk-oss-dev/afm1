@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.provider.DocumentsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -468,7 +469,9 @@ public class FilesFragment extends Fragment {
                     os = new FileOutputStream(m);
                 t = Uri.fromFile(m);
             } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-                Uri doc = Storage.createFile(context, to, target);
+                Uri doc = Storage.createFile(context, to, target); // target == path
+                if (doc == null)
+                    throw new IOException("no permission");
                 os = resolver.openOutputStream(doc);
                 t = doc;
             } else {
@@ -1048,12 +1051,12 @@ public class FilesFragment extends Fragment {
                             if (!m.exists())
                                 t.uri = null;
                         }
-                    } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-                        Uri doc = Storage.child(context, uri, target);
-                        DocumentFile k = DocumentFile.fromSingleUri(context, doc);
-                        t = new Storage.Node(k);
-                        if (!k.exists())
-                            t.uri = null;
+                    } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) { // tree supported API23+
+                        DocumentFile k = Storage.getDocumentFile(context, uri, target); // target == path
+                        if (k != null && k.exists())
+                            t = new Storage.Node(k);
+                        else
+                            t = new Storage.Node(); // t.uri = null && t.dir = false
                     } else {
                         throw new Storage.UnknownUri();
                     }
@@ -1866,8 +1869,7 @@ public class FilesFragment extends Fragment {
                         for (Storage.Node f : ff) {
                             String n = Storage.getNameNoExt(f.name);
                             String e = Storage.getExt(f.name);
-                            Uri nf = Storage.getNextFile(getContext(), app.uri, n, e);
-                            String t = Storage.getName(getContext(), nf);
+                            String t = Storage.getNextName(getContext(), app.uri, n, e);
                             paste.rename.put(f.name, t);
                         }
                         paste.create(app.uri, ff, false, uri);
@@ -2035,10 +2037,10 @@ public class FilesFragment extends Fragment {
                 name = selected.get(0).name;
             else
                 name = "Archive";
-            Uri to = Storage.getNextFile(getContext(), uri, name, "zip");
-            OutputStream os;
+            String to = Storage.getNextName(getContext(), uri, name, "zip");
+            Storage.UriOutputStream os;
             try {
-                os = storage.open(uri, Storage.getName(getContext(), to));
+                os = storage.open(uri, to);
             } catch (IOException e) {
                 Runnable run = new Runnable() {
                     @Override
@@ -2047,10 +2049,10 @@ public class FilesFragment extends Fragment {
                         choicer = new OpenChoicer(OpenFileDialog.DIALOG_TYPE.FOLDER_DIALOG, false) {
                             @Override
                             public void onResult(Uri uri) {
-                                Uri to = Storage.getNextFile(context, uri, name, "zip");
+                                String to = Storage.getNextName(context, uri, name, "zip");
                                 try {
-                                    OutputStream os = storage.open(uri, Storage.getName(context, to));
-                                    archive(to, os);
+                                    Storage.UriOutputStream os = storage.open(uri, to);
+                                    archive(os);
                                 } catch (IOException e) {
                                     ErrorDialog builder = new ErrorDialog(context, e);
                                     builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -2078,20 +2080,20 @@ public class FilesFragment extends Fragment {
                 run.run();
                 return true;
             }
-            archive(to, os);
+            archive(os);
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    void archive(final Uri to, final OutputStream fos) {
+    void archive(final Storage.UriOutputStream uos) {
         archive = new OperationBuilder(getContext());
         archive.setTitle(R.string.menu_archive);
         final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
             ZipOutputStream zip;
 
             {
-                t = to;
+                t = uos.uri;
             }
 
             @Override
@@ -2099,7 +2101,7 @@ public class FilesFragment extends Fragment {
                 try {
                     if (calcIndex < calcs.size()) {
                         if (!calc())
-                            os = zip = new ZipOutputStream(new BufferedOutputStream(fos));
+                            os = zip = new ZipOutputStream(new BufferedOutputStream(uos.os));
                         archive.title.setGravity(Gravity.NO_GRAVITY);
                         archive.title.setText(getString(R.string.files_calculating) + ": " + formatCalc());
                         archive.update(this);
@@ -2201,7 +2203,7 @@ public class FilesFragment extends Fragment {
                     closeSelection();
                     Toast.makeText(getContext(), getString(R.string.toast_files_archived, Storage.getName(context, to), files.size()), Toast.LENGTH_LONG).show();
                     Uri p = Storage.getParent(context, to);
-                    if (!p.equals(uri)) {
+                    if (p == null || !p.equals(uri)) {
                         getContext().sendBroadcast(new Intent(MOVE_UPDATE));
                     } else {
                         reload();

@@ -10,13 +10,10 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.ViewPager;
-import android.support.v7.view.WindowCallbackWrapper;
-import android.support.v7.widget.Toolbar;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.TextView;
@@ -32,6 +29,7 @@ import com.github.axet.filemanager.fragments.HexDialogFragment;
 import com.github.axet.filemanager.fragments.MediaFragment;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 
 public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
@@ -76,6 +74,10 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
         context.startActivity(intent);
     }
 
+    public static ArrayList<Storage.Node> asNodeList(Uri uri) {
+        return new ArrayList(Arrays.asList(new Storage.Node(uri, "", false, 0, 0)));
+    }
+
     public class PagerAdapter extends FragmentPagerAdapter {
         int index;
         FragmentManager fm;
@@ -96,6 +98,7 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
                 else
                     index += pager.getCurrentItem() - 1;
             }
+            updateToolbar();
         }
 
         void update() {
@@ -216,8 +219,8 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
         Uri uri = getIntent().getParcelableExtra("uri");
 
         Storage storage = new Storage(this);
-        final Uri p = Storage.getParent(this, uri);
-        ArrayList<Storage.Node> nn = storage.list(p);
+        Uri p = Storage.getParent(this, uri);
+        ArrayList<Storage.Node> nn = p == null ? asNodeList(uri) : storage.list(p);
         nodes = new Storage.Nodes(nn, false);
         Collections.sort(nodes, new FilesFragment.SortByName());
         storage.closeSu();
