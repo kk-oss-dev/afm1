@@ -2,7 +2,6 @@ package com.github.axet.filemanager.widgets;
 
 import android.annotation.TargetApi;
 import android.content.Context;
-import android.graphics.Typeface;
 import android.net.Uri;
 import android.support.annotation.Nullable;
 import android.support.v4.view.ViewCompat;
@@ -88,7 +87,7 @@ public class PathView extends HorizontalScrollView {
                 }
             });
             ll.addView(b, 0);
-            uri = Storage.getParent(getContext(), uri);
+            uri = FilesApplication.from(getContext()).getParent(uri);
             if (uri != null) {
                 AppCompatTextView p = new AppCompatTextView(getContext());
                 p.setText(">");
