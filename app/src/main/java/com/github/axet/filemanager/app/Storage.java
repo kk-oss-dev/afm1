@@ -45,7 +45,6 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     public static final String CONTENTTYPE_ZIP = "application/zip";
 
     public static final HashMap<Uri, ArchiveCache> ARCHIVE_CACHE = new HashMap<>();
-    public static final HashMap<Uri, Uri> SAF_PARENTS = new HashMap<>();
 
     SuperUser.SuIO su;
 
@@ -60,13 +59,6 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             return b.build();
         }
         return com.github.axet.androidlibrary.app.Storage.getParent(context, uri);
-    }
-
-    public static void clearParent(Uri uri) { // clear all entries with uri parent
-        for (Map.Entry<Uri, Uri> u : new HashSet<>(SAF_PARENTS.entrySet())) {
-            if (u.getValue().equals(uri))
-                clearParent(u.getKey());
-        }
     }
 
     public static String getName(Context context, Uri uri) {
@@ -85,12 +77,20 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         String d;
         String s = uri.getScheme();
         if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) { // SAF folder for content
-            d = DocumentsContract.getTreeDocumentId(uri);
-            if (d.endsWith(COLON))
-                d = d.substring(0, d.length() - 1);
-            d += CSS;
-            if (DocumentsContract.isDocumentUri(context, uri))
-                d += Storage.getDocumentChildPath(uri);
+            if (uri.getAuthority().startsWith(SAF)) {
+                d = DocumentsContract.getTreeDocumentId(uri);
+                if (d.endsWith(COLON))
+                    d = d.substring(0, d.length() - 1);
+                d += CSS;
+                if (DocumentsContract.isDocumentUri(context, uri))
+                    d += Storage.getDocumentChildPath(uri);
+            } else {
+                d = DocumentsContract.getTreeDocumentId(uri);
+                if (d.endsWith(COLON))
+                    d = d.substring(0, d.length() - 1);
+                d += CSS;
+                d += uri.getLastPathSegment();
+            }
         } else if (s.equals(ContentResolver.SCHEME_FILE)) { // full destionation for files
             d = getFile(uri).getPath();
         } else {

@@ -469,7 +469,7 @@ public class FilesFragment extends Fragment {
                     os = new FileOutputStream(m);
                 t = Uri.fromFile(m);
             } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-                Uri doc = Storage.createDocumentFile(context, to, target);
+                Uri doc = Storage.createFile(context, to, target); // target == path
                 if (doc == null)
                     throw new IOException("no permission");
                 os = resolver.openOutputStream(doc);
@@ -1052,7 +1052,7 @@ public class FilesFragment extends Fragment {
                                 t.uri = null;
                         }
                     } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) { // tree supported API23+
-                        DocumentFile k = Storage.getDocumentFile(context, uri, target);
+                        DocumentFile k = Storage.getDocumentFile(context, uri, target); // target == path
                         if (k != null && k.exists())
                             t = new Storage.Node(k);
                         else
