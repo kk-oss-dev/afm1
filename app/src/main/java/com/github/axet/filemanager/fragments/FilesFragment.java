@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.provider.DocumentsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -468,7 +469,11 @@ public class FilesFragment extends Fragment {
                     os = new FileOutputStream(m);
                 t = Uri.fromFile(m);
             } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-                Uri doc = Storage.createFile(context, to, target);
+                if (!DocumentsContract.isDocumentUri(context, to))
+                    to = DocumentsContract.buildDocumentUriUsingTree(to, DocumentsContract.getTreeDocumentId(to));
+                Uri doc = Storage.createDocumentFile(context, to, target);
+                if (doc == null)
+                    throw new IOException("no permission");
                 os = resolver.openOutputStream(doc);
                 t = doc;
             } else {
@@ -1048,12 +1053,12 @@ public class FilesFragment extends Fragment {
                             if (!m.exists())
                                 t.uri = null;
                         }
-                    } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-                        Uri doc = Storage.child(context, uri, target);
-                        DocumentFile k = DocumentFile.fromSingleUri(context, doc);
-                        t = new Storage.Node(k);
-                        if (!k.exists())
-                            t.uri = null;
+                    } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) { // tree supported API23+
+                        DocumentFile k = Storage.getDocumentFile(context, uri, target);
+                        if (k != null && k.exists())
+                            t = new Storage.Node(k);
+                        else
+                            t = new Storage.Node(); // t.uri = null && t.dir = false
                     } else {
                         throw new Storage.UnknownUri();
                     }

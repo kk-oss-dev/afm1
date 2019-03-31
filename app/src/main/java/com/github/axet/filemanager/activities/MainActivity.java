@@ -871,13 +871,13 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     }
 
     public void clearCache() {
-        for (Uri u : new TreeSet<>(Storage.CACHE.keySet())) {
+        for (Uri u : new TreeSet<>(Storage.ARCHIVE_CACHE.keySet())) {
             String p = u.getPath();
             if (Storage.relative(p, mSectionsPagerAdapter.getLeft().getUri().getPath()) != null)
                 continue;
             if (Storage.relative(p, mSectionsPagerAdapter.getRight().getUri().getPath()) != null)
                 continue;
-            Storage.CACHE.remove(u);
+            Storage.ARCHIVE_CACHE.remove(u);
         }
     }
 

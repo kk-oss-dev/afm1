@@ -96,6 +96,7 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
                 else
                     index += pager.getCurrentItem() - 1;
             }
+            updateToolbar();
         }
 
         void update() {

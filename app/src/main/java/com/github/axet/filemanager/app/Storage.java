@@ -8,7 +8,6 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
-import android.support.annotation.NonNull;
 import android.support.v4.provider.DocumentFile;
 import android.support.v7.preference.PreferenceManager;
 import android.util.Log;
@@ -22,7 +21,6 @@ import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import net.lingala.zip4j.core.NativeStorage;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
-import net.lingala.zip4j.io.ZipInputStream;
 import net.lingala.zip4j.model.FileHeader;
 
 import java.io.File;
@@ -34,18 +32,20 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 import de.innosystec.unrar.Archive;
 import de.innosystec.unrar.exception.RarException;
-import de.innosystec.unrar.rarfile.HostSystem;
 
 public class Storage extends com.github.axet.androidlibrary.app.Storage {
     public static final String TAG = Storage.class.getSimpleName();
 
     public static final String CONTENTTYPE_ZIP = "application/zip";
 
-    public static HashMap<Uri, ArchiveCache> CACHE = new HashMap<>();
+    public static final HashMap<Uri, ArchiveCache> ARCHIVE_CACHE = new HashMap<>();
+    public static final HashMap<Uri, Uri> SAF_PARENTS = new HashMap<>();
 
     SuperUser.SuIO su;
 
@@ -60,6 +60,13 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             return b.build();
         }
         return com.github.axet.androidlibrary.app.Storage.getParent(context, uri);
+    }
+
+    public static void clearParent(Uri uri) { // clear all entries with uri parent
+        for (Map.Entry<Uri, Uri> u : new HashSet<>(SAF_PARENTS.entrySet())) {
+            if (u.getValue().equals(uri))
+                clearParent(u.getKey());
+        }
     }
 
     public static String getName(Context context, Uri uri) {
@@ -77,7 +84,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     public static String getDisplayName(Context context, Uri uri) {
         String d;
         String s = uri.getScheme();
-        if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) { // saf folder for content
+        if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) { // SAF folder for content
             d = DocumentsContract.getTreeDocumentId(uri);
             if (d.endsWith(COLON))
                 d = d.substring(0, d.length() - 1);
@@ -415,7 +422,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                     n.zip = zip;
                     aa.add(n);
                 }
-                CACHE.put(uri, this);
+                ARCHIVE_CACHE.put(uri, this);
                 all = aa;
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -465,7 +472,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                     n.rar = rar;
                     aa.add(n);
                 }
-                CACHE.put(uri, this);
+                ARCHIVE_CACHE.put(uri, this);
                 all = aa;
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -621,7 +628,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     }
 
     public ArchiveReader cache(ArchiveReader r) {
-        ArchiveCache c = CACHE.get(r.uri);
+        ArchiveCache c = ARCHIVE_CACHE.get(r.uri);
         if (c != null)
             return new ArchiveReader(c, r);
         return r;
@@ -650,13 +657,12 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             File k = getFile(uri);
             File m = new File(k, name);
-            if (getRoot()) {
+            if (getRoot())
                 return new SuperUser.FileOutputStream(m);
-            } else {
+            else
                 return new FileOutputStream(m);
-            }
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
-            Uri doc = createFile(context, uri, name);
+            Uri doc = createDocumentFile(context, uri, name);
             return resolver.openOutputStream(doc, "rwt");
         } else {
             throw new UnknownUri();
@@ -667,11 +673,10 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             File k = Storage.getFile(uri);
-            if (getRoot()) {
+            if (getRoot())
                 return SuperUser.touch(getSu(), k, last).ok();
-            } else {
+            else
                 return k.setLastModified(last); // not working for most devices, requiring root
-            }
         } else if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
             return false; // not supported operation for SAF
         } else {
@@ -694,11 +699,10 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         String s = t.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             File k = Storage.getFile(t);
-            if (getRoot()) {
+            if (getRoot())
                 return SuperUser.delete(getSu(), k).ok();
-            } else {
+            else
                 return k.delete();
-            }
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
             DocumentFile f = DocumentFile.fromSingleUri(context, t);
             return f.delete();
@@ -742,7 +746,8 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         ArchiveReader r = fromArchive(uri, true);
         if (r != null)
             return r.list();
-        if (uri.getScheme().equals(ContentResolver.SCHEME_FILE) && getRoot()) {
+        String s = uri.getScheme();
+        if (s.equals(ContentResolver.SCHEME_FILE) && getRoot()) {
             ArrayList<Node> files = new ArrayList<>();
             ArrayList<File> ff = SuperUser.lsA(getSu(), Storage.getFile(uri));
             for (File f : ff) {
@@ -756,7 +761,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         return super.list(context, uri);
     }
 
-     public ArrayList<Node> walk(Uri root, Uri uri) {
+    public ArrayList<Node> walk(Uri root, Uri uri) {
         ArchiveReader a = fromArchive(uri, true);
         if (a != null)
             return a.walk(root);

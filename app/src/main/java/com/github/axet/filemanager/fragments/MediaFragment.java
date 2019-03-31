@@ -146,6 +146,8 @@ public class MediaFragment extends Fragment {
                 else
                     content = ContentType.DEFAULT_TEXT;
                 String html = IOUtils.toString(is = storage.open(uri), content.getCharset());
+                is.close();
+                is = null;
                 web.loadHtmlWithBaseURL(null, html, null);
                 return web;
             }
