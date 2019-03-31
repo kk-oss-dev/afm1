@@ -219,7 +219,7 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
         Uri uri = getIntent().getParcelableExtra("uri");
 
         Storage storage = new Storage(this);
-        Uri p = Storage.getParent(this, uri);
+        Uri p = FilesApplication.from(this).getParent(uri);
         ArrayList<Storage.Node> nn = p == null ? asNodeList(uri) : storage.list(p);
         nodes = new Storage.Nodes(nn, false);
         Collections.sort(nodes, new FilesFragment.SortByName());

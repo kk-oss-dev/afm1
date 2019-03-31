@@ -534,7 +534,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
 
     public void open(Uri uri) {
         FilesFragment f = mSectionsPagerAdapter.getActiveFragment();
-        f.load(uri);
+        f.load(uri, true);
         searchClose();
     }
 
@@ -890,7 +890,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
             return;
         }
         if (f.old != EXIT) {
-            f.load(f.old);
+            f.load(f.old, false);
             f.old = null;
             return;
         }

@@ -17,7 +17,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.provider.DocumentsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -1287,7 +1286,7 @@ public class FilesFragment extends Fragment {
                         return;
                     }
                     if (dir) {
-                        load(f.uri);
+                        load(f.uri, false);
                     } else {
                         PopupMenu menu = new PopupMenu(getContext(), v);
                         menu.inflate(R.menu.menu_file);
@@ -1490,6 +1489,7 @@ public class FilesFragment extends Fragment {
     public void onDestroy() {
         super.onDestroy();
         getContext().unregisterReceiver(receiver);
+        FilesApplication.from(getContext()).safParents.remove(this);
     }
 
     @Override
@@ -1503,7 +1503,7 @@ public class FilesFragment extends Fragment {
             @Override
             public void onUriSelected(Uri u) {
                 try {
-                    load(u);
+                    load(u, false);
                 } catch (RuntimeException e) {
                     Log.e(TAG, "reload()", e);
                     error.setText(e.getMessage());
@@ -1621,7 +1621,12 @@ public class FilesFragment extends Fragment {
         return null;
     }
 
-    public void load(Uri u) {
+    public void load(Uri u, boolean bookmark) {
+        FilesApplication.Parents safParents = FilesApplication.from(getContext()).getParents(this);
+        if (bookmark)
+            safParents.clear();
+        else
+            safParents.removeParents(u, true);
         if (uri == null) {
             getArguments().putParcelable("uri", u);
         } else {
@@ -1631,8 +1636,9 @@ public class FilesFragment extends Fragment {
             updateButton();
             updatePaste(); // enabled / disabled
             closeSelection();
-            path.setUri(uri);
             reload();
+            safParents.addParents(uri, adapter.files);
+            path.setUri(uri);
             MainActivity main = (MainActivity) getActivity();
             main.update();
             Pos p = offsets.get(uri);
@@ -1650,7 +1656,8 @@ public class FilesFragment extends Fragment {
 
         adapter.files.clear();
         try {
-            adapter.files.addAll(storage.list(uri));
+            ArrayList<Storage.Node> nn = storage.list(uri);
+            adapter.files.addAll(nn);
         } catch (RuntimeException e) {
             Log.e(TAG, "reload()", e);
             error.setText(e.getMessage());
@@ -1681,6 +1688,9 @@ public class FilesFragment extends Fragment {
                 portables.put(Uri.fromFile(n), specials.get(k));
             }
         }
+
+        FilesApplication.Parents safParents = FilesApplication.from(getContext()).getParents(this);
+        safParents.addParents(uri, adapter.files);
     }
 
     @Override
@@ -1753,7 +1763,7 @@ public class FilesFragment extends Fragment {
                 }
                 Storage.ArchiveReader r = storage.fromArchive(uri, true);
                 if (r != null && r.isDirectory()) {
-                    load(uri);
+                    load(uri, false);
                 } else {
                     MainActivity main = (MainActivity) getActivity();
                     main.openHex(uri, true);
@@ -2202,7 +2212,8 @@ public class FilesFragment extends Fragment {
                     archive.dismiss();
                     closeSelection();
                     Toast.makeText(getContext(), getString(R.string.toast_files_archived, Storage.getName(context, to), files.size()), Toast.LENGTH_LONG).show();
-                    Uri p = Storage.getParent(context, to);
+                    FilesApplication.Parents safParents = FilesApplication.from(getContext()).getParents(FilesFragment.this);
+                    Uri p = safParents.getParent(to);
                     if (p == null || !p.equals(uri)) {
                         getContext().sendBroadcast(new Intent(MOVE_UPDATE));
                     } else {
