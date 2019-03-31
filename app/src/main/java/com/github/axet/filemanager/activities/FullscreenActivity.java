@@ -79,7 +79,7 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
     }
 
     public class PagerAdapter extends FragmentPagerAdapter {
-        int index;
+        int index; // nodes index
         FragmentManager fm;
 
         public PagerAdapter(FragmentManager fm, Uri uri) {
@@ -98,7 +98,6 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
                 else
                     index += pager.getCurrentItem() - 1;
             }
-            updateToolbar();
         }
 
         void update() {
@@ -109,7 +108,7 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
                 pager.setCurrentItem(index, false);
         }
 
-        int getIndex(int i) {
+        int getIndex(int i) { // pager -> nodes index
             int k;
             if (getCount() == 3) {
                 k = index + i - 1;
