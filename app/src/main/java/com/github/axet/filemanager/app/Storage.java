@@ -480,6 +480,21 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         }
     }
 
+    public static class UriOutputStream {
+        public Uri uri;
+        public OutputStream os;
+
+        public UriOutputStream(Uri u, OutputStream os) {
+            this.uri = u;
+            this.os = os;
+        }
+
+        public UriOutputStream(File f, OutputStream os) {
+            this.uri = Uri.fromFile(f);
+            this.os = os;
+        }
+    }
+
     public Storage(Context context) {
         super(context);
     }
@@ -652,18 +667,18 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         }
     }
 
-    public OutputStream open(Uri uri, String name) throws IOException {
+    public UriOutputStream open(Uri uri, String name) throws IOException {
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             File k = getFile(uri);
             File m = new File(k, name);
             if (getRoot())
-                return new SuperUser.FileOutputStream(m);
+                return new UriOutputStream(m, new SuperUser.FileOutputStream(m));
             else
-                return new FileOutputStream(m);
+                return new UriOutputStream(m, new FileOutputStream(m));
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
             Uri doc = createDocumentFile(context, uri, name);
-            return resolver.openOutputStream(doc, "rwt");
+            return new UriOutputStream(doc, resolver.openOutputStream(doc, "rwt"));
         } else {
             throw new UnknownUri();
         }
