@@ -6,8 +6,8 @@ android {
         applicationId "com.github.axet.filemanager"
         minSdkVersion 9
         targetSdkVersion 26
-        versionCode 129
-        versionName "0.2.86"
+        versionCode 130
+        versionName "0.2.87"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         ndk {
             abiFilters "armeabi", "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
