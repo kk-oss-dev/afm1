@@ -2203,7 +2203,7 @@ public class FilesFragment extends Fragment {
                     closeSelection();
                     Toast.makeText(getContext(), getString(R.string.toast_files_archived, Storage.getName(context, to), files.size()), Toast.LENGTH_LONG).show();
                     Uri p = Storage.getParent(context, to);
-                    if (p != null && !p.equals(uri)) {
+                    if (p == null || !p.equals(uri)) {
                         getContext().sendBroadcast(new Intent(MOVE_UPDATE));
                     } else {
                         reload();
