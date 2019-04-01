@@ -114,7 +114,7 @@ public class MediaFragment extends Fragment {
             is.close();
             is = null;
             if (len <= 0)
-                throw new IOException("unable to read");
+                throw new IOException("Read error");
             FileTypeDetector.Detector[] dd = new FileTypeDetector.Detector[]{f, h, g};
             FileTypeDetector.FileTypeDetectorXml xml = new FileTypeDetector.FileTypeDetectorXml(dd);
             FileTypeDetector bin = new FileTypeDetector(dd);
