@@ -811,10 +811,10 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     }
 
     public boolean mv(Uri f, Uri tp, String tn) {
-        String s = tp.getScheme();
-        if (s.equals(ContentResolver.SCHEME_FILE)) { // target 's'
-            s = f.getScheme();
-            if (s.equals(ContentResolver.SCHEME_FILE)) { // source 's'
+        String s = tp.getScheme(); // target 's'
+        if (s.equals(ContentResolver.SCHEME_FILE)) {
+            s = f.getScheme(); // source 's'
+            if (s.equals(ContentResolver.SCHEME_FILE)) {
                 File k = Storage.getFile(tp);
                 File mf = Storage.getFile(f);
                 File mt = new File(k, tn);
@@ -826,11 +826,11 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                         return true;
                 }
             }
-        } else if (Build.VERSION.SDK_INT >= 24 && s.equals(ContentResolver.SCHEME_CONTENT)) { // moveDocument api24+
-            s = f.getScheme();
-            if (s.equals(ContentResolver.SCHEME_CONTENT)) { // source 's'
+        } else if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
+            s = f.getScheme(); // source 's'
+            if (s.equals(ContentResolver.SCHEME_CONTENT) && tp.getAuthority().startsWith(SAF) && f.getAuthority().startsWith(SAF)) {
                 try {
-                    if (DocumentsContract.moveDocument(resolver, f, Storage.getDocumentParent(context, f), tp) != null)
+                    if (Build.VERSION.SDK_INT >= 24 && DocumentsContract.moveDocument(resolver, f, Storage.getDocumentParent(context, f), tp) != null) // moveDocument api24+
                         return true;
                 } catch (RuntimeException e) { // IllegalStateException: "Failed to move"
                 }

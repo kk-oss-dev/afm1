@@ -467,7 +467,7 @@ public class FilesFragment extends Fragment {
                 else
                     os = new FileOutputStream(m);
                 t = Uri.fromFile(m);
-            } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
+            } else if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
                 Uri doc = Storage.createFile(context, to, target); // target == path
                 if (doc == null)
                     throw new IOException("no permission");
@@ -1050,7 +1050,7 @@ public class FilesFragment extends Fragment {
                             if (!m.exists())
                                 t.uri = null;
                         }
-                    } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) { // tree supported API23+
+                    } else if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
                         DocumentFile k = Storage.getDocumentFile(context, uri, target); // target == path
                         if (k != null && k.exists())
                             t = new Storage.Node(k);
@@ -1417,6 +1417,8 @@ public class FilesFragment extends Fragment {
                         InputStream is = storage.open(n.uri);
                         Bitmap bm = CacheImagesAdapter.createThumbnail(is);
                         is.close();
+                        if (bm == null)
+                            return null;
                         OutputStream os = new FileOutputStream(cover);
                         os = new BufferedOutputStream(os);
                         bm.compress(Bitmap.CompressFormat.PNG, 100, os);
