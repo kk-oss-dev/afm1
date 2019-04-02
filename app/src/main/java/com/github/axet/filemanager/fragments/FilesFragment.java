@@ -1491,7 +1491,7 @@ public class FilesFragment extends Fragment {
     public void onDestroy() {
         super.onDestroy();
         getContext().unregisterReceiver(receiver);
-        FilesApplication.from(getContext()).safParents.remove(this);
+        Storage.SAF_CACHE.remove(this);
     }
 
     @Override
@@ -1624,11 +1624,10 @@ public class FilesFragment extends Fragment {
     }
 
     public void load(Uri u, boolean bookmark) {
-        FilesApplication.Parents safParents = FilesApplication.from(getContext()).getParents(this);
         if (bookmark)
-            safParents.clear();
+            Storage.SAF_CACHE.get(this).clear();
         else
-            safParents.removeParents(u, true);
+            Storage.SAF_CACHE.get(this).removeParents(u, true);
         if (uri == null) {
             getArguments().putParcelable("uri", u);
         } else {
@@ -1639,7 +1638,7 @@ public class FilesFragment extends Fragment {
             updatePaste(); // enabled / disabled
             closeSelection();
             reload();
-            safParents.addParents(uri, adapter.files);
+            Storage.SAF_CACHE.get(this).addParents(uri, adapter.files);
             path.setUri(uri);
             MainActivity main = (MainActivity) getActivity();
             main.update();
@@ -1691,8 +1690,7 @@ public class FilesFragment extends Fragment {
             }
         }
 
-        FilesApplication.Parents safParents = FilesApplication.from(getContext()).getParents(this);
-        safParents.addParents(uri, adapter.files);
+        Storage.SAF_CACHE.get(this).addParents(uri, adapter.files);
     }
 
     @Override
@@ -2214,8 +2212,7 @@ public class FilesFragment extends Fragment {
                     archive.dismiss();
                     closeSelection();
                     Toast.makeText(getContext(), getString(R.string.toast_files_archived, Storage.getName(context, to), files.size()), Toast.LENGTH_LONG).show();
-                    FilesApplication.Parents safParents = FilesApplication.from(getContext()).getParents(FilesFragment.this);
-                    Uri p = safParents.getParent(to);
+                    Uri p = Storage.getParent(context, to);
                     if (p == null || !p.equals(uri)) {
                         getContext().sendBroadcast(new Intent(MOVE_UPDATE));
                     } else {
