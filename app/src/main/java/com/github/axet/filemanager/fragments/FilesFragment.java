@@ -79,6 +79,7 @@ import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -380,8 +381,8 @@ public class FilesFragment extends Fragment {
 
         public int calcIndex;
         public ArrayList<Storage.Node> calcs;
-        public ArrayList<Storage.Node> calcsStart; // initial calcs dir for UI
-        public Uri calcUri;
+        public ArrayList<Storage.Node> calcsStart; // initial calcs dirs for UI
+        public Uri calcUri; // root uri
 
         public int filesIndex;
         public ArrayList<Storage.Node> files = new ArrayList<>();

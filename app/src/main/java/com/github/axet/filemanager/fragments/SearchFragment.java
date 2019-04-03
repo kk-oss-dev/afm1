@@ -14,7 +14,6 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import com.github.axet.androidlibrary.services.StorageProvider;
 import com.github.axet.androidlibrary.widgets.ErrorDialog;
@@ -33,39 +32,23 @@ public class SearchFragment extends FilesFragment {
     PendingOperation search;
     Pattern pattern;
     Storage.Nodes nodes = new Storage.Nodes();
-    Runnable process = new Runnable() {
-        @Override
-        public void run() {
-            boolean changed = false;
-            while (search.filesIndex < search.files.size()) {
-                Storage.Node n = search.files.get(search.filesIndex);
-                Matcher m = pattern.matcher(n.name);
-                if (m.find()) {
-                    nodes.add(n);
-                    changed = true;
-                }
-                search.filesIndex++;
-            }
-            if (changed)
-                adapter.notifyDataSetChanged();
-        }
-    };
     Runnable calc = new Runnable() {
         Snackbar old;
 
         @Override
         public void run() {
             try {
+                search.calcs.subList(0, search.calcIndex).clear();
+                search.calcIndex = 0;
+
                 if (search.calcIndex < search.calcs.size() && search.calc()) {
                     handler.post(this);
                     if (old == null)
                         old = Snackbar.make(getActivity().findViewById(android.R.id.content), "", Snackbar.LENGTH_LONG);
                     old.setText(Storage.getDisplayName(getContext(), search.files.get(search.files.size() - 1).uri));
                     old.show();
-                    process.run();
                     return;
                 }
-                process.run();
                 storage.closeSu();
             } catch (RuntimeException e) {
                 Log.d(TAG, "search error", e);
@@ -157,6 +140,7 @@ public class SearchFragment extends FilesFragment {
         super.onDestroy();
         stop();
         search.close();
+        Storage.SAF_CACHE.remove(SearchFragment.this);
     }
 
     @Override
@@ -169,7 +153,23 @@ public class SearchFragment extends FilesFragment {
         list.setAdapter(adapter);
 
         try {
-            search = new PendingOperation(getContext());
+            search = new PendingOperation(getContext()) {
+                @Override
+                public void walk(Uri uri) {
+                    ArrayList<Storage.Node> nn = storage.walk(calcUri, uri);
+                    for (Storage.Node n : nn) {
+                        if (n.dir) {
+                            if (n.uri.equals(uri)) // walk return current dirs, do not follow it
+                                process(uri, n);
+                            else
+                                calcs.add(n);
+                        } else {
+                            process(uri, n);
+                            total += n.size;
+                        }
+                    }
+                }
+            };
             search.calcUri = uri;
             search.calcs = new ArrayList<>();
             search.walk(uri);
@@ -180,6 +180,16 @@ public class SearchFragment extends FilesFragment {
         }
 
         return list;
+    }
+
+    void process(Uri root, Storage.Node n) {
+        Matcher m = pattern.matcher(n.name);
+        if (m.find()) {
+            if (!root.equals(n.uri)) // do not current dir (we do not know its root, and it is already in list)
+                Storage.SAF_CACHE.get(SearchFragment.this).put(n.uri, root);
+            nodes.add(n);
+            adapter.notifyDataSetChanged();
+        }
     }
 
     @Override
