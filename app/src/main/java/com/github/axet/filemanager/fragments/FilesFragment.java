@@ -1892,14 +1892,20 @@ public class FilesFragment extends Fragment {
             } else {
                 paste = new PasteBuilder(getContext()) {
                     @Override
+                    public void success() {
+                        super.success();
+                        if (app.cut != null) {
+                            app.cut = null; // prevent move twice
+                            updatePaste();
+                        }
+                    }
+
+                    @Override
                     public void dismiss() {
                         super.dismiss();
                         paste = null;
                         reload();
-                        if (app.cut != null) {
-                            app.cut = null; // not possible to move twice
-                            getContext().sendBroadcast(new Intent(MOVE_UPDATE));
-                        }
+                        getContext().sendBroadcast(new Intent(MOVE_UPDATE)); // update second tab
                     }
                 };
                 ArrayList<Storage.Node> ff = null;
