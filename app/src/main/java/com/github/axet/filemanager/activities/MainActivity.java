@@ -877,6 +877,8 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                 continue;
             if (Storage.relative(p, mSectionsPagerAdapter.getRight().getUri().getPath()) != null)
                 continue;
+            Storage.ArchiveCache c = Storage.ARCHIVE_CACHE.get(u);
+            c.close();
             Storage.ARCHIVE_CACHE.remove(u);
         }
     }

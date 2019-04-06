@@ -284,11 +284,22 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 throw new RuntimeException(e);
             }
         }
+
+        public void close() {
+            try {
+                rar.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public class ArchiveCache {
         public Uri uri; // archive uri
         public ArrayList<ArchiveNode> all;
+
+        public void close() {
+        }
     }
 
     public class ArchiveReader extends ArchiveCache {
@@ -381,13 +392,14 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     }
 
     public class ZipReader extends ArchiveReader {
+        ZipFile zip;
+
         public ZipReader(Uri u, String p) {
             super(u, p);
         }
 
         public void read() {
             try {
-                ZipFile zip;
                 String s = uri.getScheme();
                 if (s.equals(ContentResolver.SCHEME_FILE)) {
                     if (getRoot()) {
@@ -428,16 +440,22 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 throw new RuntimeException(e);
             }
         }
+
+        @Override
+        public void close() {
+            super.close();
+        }
     }
 
     public class RarReader extends ArchiveReader {
+        Archive rar;
+
         public RarReader(Uri u, String p) {
             super(u, p);
         }
 
         public void read() {
             try {
-                Archive rar;
                 String s = uri.getScheme();
                 if (s.equals(ContentResolver.SCHEME_FILE)) {
                     if (getRoot()) {
@@ -475,6 +493,18 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 ARCHIVE_CACHE.put(uri, this);
                 all = aa;
             } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public void close() {
+            try {
+                if (rar != null) {
+                    rar.close();
+                    rar = null;
+                }
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
