@@ -43,7 +43,7 @@ public class RarSu extends NativeStorage {
             }
             if (len > 0)
                 throw new IOException("bad read");
-            return r;
+            return off;
         }
 
         @Override
