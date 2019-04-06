@@ -17,6 +17,7 @@ import com.github.axet.androidlibrary.app.RarSAF;
 import com.github.axet.androidlibrary.app.ZipSAF;
 import com.github.axet.androidlibrary.services.StorageProvider;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
+import com.github.axet.filemanager.fragments.FilesFragment;
 
 import net.lingala.zip4j.core.NativeStorage;
 import net.lingala.zip4j.core.ZipFile;
@@ -32,9 +33,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 
 import de.innosystec.unrar.Archive;
 import de.innosystec.unrar.exception.RarException;
@@ -45,6 +44,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     public static final String CONTENTTYPE_ZIP = "application/zip";
 
     public static final HashMap<Uri, ArchiveCache> ARCHIVE_CACHE = new HashMap<>();
+    public static final SAFCaches<FilesFragment> SAF_CACHE = new SAFCaches<>();
 
     SuperUser.SuIO su;
 
@@ -58,7 +58,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 b.appendQueryParameter("p", p);
             return b.build();
         }
-        return com.github.axet.androidlibrary.app.Storage.getParent(context, uri);
+        return SAF_CACHE.getParent(context, uri);
     }
 
     public static String getName(Context context, Uri uri) {

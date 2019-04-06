@@ -132,7 +132,7 @@ public class HexDialogFragment extends DialogFragmentCompat {
         super.onCreate(savedInstanceState);
         uri = getArguments().getParcelable("uri");
         storage = new Storage(getContext());
-        Uri p = FilesApplication.from(getContext()).getParent(uri);
+        Uri p = Storage.getParent(getContext(), uri);
         ArrayList<Storage.Node> nn = p == null ? FullscreenActivity.asNodeList(uri) : storage.list(p);
         nodes = new Storage.Nodes(nn, false);
         Collections.sort(nodes, new FilesFragment.SortByName());

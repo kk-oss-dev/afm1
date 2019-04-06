@@ -79,6 +79,7 @@ import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -380,8 +381,8 @@ public class FilesFragment extends Fragment {
 
         public int calcIndex;
         public ArrayList<Storage.Node> calcs;
-        public ArrayList<Storage.Node> calcsStart; // initial calcs dir for UI
-        public Uri calcUri;
+        public ArrayList<Storage.Node> calcsStart; // initial calcs dirs for UI
+        public Uri calcUri; // root uri
 
         public int filesIndex;
         public ArrayList<Storage.Node> files = new ArrayList<>();
@@ -1491,7 +1492,7 @@ public class FilesFragment extends Fragment {
     public void onDestroy() {
         super.onDestroy();
         getContext().unregisterReceiver(receiver);
-        FilesApplication.from(getContext()).safParents.remove(this);
+        Storage.SAF_CACHE.remove(this);
     }
 
     @Override
@@ -1624,11 +1625,10 @@ public class FilesFragment extends Fragment {
     }
 
     public void load(Uri u, boolean bookmark) {
-        FilesApplication.Parents safParents = FilesApplication.from(getContext()).getParents(this);
         if (bookmark)
-            safParents.clear();
+            Storage.SAF_CACHE.get(this).clear();
         else
-            safParents.removeParents(u, true);
+            Storage.SAF_CACHE.get(this).removeParents(u, true);
         if (uri == null) {
             getArguments().putParcelable("uri", u);
         } else {
@@ -1639,7 +1639,7 @@ public class FilesFragment extends Fragment {
             updatePaste(); // enabled / disabled
             closeSelection();
             reload();
-            safParents.addParents(uri, adapter.files);
+            Storage.SAF_CACHE.get(this).addParents(uri, adapter.files);
             path.setUri(uri);
             MainActivity main = (MainActivity) getActivity();
             main.update();
@@ -1691,8 +1691,7 @@ public class FilesFragment extends Fragment {
             }
         }
 
-        FilesApplication.Parents safParents = FilesApplication.from(getContext()).getParents(this);
-        safParents.addParents(uri, adapter.files);
+        Storage.SAF_CACHE.get(this).addParents(uri, adapter.files);
     }
 
     @Override
@@ -1893,14 +1892,20 @@ public class FilesFragment extends Fragment {
             } else {
                 paste = new PasteBuilder(getContext()) {
                     @Override
+                    public void success() {
+                        super.success();
+                        if (app.cut != null) {
+                            app.cut = null; // prevent move twice
+                            updatePaste();
+                        }
+                    }
+
+                    @Override
                     public void dismiss() {
                         super.dismiss();
                         paste = null;
                         reload();
-                        if (app.cut != null) {
-                            app.cut = null; // not possible to move twice
-                            getContext().sendBroadcast(new Intent(MOVE_UPDATE));
-                        }
+                        getContext().sendBroadcast(new Intent(MOVE_UPDATE)); // update second tab
                     }
                 };
                 ArrayList<Storage.Node> ff = null;
@@ -2214,8 +2219,7 @@ public class FilesFragment extends Fragment {
                     archive.dismiss();
                     closeSelection();
                     Toast.makeText(getContext(), getString(R.string.toast_files_archived, Storage.getName(context, to), files.size()), Toast.LENGTH_LONG).show();
-                    FilesApplication.Parents safParents = FilesApplication.from(getContext()).getParents(FilesFragment.this);
-                    Uri p = safParents.getParent(to);
+                    Uri p = Storage.getParent(context, to);
                     if (p == null || !p.equals(uri)) {
                         getContext().sendBroadcast(new Intent(MOVE_UPDATE));
                     } else {

@@ -87,7 +87,7 @@ public class PathView extends HorizontalScrollView {
                 }
             });
             ll.addView(b, 0);
-            uri = FilesApplication.from(getContext()).getParent(uri);
+            uri = Storage.getParent(getContext(), uri);
             if (uri != null) {
                 AppCompatTextView p = new AppCompatTextView(getContext());
                 p.setText(">");

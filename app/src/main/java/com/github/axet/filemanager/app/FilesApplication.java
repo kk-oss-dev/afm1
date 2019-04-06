@@ -17,15 +17,11 @@ import com.github.axet.androidlibrary.widgets.NotificationChannelCompat;
 import com.github.axet.androidlibrary.widgets.RemoteNotificationCompat;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.MainActivity;
-import com.github.axet.filemanager.fragments.FilesFragment;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Locale;
-import java.util.Map;
 
 public class FilesApplication extends MainApplication {
     public static final String PREF_LEFT = "left";
@@ -45,7 +41,6 @@ public class FilesApplication extends MainApplication {
     public Storage.Nodes copy; // selected files
     public Storage.Nodes cut; // selected files
     public Uri uri; // selected root
-    public HashMap<FilesFragment, Parents> safParents = new HashMap<>();
 
     public static String formatSize(Context context, long s) {
         if (s < 1024)
@@ -120,36 +115,6 @@ public class FilesApplication extends MainApplication {
         }
     }
 
-    public class Parents extends HashMap<Uri, Uri> {
-        public Context context;
-
-        public Parents(Context context) {
-            this.context = context;
-        }
-
-        public Uri getParent(Uri uri) {
-            String s = uri.getScheme();
-            if (s.equals(ContentResolver.SCHEME_CONTENT) && !uri.getAuthority().startsWith(Storage.SAF))
-                return get(uri);
-            return Storage.getParent(context, uri);
-        }
-
-        public void addParents(Uri u, ArrayList<Storage.Node> nn) {
-            for (Storage.Node n : nn)
-                put(n.uri, u);
-        }
-
-        public void removeParents(Uri u, boolean keep) {
-            for (Map.Entry<Uri, Uri> e : new HashSet<>(entrySet())) {
-                if (e.getValue().equals(u)) {
-                    if (!keep)
-                        safParents.remove(e.getKey());
-                    removeParents(e.getKey(), false);
-                }
-            }
-        }
-    }
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -192,26 +157,6 @@ public class FilesApplication extends MainApplication {
         SharedPreferences.Editor edit = shared.edit();
         edit.putInt(PREFERENCE_VERSION, 1);
         edit.commit();
-    }
-
-    public Parents getParents(FilesFragment ff) {
-        Parents saf = safParents.get(ff);
-        if (saf == null) {
-            saf = new Parents(this);
-            safParents.put(ff, saf);
-        }
-        return saf;
-    }
-
-    public Uri getParent(Uri uri) {
-        for (Parents safParents : safParents.values()) {
-            String s = uri.getScheme();
-            if (s.equals(ContentResolver.SCHEME_CONTENT) && !uri.getAuthority().startsWith(Storage.SAF)) {
-                if (safParents.containsKey(uri))
-                    return safParents.get(uri);
-            }
-        }
-        return Storage.getParent(this, uri);
     }
 
 }
