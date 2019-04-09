@@ -36,8 +36,8 @@ import cz.msebera.android.httpclient.entity.ContentType;
 public class MediaFragment extends Fragment {
     public static final String TAG = MediaFragment.class.getSimpleName();
 
-    Uri uri;
-    Storage storage;
+    public Uri uri;
+    public Storage storage;
 
     HorizontalScrollView scroll;
     TextViewStream text;
