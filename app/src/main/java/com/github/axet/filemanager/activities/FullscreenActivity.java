@@ -3,6 +3,8 @@ package com.github.axet.filemanager.activities;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
@@ -10,6 +12,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -28,6 +31,7 @@ import com.github.axet.filemanager.fragments.FilesFragment;
 import com.github.axet.filemanager.fragments.HexDialogFragment;
 import com.github.axet.filemanager.fragments.MediaFragment;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -184,12 +188,29 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
         final ViewGroup v = (ViewGroup) findViewById(R.id.content);
 
         gesture = new PinchGesture(this) {
+            Bitmap tmp;
+
             @Override
             public void onScaleBegin(float x, float y) {
                 super.onScaleBegin(x, y);
                 MediaFragment current = adapter.getCurrentFragment();
                 Rect rect = PinchView.getImageBounds(current.image);
-                pinchOpen(rect, current.bm);
+                InputStream is = null;
+                Bitmap bm = null;
+                try {
+                    bm = tmp = BitmapFactory.decodeStream(is = current.storage.open(current.uri));
+                } catch (Exception e) { // catch outofmemory exception
+                } finally {
+                    try {
+                        if (is != null)
+                            is.close();
+                    } catch (Exception e) {
+                        Log.d(TAG, "unable to close", e);
+                    }
+                }
+                if (bm == null)
+                    bm = current.bm;
+                pinchOpen(rect, bm);
                 v.addView(pinch, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             }
 
@@ -198,6 +219,10 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
                 if (pinch != null) {
                     v.removeView(pinch);
                     pinch = null;
+                }
+                if (tmp != null) {
+                    tmp.recycle();
+                    tmp = null;
                 }
             }
         };
