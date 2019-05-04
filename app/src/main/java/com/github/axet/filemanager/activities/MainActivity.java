@@ -116,10 +116,11 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     }
 
     public static String getDefault(Context context) {
-        if (!Storage.permitted(context, Storage.PERMISSIONS_RO))
+        File ext = Environment.getExternalStorageDirectory();
+        if (ext == null || !Storage.permitted(context, Storage.PERMISSIONS_RO))
             return Uri.fromFile(context.getFilesDir()).toString();
         else
-            return Uri.fromFile(Environment.getExternalStorageDirectory()).toString();
+            return Uri.fromFile(ext).toString();
     }
 
     public static class FilesTabView extends PathMax {
