@@ -53,9 +53,8 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity {
 
     private void setupActionBar() {
         ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
+        if (actionBar != null)
             actionBar.setDisplayHomeAsUpEnabled(true);
-        }
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
@@ -86,7 +85,7 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity {
                     return true;
                 }
             });
-            if (!SuperUser.isRooted())
+            if (!root.isEnabled() && !SuperUser.isRooted())
                 root.setVisible(false);
             bindPreferenceSummaryToValue(findPreference(FilesApplication.PREF_THEME));
         }
