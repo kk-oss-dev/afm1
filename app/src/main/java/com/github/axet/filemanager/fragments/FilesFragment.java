@@ -1746,20 +1746,11 @@ public class FilesFragment extends Fragment {
         int id = item.getItemId();
         if (id == R.id.action_open) {
             Intent intent = item.getIntent();
-            Uri uri = intent.getData();
-            String name = intent.getStringExtra("name");
-            Intent open = StorageProvider.getProvider().openIntent(uri, name);
-            if (name.toLowerCase().endsWith(FilesApplication.APK)) {
-                try {
-                    FilesApplication.install(getContext(), uri, name);
-                } catch (RuntimeException e) {
-                    Toast.Error(getContext(), e).show();
-                }
-            } else if (OptimizationPreferenceCompat.isCallable(getContext(), open)) {
+            Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
+            if (OptimizationPreferenceCompat.isCallable(getContext(), open))
                 startActivity(open);
-            } else {
+            else
                 Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
-            }
             return true;
         }
         if (id == R.id.action_view) {

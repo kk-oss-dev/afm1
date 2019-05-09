@@ -44,9 +44,6 @@ public class FilesApplication extends MainApplication {
 
     public static final String PREFERENCE_VERSION = "version";
 
-    public static final String CONTENTTYPE_APK = "application/vnd.android.package-archive";
-    public static final String APK = "apk"; // ext
-
     public Bookmarks bookmarks;
     public Storage.Nodes copy; // selected files
     public Storage.Nodes cut; // selected files
@@ -77,34 +74,6 @@ public class FilesApplication extends MainApplication {
 
     public static int getTheme(Context context, int light, int dark) {
         return MainApplication.getTheme(context, PREF_THEME, light, dark, context.getString(R.string.Theme_Dark));
-    }
-
-    public static void install(Context context, Uri uri, String name) {
-        String s = uri.getScheme();
-        if (s.equals(ContentResolver.SCHEME_CONTENT) && Build.VERSION.SDK_INT >= 21 && uri.getAuthority().startsWith(Storage.SAF)) { // convert content:///primary to file://
-            Uri old = uri;
-            uri = StorageProvider.filterFolderIntent(context, uri);
-            if (old == uri) { // content:// uri not converted by filter, then copy apk to tmp folder
-                File f = context.getExternalCacheDir();
-                if (f == null)
-                    f = context.getCacheDir();
-                f = new File(f, name);
-                try {
-                    InputStream is = context.getContentResolver().openInputStream(uri);
-                    OutputStream os = new FileOutputStream(f);
-                    IOUtils.copy(is, os);
-                    is.close();
-                    os.close();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-                uri = Uri.fromFile(f);
-            }
-        }
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setDataAndType(uri, CONTENTTYPE_APK);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(intent);
     }
 
     public class Bookmarks extends ArrayList<Uri> {
