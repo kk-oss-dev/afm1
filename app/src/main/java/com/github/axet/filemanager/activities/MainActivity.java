@@ -44,6 +44,7 @@ import android.view.animation.AccelerateInterpolator;
 import android.view.animation.Animation;
 import android.view.animation.Transformation;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -52,6 +53,7 @@ import com.github.axet.androidlibrary.widgets.AppCompatThemeActivity;
 import com.github.axet.androidlibrary.widgets.OpenChoicer;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.PathMax;
+import com.github.axet.androidlibrary.widgets.RemoteNotificationCompat;
 import com.github.axet.androidlibrary.widgets.SearchView;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.androidlibrary.widgets.Toast;
@@ -342,6 +344,9 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         View navigationHeader = navigationView.getHeaderView(0);
         TextView ver = (TextView) navigationHeader.findViewById(R.id.nav_version);
         AboutPreferenceCompat.setVersion(ver);
+
+        ImageView v = (ImageView) navigationHeader.findViewById(R.id.imageView);
+        RemoteNotificationCompat.setAdaptiveIcon(v, R.drawable.ic_launcher_foreground);
 
         final FloatingActionsMenu fab = (FloatingActionsMenu) findViewById(R.id.fab);
         FloatingActionButton fabFolder = (FloatingActionButton) findViewById(R.id.fab_create_folder);
