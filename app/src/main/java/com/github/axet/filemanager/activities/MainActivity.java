@@ -345,9 +345,6 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         TextView ver = (TextView) navigationHeader.findViewById(R.id.nav_version);
         AboutPreferenceCompat.setVersion(ver);
 
-        ImageView v = (ImageView) navigationHeader.findViewById(R.id.imageView);
-        RemoteNotificationCompat.setAdaptiveIcon(v, R.drawable.ic_launcher_foreground);
-
         final FloatingActionsMenu fab = (FloatingActionsMenu) findViewById(R.id.fab);
         FloatingActionButton fabFolder = (FloatingActionButton) findViewById(R.id.fab_create_folder);
         fabFolder.setOnClickListener(new View.OnClickListener() {
