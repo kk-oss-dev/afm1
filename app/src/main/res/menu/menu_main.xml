@@ -21,6 +21,27 @@
         android:orderInCategory="300"
         android:title="@string/refresh" />
     <item
+        android:id="@+id/action_sort"
+        android:orderInCategory="350"
+        android:title="@string/sort_by">
+        <menu>
+            <group android:checkableBehavior="single">
+                <item
+                    android:id="@+id/sort_name_ask"
+                    android:title="@string/sort_by_name_a_z" />
+                <item
+                    android:id="@+id/sort_name_desc"
+                    android:title="@string/sort_by_name_z_a" />
+                <item
+                    android:id="@+id/sort_modified_ask"
+                    android:title="@string/sort_by_last_modified_asc" />
+                <item
+                    android:id="@+id/sort_modified_desc"
+                    android:title="@string/sort_by_last_modified_desc" />
+            </group>
+        </menu>
+    </item>
+    <item
         android:id="@+id/action_selected"
         android:icon="@drawable/ic_settings_black_24dp"
         android:orderInCategory="400"
