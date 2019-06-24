@@ -79,4 +79,9 @@
     <string name="action_fullscreen">Полныйэкран</string>
     <string name="viewas_hex">Hex</string>
     <string name="free_space">%1$s свободно</string>
+    <string name="sort_by">Сортировка ...</string>
+    <string name="sort_by_name_a_z">Имя А-Я</string>
+    <string name="sort_by_name_z_a">Имя Я-А</string>
+    <string name="sort_by_last_modified_asc">Изменен по возрастанию</string>
+    <string name="sort_by_last_modified_desc">Изменен по убыванию</string>
 </resources>

@@ -79,4 +79,9 @@
     <string name="action_fullscreen">Pantalla completa</string>
     <string name="viewas_hex">Hex</string>
     <string name="free_space">%1$s libres</string>
+    <string name="sort_by">Sort By ...</string>
+    <string name="sort_by_name_a_z">Name A-Z</string>
+    <string name="sort_by_name_z_a">Name Z-A</string>
+    <string name="sort_by_last_modified_asc">Last Modified Asc</string>
+    <string name="sort_by_last_modified_desc">Last Modified Desc</string>
 </resources>

@@ -44,6 +44,8 @@ public class FilesApplication extends MainApplication {
 
     public static final String PREFERENCE_VERSION = "version";
 
+    public static final String PREFERENCE_SORT = "sort";
+
     public Bookmarks bookmarks;
     public Storage.Nodes copy; // selected files
     public Storage.Nodes cut; // selected files

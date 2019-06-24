@@ -246,7 +246,7 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
         Uri p = Storage.getParent(this, uri);
         ArrayList<Storage.Node> nn = p == null ? asNodeList(uri) : storage.list(p);
         nodes = new Storage.Nodes(nn, false);
-        Collections.sort(nodes, new FilesFragment.SortByName());
+        Collections.sort(nodes, FilesFragment.sort(this));
         storage.closeSu();
 
         pager = (ViewPager) findViewById(R.id.pager);

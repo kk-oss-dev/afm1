@@ -24,7 +24,6 @@ import android.widget.Toast;
 import com.github.axet.androidlibrary.widgets.DialogFragmentCompat;
 import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.FullscreenActivity;
-import com.github.axet.filemanager.app.FilesApplication;
 import com.github.axet.filemanager.app.Storage;
 
 import java.util.ArrayList;
@@ -135,7 +134,7 @@ public class HexDialogFragment extends DialogFragmentCompat {
         Uri p = Storage.getParent(getContext(), uri);
         ArrayList<Storage.Node> nn = p == null ? FullscreenActivity.asNodeList(uri) : storage.list(p);
         nodes = new Storage.Nodes(nn, false);
-        Collections.sort(nodes, new FilesFragment.SortByName());
+        Collections.sort(nodes, FilesFragment.sort(getContext()));
         storage.closeSu();
     }
 

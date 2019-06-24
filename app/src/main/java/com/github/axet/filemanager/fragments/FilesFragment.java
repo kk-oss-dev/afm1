@@ -36,6 +36,7 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
@@ -49,6 +50,7 @@ import android.widget.TextView;
 import com.github.axet.androidlibrary.widgets.CacheImagesAdapter;
 import com.github.axet.androidlibrary.widgets.CacheImagesRecyclerAdapter;
 import com.github.axet.androidlibrary.widgets.ErrorDialog;
+import com.github.axet.androidlibrary.widgets.InvalidateOptionsMenuCompat;
 import com.github.axet.androidlibrary.widgets.OpenChoicer;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
@@ -144,6 +146,7 @@ public class FilesFragment extends Fragment {
                 reload();
         }
     };
+    Runnable invalidateOptionsMenu;
 
     public Uri old;
 
@@ -156,6 +159,23 @@ public class FilesFragment extends Fragment {
         if (s.endsWith(right))
             s = s.substring(0, s.length() - right.length());
         return s;
+    }
+
+    public static Comparator<Storage.Node> sort(Context context) {
+        SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(context);
+        int selected = context.getResources().getIdentifier(shared.getString(FilesApplication.PREFERENCE_SORT, context.getResources().getResourceEntryName(R.id.sort_name_ask)), "id", context.getPackageName());
+        switch (selected) {
+            case R.id.sort_modified_ask:
+                return new SortByType(new SortByDate());
+            case R.id.sort_modified_desc:
+                return new SortByType(Collections.reverseOrder(new SortByDate()));
+            case R.id.sort_name_ask:
+                return new SortByType(new SortByName());
+            case R.id.sort_name_desc:
+                return new SortByType(Collections.reverseOrder(new SortByName()));
+            default:
+                return new SortByType(new SortByName());
+        }
     }
 
     public static void pasteError(final OperationBuilder paste, final PendingOperation op, final Throwable e, final boolean move) {
@@ -1164,12 +1184,32 @@ public class FilesFragment extends Fragment {
     public static class SortByName implements Comparator<Storage.Node> { // by name files first
         @Override
         public int compare(Storage.Node o1, Storage.Node o2) {
+            return o1.name.compareTo(o2.name);
+        }
+    }
+
+    public static class SortByDate implements Comparator<Storage.Node> { // by last modified
+        @Override
+        public int compare(Storage.Node o1, Storage.Node o2) {
+            return Long.valueOf(o1.last).compareTo(o2.last);
+        }
+    }
+
+    public static class SortByType implements Comparator<Storage.Node> { // by type folders first
+        Comparator<Storage.Node> wrap;
+
+        public SortByType(Comparator<Storage.Node> wrap) {
+            this.wrap = wrap;
+        }
+
+        @Override
+        public int compare(Storage.Node o1, Storage.Node o2) {
             Boolean d1 = o1.dir || (o1 instanceof Storage.SymlinkNode && ((Storage.SymlinkNode) o1).isSymDir());
             Boolean d2 = o2.dir || (o2 instanceof Storage.SymlinkNode && ((Storage.SymlinkNode) o2).isSymDir());
             int c = d2.compareTo(d1);
             if (c != 0)
                 return c;
-            return o1.name.compareTo(o2.name);
+            return wrap.compare(o1, o2);
         }
     }
 
@@ -1667,8 +1707,7 @@ public class FilesFragment extends Fragment {
         } finally {
             storage.closeSu();
         }
-        Collections.sort(adapter.files, new SortByName());
-        adapter.notifyDataSetChanged();
+        sort();
 
         portables.clear();
         File[] ff = OpenFileDialog.getPortableList();
@@ -1693,6 +1732,11 @@ public class FilesFragment extends Fragment {
         Storage.SAF_CACHE.get(this).addParents(uri, adapter.files);
     }
 
+    void sort() {
+        Collections.sort(adapter.files, sort(getContext()));
+        adapter.notifyDataSetChanged();
+    }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -1702,8 +1746,10 @@ public class FilesFragment extends Fragment {
 
     @SuppressLint("RestrictedApi")
     @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+    public void onCreateOptionsMenu(final Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
+        invalidateOptionsMenu = InvalidateOptionsMenuCompat.onCreateOptionsMenu(this, menu, inflater);
+
         try {
             toolbar = menu.findItem(R.id.action_selected);
             MainActivity main = (MainActivity) getActivity();
@@ -1731,6 +1777,21 @@ public class FilesFragment extends Fragment {
             };
             select.create(menu, R.menu.menu_select);
             select.hide(R.id.action_rename);
+            MenuItem sort = menu.findItem(R.id.action_sort);
+            SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
+            int selected = getContext().getResources().getIdentifier(shared.getString(FilesApplication.PREFERENCE_SORT, getContext().getResources().getResourceEntryName(R.id.sort_name_ask)), "id", getContext().getPackageName());
+            SubMenu sorts = sort.getSubMenu();
+            for (int i = 0; i < sorts.size(); i++) {
+                MenuItem m = sorts.getItem(i);
+                if (m.getItemId() == selected)
+                    m.setChecked(true);
+                m.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem item) {
+                        return false;
+                    }
+                });
+            }
         } catch (RuntimeException e) {
             Log.e(TAG, "io", e);
             error.setText(ErrorDialog.toMessage(e));
@@ -1744,6 +1805,17 @@ public class FilesFragment extends Fragment {
     public boolean onOptionsItemSelected(final MenuItem item) {
         Log.d(TAG, "onOptionsItemSelected " + Storage.getDisplayName(getContext(), uri) + " " + item);
         int id = item.getItemId();
+        final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
+        switch (id) {
+            case R.id.sort_modified_ask:
+            case R.id.sort_modified_desc:
+            case R.id.sort_name_ask:
+            case R.id.sort_name_desc:
+                shared.edit().putString(FilesApplication.PREFERENCE_SORT, getContext().getResources().getResourceEntryName(item.getItemId())).commit();
+                sort();
+                invalidateOptionsMenu.run();
+                return true;
+        }
         if (id == R.id.action_open) {
             Intent intent = item.getIntent();
             Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
@@ -1957,7 +2029,6 @@ public class FilesFragment extends Fragment {
         if (id == R.id.action_delete) {
             if (delete != null)
                 return true;
-            final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
             final Runnable permanently = new Runnable() {
                 @Override
                 public void run() {
