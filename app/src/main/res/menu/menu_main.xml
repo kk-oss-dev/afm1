@@ -38,6 +38,12 @@
                 <item
                     android:id="@+id/sort_modified_desc"
                     android:title="@string/sort_by_last_modified_desc" />
+                <item
+                    android:id="@+id/sort_size_ask"
+                    android:title="@string/sort_by_size_asc" />
+                <item
+                    android:id="@+id/sort_size_desc"
+                    android:title="@string/sort_by_size_desc" />
             </group>
         </menu>
     </item>
