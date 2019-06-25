@@ -1822,6 +1822,8 @@ public class FilesFragment extends Fragment {
             case R.id.sort_modified_desc:
             case R.id.sort_name_ask:
             case R.id.sort_name_desc:
+            case R.id.sort_size_ask:
+            case R.id.sort_size_desc:
                 shared.edit().putString(FilesApplication.PREFERENCE_SORT, getContext().getResources().getResourceEntryName(item.getItemId())).commit();
                 sort();
                 invalidateOptionsMenu.run();
