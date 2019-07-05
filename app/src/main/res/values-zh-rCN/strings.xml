@@ -79,9 +79,11 @@
     <string name="action_fullscreen">全屏</string>
     <string name="viewas_hex">十六进制</string>
     <string name="free_space">%1$s 空闲</string>
-    <string name="sort_by">Sort By ...</string>
-    <string name="sort_by_name_a_z">Name A-Z</string>
-    <string name="sort_by_name_z_a">Name Z-A</string>
-    <string name="sort_by_last_modified_asc">Last Modified Asc</string>
-    <string name="sort_by_last_modified_desc">Last Modified Desc</string>
+    <string name="sort_by">按 ... 排序</string>
+    <string name="sort_by_name_a_z">名称 A-Z</string>
+    <string name="sort_by_name_z_a">名称 Z-A</string>
+    <string name="sort_by_last_modified_asc">最后修改升序</string>
+    <string name="sort_by_last_modified_desc">最后修改降序</string>
+    <string name="sort_by_size_desc">大小降序</string>
+    <string name="sort_by_size_asc">大小升序</string>
 </resources>

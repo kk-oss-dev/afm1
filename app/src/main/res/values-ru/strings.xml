@@ -84,4 +84,6 @@
     <string name="sort_by_name_z_a">Имя Я-А</string>
     <string name="sort_by_last_modified_asc">Изменен по возрастанию</string>
     <string name="sort_by_last_modified_desc">Изменен по убыванию</string>
+    <string name="sort_by_size_desc">Размер по убыванию</string>
+    <string name="sort_by_size_asc">Размер по возрастанию</string>
 </resources>

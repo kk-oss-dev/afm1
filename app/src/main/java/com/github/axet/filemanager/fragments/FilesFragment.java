@@ -173,6 +173,10 @@ public class FilesFragment extends Fragment {
                 return new SortByType(new SortByName());
             case R.id.sort_name_desc:
                 return new SortByType(Collections.reverseOrder(new SortByName()));
+            case R.id.sort_size_ask:
+                return new SortByType(new SortBySize());
+            case R.id.sort_size_desc:
+                return new SortByType(Collections.reverseOrder(new SortBySize()));
             default:
                 return new SortByType(new SortByName());
         }
@@ -1195,6 +1199,13 @@ public class FilesFragment extends Fragment {
         }
     }
 
+    public static class SortBySize implements Comparator<Storage.Node> { // by size
+        @Override
+        public int compare(Storage.Node o1, Storage.Node o2) {
+            return Long.valueOf(o1.size).compareTo(o2.size);
+        }
+    }
+
     public static class SortByType implements Comparator<Storage.Node> { // by type folders first
         Comparator<Storage.Node> wrap;
 
@@ -1811,6 +1822,8 @@ public class FilesFragment extends Fragment {
             case R.id.sort_modified_desc:
             case R.id.sort_name_ask:
             case R.id.sort_name_desc:
+            case R.id.sort_size_ask:
+            case R.id.sort_size_desc:
                 shared.edit().putString(FilesApplication.PREFERENCE_SORT, getContext().getResources().getResourceEntryName(item.getItemId())).commit();
                 sort();
                 invalidateOptionsMenu.run();
