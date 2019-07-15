@@ -144,13 +144,13 @@ public class FilesApplication extends MainApplication {
 
     public void show(String title, String text) {
         PendingIntent main = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
-        RemoteNotificationCompat.Default builder = new RemoteNotificationCompat.Default(this, R.mipmap.ic_launcher_foreground);
+        RemoteNotificationCompat.Default builder = new RemoteNotificationCompat.Default(this, R.drawable.ic_launcher_foreground);
         builder.setTheme(FilesApplication.getTheme(this, R.style.AppThemeLight, R.style.AppThemeDark))
                 .setTitle(title)
                 .setText(text)
                 .setMainIntent(main)
                 .setChannel(new NotificationChannelCompat(this, "status", "Status", NotificationManagerCompat.IMPORTANCE_DEFAULT))
-                .setAdaptiveIcon(R.mipmap.ic_launcher_foreground)
+                .setAdaptiveIcon(R.drawable.ic_launcher_foreground)
                 .setSmallIcon(R.drawable.ic_launcher_notification);
         NotificationManagerCompat nm = NotificationManagerCompat.from(this);
         nm.notify((int) System.currentTimeMillis(), builder.build());
