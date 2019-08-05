@@ -20,6 +20,7 @@ import com.github.axet.filemanager.activities.MainActivity;
 import com.github.axet.filemanager.services.StorageProvider;
 
 import org.apache.commons.io.IOUtils;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -128,7 +129,6 @@ public class FilesApplication extends MainApplication {
     public void onCreate() {
         super.onCreate();
         bookmarks = new Bookmarks();
-
         switch (getVersion(PREFERENCE_VERSION, R.xml.pref_general)) {
             case -1:
                 SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
@@ -168,6 +168,4 @@ public class FilesApplication extends MainApplication {
         edit.putInt(PREFERENCE_VERSION, 1);
         edit.commit();
     }
-
 }
-
