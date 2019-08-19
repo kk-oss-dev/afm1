@@ -12,6 +12,8 @@
 #include <linux/fs.h>
 #include <sys/statfs.h>
 #include <sys/system_properties.h>
+#include <pwd.h>
+#include <grp.h>
 
 typedef struct {
     char *buf;
@@ -444,9 +446,12 @@ int main(int argc, char *argv[]) {
                 struct statfs fs = {0};
                 statfs(str.buf, &fs);
 #endif
-                writestringf("%i:%i %i %i %i %i %i %i %i %i %i %i",
+                struct passwd *p = getpwuid(st.st_uid);
+                struct group *g = getgrgid(st.st_gid);
+                writestringf("%i:%i %i %i %i %i %i %i %i %i %i %i %s %s",
                     (int) major(st.st_dev), (int) minor(st.st_dev), (int) st.st_ino, (int) st.st_mode, (int) st.st_uid, (int) st.st_gid,
-                    (int) fs.f_type, (int) fs.f_bsize, (int) fs.f_blocks, (int) fs.f_bfree, (int) fs.f_files, (int) fs.f_ffree);
+                    (int) fs.f_type, (int) fs.f_bsize, (int) fs.f_blocks, (int) fs.f_bfree, (int) fs.f_files, (int) fs.f_ffree,
+                    p->pw_name, g->gr_name);
             }
             continue;
         }

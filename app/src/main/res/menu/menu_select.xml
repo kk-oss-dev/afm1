@@ -38,4 +38,10 @@
         android:orderInCategory="600"
         android:title="@string/ShareAction"
         app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_properties"
+        android:icon="@drawable/ic_format_list_bulleted_black_24dp"
+        android:orderInCategory="600"
+        android:title="@string/properties"
+        app:showAsAction="ifRoom" />
 </menu>
