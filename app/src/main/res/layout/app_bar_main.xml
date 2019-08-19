@@ -52,7 +52,7 @@
             android:visibility="gone" />
     </FrameLayout>
 
-    <net.i2p.android.ext.floatingactionbutton.FloatingActionsMenu
+    <com.github.axet.androidlibrary.widgets.FloatingActionsMenu
         android:id="@+id/fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -84,5 +84,5 @@
             app:fab_colorPressed="@android:color/white"
             app:fab_size="mini"
             app:fab_title="@string/button_new_file" />
-    </net.i2p.android.ext.floatingactionbutton.FloatingActionsMenu>
+    </com.github.axet.androidlibrary.widgets.FloatingActionsMenu>
 </android.support.design.widget.CoordinatorLayout>

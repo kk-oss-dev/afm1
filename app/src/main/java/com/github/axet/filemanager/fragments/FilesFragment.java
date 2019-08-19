@@ -47,13 +47,13 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.github.axet.androidlibrary.preferences.OptimizationPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.CacheImagesAdapter;
 import com.github.axet.androidlibrary.widgets.CacheImagesRecyclerAdapter;
 import com.github.axet.androidlibrary.widgets.ErrorDialog;
 import com.github.axet.androidlibrary.widgets.InvalidateOptionsMenuCompat;
 import com.github.axet.androidlibrary.widgets.OpenChoicer;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
-import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.androidlibrary.widgets.Toast;
 import com.github.axet.androidlibrary.widgets.ToolbarActionView;
@@ -62,6 +62,7 @@ import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.FullscreenActivity;
 import com.github.axet.filemanager.activities.MainActivity;
 import com.github.axet.filemanager.app.FilesApplication;
+import com.github.axet.filemanager.app.MountInfo;
 import com.github.axet.filemanager.app.Storage;
 import com.github.axet.filemanager.app.SuperUser;
 import com.github.axet.filemanager.services.StorageProvider;
@@ -664,9 +665,12 @@ public class FilesFragment extends Fragment {
 
         public OperationBuilder(Context context) {
             super(context);
+        }
+
+        void create(int id) {
             setCancelable(false);
             LayoutInflater inflater = LayoutInflater.from(getContext());
-            v = inflater.inflate(R.layout.paste, null);
+            v = inflater.inflate(id, null);
             setView(v);
             setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                 @Override
@@ -750,6 +754,7 @@ public class FilesFragment extends Fragment {
 
         public DeleteBuilder(Context context) {
             super(context);
+            create(R.layout.paste);
             setTitle(getContext().getString(R.string.files_deleting));
         }
 
@@ -864,6 +869,142 @@ public class FilesFragment extends Fragment {
         }
     }
 
+    public class PropertiesBuilder extends OperationBuilder {
+        public Handler handler = new Handler();
+        public PendingOperation op;
+        public TextView props;
+
+        public PropertiesBuilder(Context context) {
+            super(context);
+            create(R.layout.properties);
+            setCancelable(true);
+            setTitle("Properties");
+        }
+
+        public PropertiesBuilder(Context context, Uri uri, ArrayList<Storage.Node> selected) {
+            this(context);
+            create(uri, selected);
+            props = (TextView) v.findViewById(R.id.properties);
+        }
+
+        public void create(Uri uri, ArrayList<Storage.Node> selected) {
+            op = new PendingOperation(getContext(), uri, selected) {
+                @Override
+                public void run() {
+                    try {
+                        if (calcIndex < calcs.size()) {
+                            propsCalc();
+                            return;
+                        }
+                        success();
+                    } catch (RuntimeException e) {
+                        propsError(e);
+                    }
+                }
+
+                public void post() {
+                    handler.removeCallbacks(this);
+                    handler.post(this);
+                }
+            };
+            neutral = new View.OnClickListener() { // pause/resume
+                @Override
+                public void onClick(View v) {
+                    final View.OnClickListener neutral = this;
+                    op.pause();
+                    handler.removeCallbacks(op);
+                    final Button b = d.getButton(DialogInterface.BUTTON_NEUTRAL);
+                    b.setText(R.string.copy_resume);
+                    PropertiesBuilder.this.neutral = new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            op.run();
+                            b.setText(R.string.copy_pause);
+                            PropertiesBuilder.this.neutral = neutral;
+                        }
+                    };
+                }
+            };
+            dismiss = new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    handler.removeCallbacks(op);
+                    op.close();
+                    dismiss();
+                }
+            };
+        }
+
+        public void propsCalc() {
+            if (!op.calc())
+                Collections.sort(op.files, new SortDelete());
+            title.setGravity(Gravity.LEFT);
+            title.setText(op.context.getString(R.string.files_calculating) + ": " + op.formatCalc());
+            update(op);
+            from.setText(op.formatStart());
+            op.post();
+        }
+
+        public void update(PendingOperation op) {
+            filesCount.setText("" + op.files.size());
+            filesTotal.setText(FilesApplication.formatSize(getContext(), op.total) + " (" + BYTES.format(op.total) + " " + getContext().getString(R.string.size_bytes) + ")");
+            StringBuffer sb = new StringBuffer();
+            String s = op.calcUri.getScheme();
+            if (s.equals(ContentResolver.SCHEME_CONTENT) && op.calcUri.getAuthority().startsWith(Storage.SAF)) {
+                sb.append("type: SAF"); // Underlying filesystem: unknown, owners/group: unknown, attributes: unknown, thanks google!
+            }
+            if (s.equals(ContentResolver.SCHEME_FILE)) {
+                MountInfo mount = new MountInfo();
+                MountInfo.Info info = mount.findMount(Storage.getFile(op.calcUri));
+                if (info != null)
+                    sb.append("type: " + info.fs);
+            }
+            if (op.files.size() == 1) { // show attributes
+                if (s.equals(ContentResolver.SCHEME_FILE)) {
+                    SuperUser.DF df;
+                    File file = Storage.getFile(op.files.get(0).uri);
+                    if (storage.getRoot())
+                        df = new SuperUser.DF(storage.getSu(), file);
+                    else
+                        df = new SuperUser.DF(file);
+                    sb.append("\nmode: " + df.getMode());
+                    sb.append("\ninode: " + df.inode);
+                    sb.append("\nowner: " + df.group + "/" + df.name);
+                }
+            }
+            String str = sb.toString();
+            if (str.isEmpty())
+                props.setVisibility(View.GONE);
+            else
+                props.setText(sb.toString());
+        }
+
+        public void propsError(Throwable e) {
+            switch (op.check(e).iterator().next()) {
+                case SKIP:
+                    Log.e(TAG, "skip", e);
+                    op.filesIndex++;
+                    op.cancel();
+                    op.post();
+                    return;
+            }
+            pasteError(PropertiesBuilder.this, op, e, true);
+        }
+
+        public void success() { // success!
+            title.setVisibility(View.INVISIBLE);
+            final Button b = d.getButton(DialogInterface.BUTTON_NEUTRAL);
+            b.setVisibility(View.INVISIBLE);
+        }
+
+        @Override
+        public AlertDialog show() {
+            AlertDialog d = super.show();
+            op.run();
+            return d;
+        }
+    }
+
     public static class PasteBuilder extends OperationBuilder {
         Handler handler = new Handler();
         PendingOperation op;
@@ -872,6 +1013,7 @@ public class FilesFragment extends Fragment {
 
         public PasteBuilder(Context context) {
             super(context);
+            create(R.layout.paste);
         }
 
         public void create(Uri calcUri, final ArrayList<Storage.Node> ff, final boolean move, final Uri uri) {
@@ -1823,269 +1965,232 @@ public class FilesFragment extends Fragment {
             case R.id.sort_name_ask:
             case R.id.sort_name_desc:
             case R.id.sort_size_ask:
-            case R.id.sort_size_desc:
+            case R.id.sort_size_desc: {
                 shared.edit().putString(FilesApplication.PREFERENCE_SORT, getContext().getResources().getResourceEntryName(item.getItemId())).commit();
                 sort();
                 invalidateOptionsMenu.run();
                 return true;
-        }
-        if (id == R.id.action_open) {
-            Intent intent = item.getIntent();
-            Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
-            if (OptimizationPreferenceCompat.isCallable(getContext(), open))
-                startActivity(open);
-            else
-                Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
-            return true;
-        }
-        if (id == R.id.action_view) {
-            try {
-                Uri uri = item.getIntent().getData();
-                String name = Storage.getName(getContext(), uri);
-                if (CacheImagesAdapter.isImage(name)) {
-                    FullscreenActivity.start(getContext(), uri);
-                    return true;
+            }
+            case R.id.action_open: {
+                Intent intent = item.getIntent();
+                Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
+                if (OptimizationPreferenceCompat.isCallable(getContext(), open))
+                    startActivity(open);
+                else
+                    Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
+                return true;
+            }
+            case R.id.action_openas: {
+                return true;
+            }
+            case R.id.action_openastext: {
+                Intent intent = item.getIntent();
+                Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
+                open.setDataAndType(open.getData(), "text/*");
+                if (OptimizationPreferenceCompat.isCallable(getContext(), open))
+                    startActivity(open);
+                else
+                    Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
+                return true;
+            }
+            case R.id.action_view: {
+                try {
+                    Uri uri = item.getIntent().getData();
+                    String name = Storage.getName(getContext(), uri);
+                    if (CacheImagesAdapter.isImage(name)) {
+                        FullscreenActivity.start(getContext(), uri);
+                        return true;
+                    }
+                    Storage.ArchiveReader r = storage.fromArchive(uri, true);
+                    if (r != null && r.isDirectory()) {
+                        load(uri, false);
+                    } else {
+                        MainActivity main = (MainActivity) getActivity();
+                        main.openHex(uri, true);
+                    }
+                } finally {
+                    storage.closeSu();
                 }
-                Storage.ArchiveReader r = storage.fromArchive(uri, true);
-                if (r != null && r.isDirectory()) {
-                    load(uri, false);
+                return true;
+            }
+            case R.id.action_openasimage: {
+                Intent intent = item.getIntent();
+                Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
+                open.setDataAndType(open.getData(), "image/*");
+                if (OptimizationPreferenceCompat.isCallable(getContext(), open))
+                    startActivity(open);
+                else
+                    Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
+                return true;
+            }
+            case R.id.action_openasaudio: {
+                Intent intent = item.getIntent();
+                Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
+                open.setDataAndType(open.getData(), "audio/*");
+                if (OptimizationPreferenceCompat.isCallable(getContext(), open))
+                    startActivity(open);
+                else
+                    Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
+                return true;
+            }
+            case R.id.action_share: {
+                Intent intent = item.getIntent();
+                Intent share;
+                if (intent != null) {
+                    share = StorageProvider.getProvider().shareIntent(intent.getData(), intent.getType(), intent.getStringExtra("name"));
                 } else {
-                    MainActivity main = (MainActivity) getActivity();
-                    main.openHex(uri, true);
-                }
-            } finally {
-                storage.closeSu();
-            }
-            return true;
-        }
-        if (id == R.id.action_openas)
-            return true;
-        if (id == R.id.action_openastext) {
-            Intent intent = item.getIntent();
-            Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
-            open.setDataAndType(open.getData(), "text/*");
-            if (OptimizationPreferenceCompat.isCallable(getContext(), open))
-                startActivity(open);
-            else
-                Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
-            return true;
-        }
-        if (id == R.id.action_openasimage) {
-            Intent intent = item.getIntent();
-            Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
-            open.setDataAndType(open.getData(), "image/*");
-            if (OptimizationPreferenceCompat.isCallable(getContext(), open))
-                startActivity(open);
-            else
-                Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
-            return true;
-        }
-        if (id == R.id.action_openasaudio) {
-            Intent intent = item.getIntent();
-            Intent open = StorageProvider.getProvider().openIntent(intent.getData(), intent.getStringExtra("name"));
-            open.setDataAndType(open.getData(), "audio/*");
-            if (OptimizationPreferenceCompat.isCallable(getContext(), open))
-                startActivity(open);
-            else
-                Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
-            return true;
-        }
-        if (id == R.id.action_share) {
-            Intent intent = item.getIntent();
-            Intent share;
-            if (intent != null) {
-                share = StorageProvider.getProvider().shareIntent(intent.getData(), intent.getType(), intent.getStringExtra("name"));
-            } else {
-                if (selected.size() == 1) {
-                    Storage.Node n = selected.get(0);
-                    share = StorageProvider.getProvider().shareIntent(n.uri, Storage.getTypeByName(n.name), Storage.getNameNoExt(n.name));
-                } else {
-                    String name = "";
-                    TreeMap<String, Integer> nn = new TreeMap<>();
-                    ArrayList<Uri> ll = new ArrayList<>();
-                    for (Storage.Node n : selected) {
-                        ll.add(n.uri);
-                        String e = Storage.getExt(n.name);
-                        Integer old = nn.get(e);
-                        if (old == null)
-                            old = 0;
-                        nn.put(e, old + 1);
-                    }
-                    for (String key : nn.keySet())
-                        name += "(" + nn.get(key) + ") ." + key + ", ";
-                    name = stripRight(name, ", ");
-                    share = StorageProvider.getProvider().shareIntent(ll, "*/*", name); // need smart type? image/* || image/gif || */*
-                }
-            }
-            if (OptimizationPreferenceCompat.isCallable(getContext(), share))
-                startActivity(share);
-            else
-                Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
-            return true;
-        }
-        if (id == R.id.action_refresh) {
-            reload();
-            return true;
-        }
-        if (id == R.id.action_paste_cancel) {
-            app.copy = null;
-            app.cut = null;
-            updatePaste();
-            return true;
-        }
-        if (id == R.id.action_paste && item.isEnabled()) {
-            if (paste != null)
-                return true;
-            if (app.uri.equals(uri)) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-                builder.setTitle(R.string.duplicate_folder);
-                builder.setMessage(R.string.are_you_sure);
-                builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                    }
-                });
-                builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        paste = new PasteBuilder(getContext()) {
-                            @Override
-                            public void dismiss() {
-                                super.dismiss();
-                                paste = null;
-                                reload();
-                            }
-                        };
-                        ArrayList<Storage.Node> ff = null;
-                        if (app.copy != null)
-                            ff = app.copy;
-                        if (app.cut != null)
-                            ff = app.cut;
-                        for (Storage.Node f : ff) {
-                            String n = Storage.getNameNoExt(f.name);
-                            String e = Storage.getExt(f.name);
-                            String t = Storage.getNextName(getContext(), app.uri, n, e);
-                            paste.rename.put(f.name, t);
+                    if (selected.size() == 1) {
+                        Storage.Node n = selected.get(0);
+                        share = StorageProvider.getProvider().shareIntent(n.uri, Storage.getTypeByName(n.name), Storage.getNameNoExt(n.name));
+                    } else {
+                        String name = "";
+                        TreeMap<String, Integer> nn = new TreeMap<>();
+                        ArrayList<Uri> ll = new ArrayList<>();
+                        for (Storage.Node n : selected) {
+                            ll.add(n.uri);
+                            String e = Storage.getExt(n.name);
+                            Integer old = nn.get(e);
+                            if (old == null)
+                                old = 0;
+                            nn.put(e, old + 1);
                         }
-                        paste.create(app.uri, ff, false, uri);
-                        paste.show();
+                        for (String key : nn.keySet())
+                            name += "(" + nn.get(key) + ") ." + key + ", ";
+                        name = stripRight(name, ", ");
+                        share = StorageProvider.getProvider().shareIntent(ll, "*/*", name); // need smart type? image/* || image/gif || */*
                     }
-                });
-                builder.show();
-                return true;
-            } else {
-                paste = new PasteBuilder(getContext()) {
-                    @Override
-                    public void success() {
-                        super.success();
-                        if (app.cut != null) {
-                            app.cut = null; // prevent move twice
-                            updatePaste();
-                        }
-                    }
-
-                    @Override
-                    public void dismiss() {
-                        super.dismiss();
-                        paste = null;
-                        reload();
-                        getContext().sendBroadcast(new Intent(MOVE_UPDATE)); // update second tab
-                    }
-                };
-                ArrayList<Storage.Node> ff = null;
-                boolean move = false;
-                if (app.copy != null)
-                    ff = app.copy;
-                if (app.cut != null) {
-                    ff = app.cut;
-                    move = true;
                 }
-                paste.create(app.uri, ff, move, uri);
-                paste.show();
+                if (OptimizationPreferenceCompat.isCallable(getContext(), share))
+                    startActivity(share);
+                else
+                    Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
                 return true;
             }
-        }
-        if (id == R.id.action_copy) {
-            try {
-                app.copy = new Storage.Nodes(selected);
-                app.cut = null;
-                app.uri = uri;
-                updatePaste();
-                closeSelection();
-                Toast.makeText(getContext(), getString(R.string.toast_files_copied, app.copy.size()), Toast.LENGTH_SHORT).show();
-            } catch (RuntimeException e) {
-                Log.e(TAG, "io", e);
-                error.setText(e.getMessage());
-                error.setVisibility(View.VISIBLE);
-            } finally {
-                storage.closeSu();
+            case R.id.action_refresh: {
+                reload();
+                return true;
             }
-            return true;
-        }
-        if (id == R.id.action_cut) {
-            try {
+            case R.id.action_paste_cancel: {
                 app.copy = null;
-                app.cut = new Storage.Nodes(selected);
-                app.uri = uri;
+                app.cut = null;
                 updatePaste();
-                closeSelection();
-                Toast.makeText(getContext(), getString(R.string.toast_files_cut, app.cut.size()), Toast.LENGTH_SHORT).show();
-            } catch (RuntimeException e) {
-                Log.e(TAG, "io", e);
-                error.setText(e.getMessage());
-                error.setVisibility(View.VISIBLE);
-            } finally {
-                storage.closeSu();
-            }
-            return true;
-        }
-        if (id == R.id.action_delete) {
-            if (delete != null)
                 return true;
-            final Runnable permanently = new Runnable() {
-                @Override
-                public void run() {
-                    delete = new DeleteBuilder(getContext(), uri, selected) {
+            }
+            case R.id.action_paste: {
+                if (!item.isEnabled())
+                    return true;
+                if (paste != null)
+                    return true;
+                if (app.uri.equals(uri)) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                    builder.setTitle(R.string.duplicate_folder);
+                    builder.setMessage(R.string.are_you_sure);
+                    builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                         @Override
-                        public void dismiss() {
-                            super.dismiss();
-                            delete = null;
+                        public void onClick(DialogInterface dialog, int which) {
                         }
-
+                    });
+                    builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            paste = new PasteBuilder(getContext()) {
+                                @Override
+                                public void dismiss() {
+                                    super.dismiss();
+                                    paste = null;
+                                    reload();
+                                }
+                            };
+                            ArrayList<Storage.Node> ff = null;
+                            if (app.copy != null)
+                                ff = app.copy;
+                            if (app.cut != null)
+                                ff = app.cut;
+                            for (Storage.Node f : ff) {
+                                String n = Storage.getNameNoExt(f.name);
+                                String e = Storage.getExt(f.name);
+                                String t = Storage.getNextName(getContext(), app.uri, n, e);
+                                paste.rename.put(f.name, t);
+                            }
+                            paste.create(app.uri, ff, false, uri);
+                            paste.show();
+                        }
+                    });
+                    builder.show();
+                    return true;
+                } else {
+                    paste = new PasteBuilder(getContext()) {
                         @Override
                         public void success() {
                             super.success();
-                            closeSelection();
+                            if (app.cut != null) {
+                                app.cut = null; // prevent move twice
+                                updatePaste();
+                            }
+                        }
+
+                        @Override
+                        public void dismiss() {
+                            super.dismiss();
+                            paste = null;
                             reload();
+                            getContext().sendBroadcast(new Intent(MOVE_UPDATE)); // update second tab
                         }
                     };
-                    delete.show();
+                    ArrayList<Storage.Node> ff = null;
+                    boolean move = false;
+                    if (app.copy != null)
+                        ff = app.copy;
+                    if (app.cut != null) {
+                        ff = app.cut;
+                        move = true;
+                    }
+                    paste.create(app.uri, ff, move, uri);
+                    paste.show();
+                    return true;
                 }
-            };
-            AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-            builder.setTitle(R.string.files_delete);
-            builder.setMessage(R.string.are_you_sure);
-            if (shared.getBoolean(FilesApplication.PREF_RECYCLE, false)) {
-                builder.setNeutralButton(R.string.delete_permanently, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        permanently.run();
-                    }
-                });
             }
-            builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    File trash = storage.getTrash();
-                    boolean t = shared.getBoolean(FilesApplication.PREF_RECYCLE, false);
-                    String s = uri.getScheme();
-                    if (s.equals(ContentResolver.SCHEME_FILE)) {
-                        File f = Storage.getFile(uri);
-                        if (Storage.relative(trash, f) != null)
-                            t = false; // delete permanenty, operation on trash folder
-                    }
-                    if (t) {
-                        delete = new RecycleBuilder(getContext(), uri, selected, trash) {
+            case R.id.action_copy: {
+                try {
+                    app.copy = new Storage.Nodes(selected);
+                    app.cut = null;
+                    app.uri = uri;
+                    updatePaste();
+                    closeSelection();
+                    Toast.makeText(getContext(), getString(R.string.toast_files_copied, app.copy.size()), Toast.LENGTH_SHORT).show();
+                } catch (RuntimeException e) {
+                    Log.e(TAG, "io", e);
+                    error.setText(e.getMessage());
+                    error.setVisibility(View.VISIBLE);
+                } finally {
+                    storage.closeSu();
+                }
+                return true;
+            }
+            case R.id.action_cut: {
+                try {
+                    app.copy = null;
+                    app.cut = new Storage.Nodes(selected);
+                    app.uri = uri;
+                    updatePaste();
+                    closeSelection();
+                    Toast.makeText(getContext(), getString(R.string.toast_files_cut, app.cut.size()), Toast.LENGTH_SHORT).show();
+                } catch (RuntimeException e) {
+                    Log.e(TAG, "io", e);
+                    error.setText(e.getMessage());
+                    error.setVisibility(View.VISIBLE);
+                } finally {
+                    storage.closeSu();
+                }
+                return true;
+            }
+            case R.id.action_delete: {
+                if (delete != null)
+                    return true;
+                final Runnable permanently = new Runnable() {
+                    @Override
+                    public void run() {
+                        delete = new DeleteBuilder(getContext(), uri, selected) {
                             @Override
                             public void dismiss() {
                                 super.dismiss();
@@ -2100,94 +2205,143 @@ public class FilesFragment extends Fragment {
                             }
                         };
                         delete.show();
-                    } else {
-                        permanently.run();
-                    }
-                }
-            });
-            builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                }
-            });
-            builder.show();
-            return true;
-        }
-        if (id == R.id.action_rename && item.isEnabled()) {
-            final Uri f = selected.get(0).uri;
-            final OpenFileDialog.EditTextDialog dialog = new OpenFileDialog.EditTextDialog(getContext());
-            dialog.setTitle(R.string.files_rename);
-            dialog.setText(Storage.getName(getContext(), f));
-            dialog.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface d, int which) {
-                    storage.rename(f, dialog.getText());
-                    reload();
-                    closeSelection();
-                }
-            });
-            dialog.show();
-            return true;
-        }
-        if (id == R.id.action_archive) {
-            if (archive != null)
-                return true;
-            final String name;
-            if (selected.size() == 1)
-                name = selected.get(0).name;
-            else
-                name = "Archive";
-            String to = Storage.getNextName(getContext(), uri, name, "zip");
-            Storage.UriOutputStream os;
-            try {
-                os = storage.open(uri, to);
-            } catch (IOException e) {
-                Runnable run = new Runnable() {
-                    @Override
-                    public void run() {
-                        final Runnable run = this;
-                        choicer = new OpenChoicer(OpenFileDialog.DIALOG_TYPE.FOLDER_DIALOG, false) {
-                            @Override
-                            public void onResult(Uri uri) {
-                                String to = Storage.getNextName(context, uri, name, "zip");
-                                try {
-                                    Storage.UriOutputStream os = storage.open(uri, to);
-                                    archive(os);
-                                } catch (IOException e) {
-                                    ErrorDialog builder = new ErrorDialog(context, e);
-                                    builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                        }
-                                    });
-                                    builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            run.run();
-                                        }
-                                    });
-                                    builder.show();
-                                }
-                            }
-                        };
-                        choicer.setTitle(getString(R.string.save_to));
-                        choicer.setPermissionsDialog(FilesFragment.this, Storage.PERMISSIONS_RW, RESULT_ARCHIVE);
-                        if (Build.VERSION.SDK_INT >= 21)
-                            choicer.setStorageAccessFramework(FilesFragment.this, RESULT_ARCHIVE);
-                        choicer.show(uri);
                     }
                 };
-                run.run();
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                builder.setTitle(R.string.files_delete);
+                builder.setMessage(R.string.are_you_sure);
+                if (shared.getBoolean(FilesApplication.PREF_RECYCLE, false)) {
+                    builder.setNeutralButton(R.string.delete_permanently, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            permanently.run();
+                        }
+                    });
+                }
+                builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        File trash = storage.getTrash();
+                        boolean t = shared.getBoolean(FilesApplication.PREF_RECYCLE, false);
+                        String s = uri.getScheme();
+                        if (s.equals(ContentResolver.SCHEME_FILE)) {
+                            File f = Storage.getFile(uri);
+                            if (Storage.relative(trash, f) != null)
+                                t = false; // delete permanenty, operation on trash folder
+                        }
+                        if (t) {
+                            delete = new RecycleBuilder(getContext(), uri, selected, trash) {
+                                @Override
+                                public void dismiss() {
+                                    super.dismiss();
+                                    delete = null;
+                                }
+
+                                @Override
+                                public void success() {
+                                    super.success();
+                                    closeSelection();
+                                    reload();
+                                }
+                            };
+                            delete.show();
+                        } else {
+                            permanently.run();
+                        }
+                    }
+                });
+                builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                    }
+                });
+                builder.show();
                 return true;
             }
-            archive(os);
-            return true;
+            case R.id.action_properties: {
+                PropertiesBuilder builder = new PropertiesBuilder(getContext(), uri, selected);
+                builder.show();
+                return true;
+            }
+            case R.id.action_rename: {
+                if (!item.isEnabled())
+                    return true;
+                final Uri f = selected.get(0).uri;
+                final OpenFileDialog.EditTextDialog dialog = new OpenFileDialog.EditTextDialog(getContext());
+                dialog.setTitle(R.string.files_rename);
+                dialog.setText(Storage.getName(getContext(), f));
+                dialog.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int which) {
+                        storage.rename(f, dialog.getText());
+                        reload();
+                        closeSelection();
+                    }
+                });
+                dialog.show();
+                return true;
+            }
+            case R.id.action_archive: {
+                if (archive != null)
+                    return true;
+                final String name;
+                if (selected.size() == 1)
+                    name = selected.get(0).name;
+                else
+                    name = "Archive";
+                String to = Storage.getNextName(getContext(), uri, name, "zip");
+                Storage.UriOutputStream os;
+                try {
+                    os = storage.open(uri, to);
+                } catch (IOException e) {
+                    Runnable run = new Runnable() {
+                        @Override
+                        public void run() {
+                            final Runnable run = this;
+                            choicer = new OpenChoicer(OpenFileDialog.DIALOG_TYPE.FOLDER_DIALOG, false) {
+                                @Override
+                                public void onResult(Uri uri) {
+                                    String to = Storage.getNextName(context, uri, name, "zip");
+                                    try {
+                                        Storage.UriOutputStream os = storage.open(uri, to);
+                                        archive(os);
+                                    } catch (IOException e) {
+                                        ErrorDialog builder = new ErrorDialog(context, e);
+                                        builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                            }
+                                        });
+                                        builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                run.run();
+                                            }
+                                        });
+                                        builder.show();
+                                    }
+                                }
+                            };
+                            choicer.setTitle(getString(R.string.save_to));
+                            choicer.setPermissionsDialog(FilesFragment.this, Storage.PERMISSIONS_RW, RESULT_ARCHIVE);
+                            if (Build.VERSION.SDK_INT >= 21)
+                                choicer.setStorageAccessFramework(FilesFragment.this, RESULT_ARCHIVE);
+                            choicer.show(uri);
+                        }
+                    };
+                    run.run();
+                    return true;
+                }
+                archive(os);
+                return true;
+            }
         }
         return super.onOptionsItemSelected(item);
     }
 
     void archive(final Storage.UriOutputStream uos) {
         archive = new OperationBuilder(getContext());
+        archive.create(R.layout.paste);
         archive.setTitle(R.string.menu_archive);
         final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
             ZipOutputStream zip;

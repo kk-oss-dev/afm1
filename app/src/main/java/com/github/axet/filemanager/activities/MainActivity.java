@@ -47,8 +47,8 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.github.axet.androidlibrary.widgets.AboutPreferenceCompat;
-import com.github.axet.androidlibrary.widgets.AppCompatThemeActivity;
+import com.github.axet.androidlibrary.preferences.AboutPreferenceCompat;
+import com.github.axet.androidlibrary.activities.AppCompatThemeActivity;
 import com.github.axet.androidlibrary.widgets.OpenChoicer;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.PathMax;
@@ -344,47 +344,6 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         AboutPreferenceCompat.setVersion(ver);
 
         final FloatingActionsMenu fab = (FloatingActionsMenu) findViewById(R.id.fab);
-        if (Build.VERSION.SDK_INT < 11) { // API10 bug
-            fab.setOnFloatingActionsMenuUpdateListener(new FloatingActionsMenu.OnFloatingActionsMenuUpdateListener() {
-                Handler handler = new Handler();
-
-                {
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            fab.expand();
-                            fab.collapseImmediately();
-                        }
-                    });
-                }
-
-                boolean isEnclosing(Class c, Class b) {
-                    return c.isAnonymousClass() && c.getEnclosingClass() == b;
-                }
-
-                @Override
-                public void onMenuExpanded() {
-                    for (int i = 0; i < fab.getChildCount(); i++) {
-                        View v = fab.getChildAt(i);
-                        if (isEnclosing(v.getClass(), FloatingActionsMenu.class))
-                            continue;
-                        if (v instanceof FloatingActionButton)
-                            v.setClickable(true);
-                    }
-                }
-
-                @Override
-                public void onMenuCollapsed() {
-                    for (int i = 0; i < fab.getChildCount(); i++) {
-                        View v = fab.getChildAt(i);
-                        if (isEnclosing(v.getClass(), FloatingActionsMenu.class))
-                            continue;
-                        if (v instanceof FloatingActionButton)
-                            v.setClickable(false);
-                    }
-                }
-            });
-        }
         FloatingActionButton fabFolder = (FloatingActionButton) findViewById(R.id.fab_create_folder);
         fabFolder.setOnClickListener(new View.OnClickListener() {
             @Override

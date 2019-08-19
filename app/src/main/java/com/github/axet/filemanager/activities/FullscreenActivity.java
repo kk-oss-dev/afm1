@@ -21,7 +21,7 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.TextView;
 
-import com.github.axet.androidlibrary.widgets.AppCompatFullscreenThemeActivity;
+import com.github.axet.androidlibrary.activities.AppCompatFullscreenThemeActivity;
 import com.github.axet.androidlibrary.widgets.PinchGesture;
 import com.github.axet.androidlibrary.widgets.PinchView;
 import com.github.axet.filemanager.R;
