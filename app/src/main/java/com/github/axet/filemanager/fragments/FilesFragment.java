@@ -969,7 +969,7 @@ public class FilesFragment extends Fragment {
                         df = new SuperUser.DF(file);
                     sb.append("\nmode: " + df.getMode());
                     sb.append("\ninode: " + df.inode);
-                    sb.append("\nowner: " + df.group + "/" + df.name);
+                    sb.append("\nowner: " + df.name + "/" + df.group);
                 }
             }
             String str = sb.toString();
@@ -995,6 +995,7 @@ public class FilesFragment extends Fragment {
             title.setVisibility(View.INVISIBLE);
             final Button b = d.getButton(DialogInterface.BUTTON_NEUTRAL);
             b.setVisibility(View.INVISIBLE);
+            storage.closeSu();
         }
 
         @Override
