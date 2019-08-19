@@ -960,6 +960,25 @@ public class FilesFragment extends Fragment {
                     sb.append("type: " + info.fs);
             }
             if (op.files.size() == 1) { // show attributes
+                if (s.equals(ContentResolver.SCHEME_CONTENT) && op.calcUri.getAuthority().startsWith(Storage.SAF) && storage.getRoot()) {
+                    Uri uri = op.files.get(0).uri;
+                    Uri otg = StorageProvider.filterFolderIntent(getContext(), uri);
+                    if (uri == otg)
+                        otg = StorageProvider.filterOTGFolderIntent(storage, uri);
+                    if (uri != otg) {
+                        File file = Storage.getFile(otg);
+                        MountInfo mount = new MountInfo();
+                        MountInfo.Info info = mount.findMount(file);
+                        if (info != null)
+                            sb.append("\nunderlying: " + info.fs);
+                        else
+                            sb.append("\nunderlying: unknown"); // Underlying filesystem: unknown, owners/group: unknown, attributes: unknown, thanks google!
+                        SuperUser.DF df = new SuperUser.DF(storage.getSu(), file);
+                        sb.append("\nmode: " + df.getMode());
+                        sb.append("\ninode: " + df.inode);
+                        sb.append("\nowner: " + df.name + "/" + df.group);
+                    } // else we can open document inputstream and using fd get real path
+                }
                 if (s.equals(ContentResolver.SCHEME_FILE)) {
                     SuperUser.DF df;
                     File file = Storage.getFile(op.files.get(0).uri);
@@ -969,7 +988,7 @@ public class FilesFragment extends Fragment {
                         df = new SuperUser.DF(file);
                     sb.append("\nmode: " + df.getMode());
                     sb.append("\ninode: " + df.inode);
-                    sb.append("\nowner: " + df.group + "/" + df.name);
+                    sb.append("\nowner: " + df.name + "/" + df.group);
                 }
             }
             String str = sb.toString();
@@ -995,6 +1014,7 @@ public class FilesFragment extends Fragment {
             title.setVisibility(View.INVISIBLE);
             final Button b = d.getButton(DialogInterface.BUTTON_NEUTRAL);
             b.setVisibility(View.INVISIBLE);
+            storage.closeSu();
         }
 
         @Override
