@@ -618,8 +618,8 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         public long bfree; // free blocks
         public long nodes; // total inodes
         public long nfree; // free inodes
-        public String name;
-        public String group;
+        public String user; // user id -> user
+        public String group; // group id -> group
 
         public DF(File path) {
             SuperUser.SuIO su = new SuperUser.SuIO(SuperUser.BIN_SH);
@@ -647,7 +647,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                 bfree = Long.valueOf(ss[8]);
                 nodes = Long.valueOf(ss[9]);
                 nfree = Long.valueOf(ss[10]);
-                name = ss[11];
+                user = ss[11];
                 group = ss[12];
             } catch (IOException e) {
                 throw new RuntimeException(e);

@@ -878,7 +878,7 @@ public class FilesFragment extends Fragment {
             super(context);
             create(R.layout.properties);
             setCancelable(true);
-            setTitle("Properties");
+            setTitle(getString(R.string.properties));
         }
 
         public PropertiesBuilder(Context context, Uri uri, ArrayList<Storage.Node> selected) {
@@ -950,16 +950,16 @@ public class FilesFragment extends Fragment {
             filesTotal.setText(FilesApplication.formatSize(getContext(), op.total) + " (" + BYTES.format(op.total) + " " + getContext().getString(R.string.size_bytes) + ")");
             StringBuffer sb = new StringBuffer();
             String s = op.calcUri.getScheme();
-            if (s.equals(ContentResolver.SCHEME_CONTENT) && op.calcUri.getAuthority().startsWith(Storage.SAF)) {
-                sb.append("type: SAF"); // Underlying filesystem: unknown, owners/group: unknown, attributes: unknown, thanks google!
-            }
+            if (s.equals(ContentResolver.SCHEME_CONTENT) && op.calcUri.getAuthority().startsWith(Storage.SAF))
+                sb.append("mount: SAF"); // Underlying filesystem: unknown, owners/group: unknown, attributes: unknown, thanks google!
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 MountInfo mount = new MountInfo();
                 MountInfo.Info info = mount.findMount(Storage.getFile(op.calcUri));
                 if (info != null)
-                    sb.append("type: " + info.fs);
+                    sb.append("mount: " + info.fs);
             }
             if (op.files.size() == 1) { // show attributes
+                SuperUser.DF df = null;
                 if (s.equals(ContentResolver.SCHEME_CONTENT) && op.calcUri.getAuthority().startsWith(Storage.SAF) && storage.getRoot()) {
                     Uri uri = op.files.get(0).uri;
                     Uri otg = StorageProvider.filterFolderIntent(getContext(), uri);
@@ -973,22 +973,27 @@ public class FilesFragment extends Fragment {
                             sb.append("\nunderlying: " + info.fs);
                         else
                             sb.append("\nunderlying: unknown"); // Underlying filesystem: unknown, owners/group: unknown, attributes: unknown, thanks google!
-                        SuperUser.DF df = new SuperUser.DF(storage.getSu(), file);
-                        sb.append("\nmode: " + df.getMode());
-                        sb.append("\ninode: " + df.inode);
-                        sb.append("\nowner: " + df.name + "/" + df.group);
+                        df = new SuperUser.DF(storage.getSu(), file);
                     } // else we can open document inputstream and using fd get real path
                 }
                 if (s.equals(ContentResolver.SCHEME_FILE)) {
-                    SuperUser.DF df;
                     File file = Storage.getFile(op.files.get(0).uri);
                     if (storage.getRoot())
                         df = new SuperUser.DF(storage.getSu(), file);
                     else
                         df = new SuperUser.DF(file);
+                }
+                if (df != null) {
+                    if (df.nodes != 0) {
+                        sb.append("\nnodes: " + df.nodes);
+                        sb.append("\nnfree: " + df.nfree);
+                        sb.append("\nblock size: " + df.bsize);
+                        sb.append("\ntotal blocks: " + df.blocks);
+                        sb.append("\n");
+                    }
                     sb.append("\nmode: " + df.getMode());
                     sb.append("\ninode: " + df.inode);
-                    sb.append("\nowner: " + df.name + "/" + df.group);
+                    sb.append("\nowner: " + df.user + "/" + df.group);
                 }
             }
             String str = sb.toString();
