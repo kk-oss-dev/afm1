@@ -1,70 +1,178 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/main_content"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
     android:padding="5dp">
 
-    <TextView
-        android:id="@+id/title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ellipsize="middle"
-        android:singleLine="true"
-        android:text="Calculating: 50 KB/sec, 2m" />
-
-    <View
-        android:layout_width="0dp"
-        android:layout_height="5dp" />
-
-    <TextView
-        android:id="@+id/from"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ellipsize="middle"
-        android:singleLine="true"
-        android:text="Files: file.txt" />
-
-    <View
-        android:layout_width="0dp"
-        android:layout_height="5dp" />
-
-    <TextView
-        android:id="@+id/properties"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ellipsize="middle"
-        android:text="File system: fuse\nAttributes: xxx" />
-
-    <View
-        android:layout_width="0dp"
-        android:layout_height="5dp" />
-
-    <View
-        android:layout_width="0dp"
-        android:layout_height="5dp" />
-
     <LinearLayout
+        android:id="@+id/main_content"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="vertical">
 
         <TextView
-            android:id="@+id/files_count"
-            android:layout_width="wrap_content"
+            android:id="@+id/title"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="4/44" />
+            android:ellipsize="middle"
+            android:singleLine="true"
+            android:text="Calculating: 50 KB/sec, 2m" />
 
         <View
             android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_height="5dp" />
 
         <TextView
-            android:id="@+id/files_size"
-            android:layout_width="wrap_content"
+            android:id="@+id/from"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="300 Mb / 1500 Mb" />
+            android:ellipsize="middle"
+            android:singleLine="true"
+            android:text="Files: file.txt" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="5dp" />
+
+        <TextView
+            android:id="@+id/properties"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="middle"
+            android:text="File system: fuse\nAttributes: xxx" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="5dp" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="5dp" />
+
+        <TableLayout
+            android:id="@+id/sums"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:shrinkColumns="0,2"
+            android:stretchColumns="1">
+
+            <TableRow
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="md5:" />
+
+                <TextView
+                    android:id="@+id/md5"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="middle"
+                    android:singleLine="true"
+                    android:text="e309a97f6e297ae72ebe57dbb6a72854" />
+
+                <ImageView
+                    android:id="@+id/copy_md5"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingLeft="10dp"
+                    android:paddingRight="10dp"
+                    android:src="@drawable/ic_content_copy_black_24dp" />
+            </TableRow>
+
+            <TableRow
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="sha1:" />
+
+                <TextView
+                    android:id="@+id/sha1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="middle"
+                    android:singleLine="true"
+                    android:text="057aafe631aa984015810e9ec020e51869a51abd66d1664a53300d2e752bfc57" />
+
+                <ImageView
+                    android:id="@+id/copy_sha1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingLeft="10dp"
+                    android:paddingRight="10dp"
+                    android:src="@drawable/ic_content_copy_black_24dp" />
+            </TableRow>
+        </TableLayout>
+
+        <LinearLayout
+            android:id="@+id/sumscalc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="md5:" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="sha1:" />
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/progress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:padding="5dp" />
+
+            <Button
+                android:id="@+id/calc"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Calculate"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="5dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/files_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="4/44" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/files_size"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="300 Mb / 1500 Mb" />
+        </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+</ScrollView>

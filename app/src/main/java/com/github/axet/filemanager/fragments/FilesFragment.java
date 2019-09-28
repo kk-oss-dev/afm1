@@ -2,6 +2,8 @@ package com.github.axet.filemanager.fragments;
 
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -11,6 +13,7 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -69,6 +72,8 @@ import com.github.axet.filemanager.services.StorageProvider;
 import com.github.axet.filemanager.widgets.PathView;
 import com.github.axet.wget.SpeedInfo;
 
+import org.apache.commons.io.IOUtils;
+
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -77,6 +82,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.security.MessageDigest;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
@@ -84,6 +90,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.TreeMap;
@@ -350,6 +357,14 @@ public class FilesFragment extends Fragment {
                 paste.getContext().getString(R.string.size_bytes) + ", " + SIMPLE.format(f.last));
 
         d.show();
+    }
+
+    public static void copy(Context context, String text) {
+        if (Build.VERSION.SDK_INT >= 11) {
+            ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipData clip = ClipData.newPlainText("sha1", text);
+            clipboard.setPrimaryClip(clip);
+        }
     }
 
     public static class Pos {
@@ -873,6 +888,12 @@ public class FilesFragment extends Fragment {
         public Handler handler = new Handler();
         public PendingOperation op;
         public TextView props;
+        public View sums; //md5sums
+        public View sumscalc;
+        public ProgressBar progress;
+        public TextView md5;
+        public TextView sha1;
+        public Thread thread; // sums stream
 
         public PropertiesBuilder(Context context) {
             super(context);
@@ -933,6 +954,126 @@ public class FilesFragment extends Fragment {
                     dismiss();
                 }
             };
+            sums = v.findViewById(R.id.sums);
+            sumscalc = v.findViewById(R.id.sumscalc);
+            md5 = (TextView) v.findViewById(R.id.md5);
+            sha1 = (TextView) v.findViewById(R.id.sha1);
+            progress = (ProgressBar) v.findViewById(R.id.progress);
+            View copymd5 = v.findViewById(R.id.copy_md5);
+            copymd5.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    copy(getContext(), md5.getText().toString());
+                    Toast.makeText(getContext(), "Copied", Toast.LENGTH_SHORT).show();
+                }
+            });
+            View copysha1 = v.findViewById(R.id.copy_sha1);
+            copysha1.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    copy(getContext(), sha1.getText().toString());
+                    Toast.makeText(getContext(), "Copied", Toast.LENGTH_SHORT).show();
+                }
+            });
+            final Button calc = (Button) v.findViewById(R.id.calc);
+            calc.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    calc.getBackground().setColorFilter(Color.GRAY, PorterDuff.Mode.MULTIPLY);
+                    calc.setTextColor(Color.LTGRAY);
+                    calc.setOnClickListener(null);
+                    calcSums();
+                }
+            });
+            dismiss = new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    if (thread != null) {
+                        thread.interrupt();
+                        try {
+                            thread.join();
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                        thread = null;
+                    }
+                }
+            };
+        }
+
+        public void calcSums() {
+            final InputStream is;
+            String s = op.calcUri.getScheme();
+            if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+                try {
+                    is = getContext().getContentResolver().openInputStream(op.calcUri);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            } else if (s.equals(ContentResolver.SCHEME_FILE)) {
+                File file = Storage.getFile(op.files.get(0).uri);
+                try {
+                    is = new FileInputStream(file);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            } else {
+                throw new Storage.UnknownUri();
+            }
+            thread = new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        final MessageDigest md5 = MessageDigest.getInstance("MD5");
+                        final MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
+                        IOUtils.copy(is, new OutputStream() {
+                            long pos = 0;
+
+                            @Override
+                            public void write(int b) throws IOException {
+                                md5.update((byte) b);
+                                sha1.update((byte) b);
+                                pos++;
+                                update();
+                            }
+
+                            @Override
+                            public void write(@NonNull byte[] b, int off, int len) throws IOException {
+                                md5.update(b, off, len);
+                                sha1.update(b, off, len);
+                                pos += len;
+                                update();
+                            }
+
+                            void update() throws IOException {
+                                if (Thread.currentThread().isInterrupted())
+                                    throw new IOException(new InterruptedException());
+                                handler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        progress.setProgress((int) (pos * 100 / op.total));
+                                    }
+                                });
+                            }
+                        });
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                thread = null;
+                                PropertiesBuilder.this.md5.setText(Storage.toHex(md5.digest()));
+                                PropertiesBuilder.this.sha1.setText(Storage.toHex(sha1.digest()));
+                                sums.setVisibility(View.VISIBLE);
+                                sumscalc.setVisibility(View.GONE);
+                            }
+                        });
+                    } catch (Exception e) {
+                        Log.d(TAG, "crc error", e);
+                    } finally {
+                        Log.d(TAG, "crc done");
+                    }
+                }
+            };
+            thread.start();
         }
 
         public void propsCalc() {
@@ -945,7 +1086,7 @@ public class FilesFragment extends Fragment {
             op.post();
         }
 
-        public void update(PendingOperation op) {
+        public void update(final PendingOperation op) {
             filesCount.setText("" + op.files.size());
             filesTotal.setText(FilesApplication.formatSize(getContext(), op.total) + " (" + BYTES.format(op.total) + " " + getContext().getString(R.string.size_bytes) + ")");
             StringBuffer sb = new StringBuffer();
@@ -959,29 +1100,38 @@ public class FilesFragment extends Fragment {
                     sb.append("mount: " + info.fs);
             }
             if (op.files.size() == 1) { // show attributes
+                long last = 0;
                 SuperUser.DF df = null;
-                if (s.equals(ContentResolver.SCHEME_CONTENT) && op.calcUri.getAuthority().startsWith(Storage.SAF) && storage.getRoot()) {
-                    Uri uri = op.files.get(0).uri;
-                    Uri otg = StorageProvider.filterFolderIntent(getContext(), uri);
-                    if (uri == otg)
-                        otg = StorageProvider.filterOTGFolderIntent(storage, uri);
-                    if (uri != otg) {
-                        File file = Storage.getFile(otg);
-                        MountInfo mount = new MountInfo();
-                        MountInfo.Info info = mount.findMount(file);
-                        if (info != null)
-                            sb.append("\nunderlying: " + info.fs);
-                        else
-                            sb.append("\nunderlying: unknown"); // Underlying filesystem: unknown, owners/group: unknown, attributes: unknown, thanks google!
-                        df = new SuperUser.DF(storage.getSu(), file);
-                    } // else we can open document inputstream and using fd get real path
+                if (s.equals(ContentResolver.SCHEME_CONTENT) && op.calcUri.getAuthority().startsWith(Storage.SAF)) {
+                    if (storage.getRoot()) {
+                        Uri uri = op.files.get(0).uri;
+                        Uri otg = StorageProvider.filterFolderIntent(getContext(), uri);
+                        if (uri == otg)
+                            otg = StorageProvider.filterOTGFolderIntent(storage, uri);
+                        if (uri != otg) {
+                            File file = Storage.getFile(otg);
+                            MountInfo mount = new MountInfo();
+                            MountInfo.Info info = mount.findMount(file);
+                            if (info != null)
+                                sb.append("\nunderlying: " + info.fs);
+                            else
+                                sb.append("\nunderlying: unknown"); // Underlying filesystem: unknown, owners/group: unknown, attributes: unknown, thanks google!
+                            df = new SuperUser.DF(storage.getSu(), file);
+                            last = SuperUser.lastModified(storage.getSu(), file);
+                        } // else we can open document inputstream and get real path using fd
+                    } else {
+                        last = Storage.getLastModified(getContext(), op.calcUri);
+                    }
                 }
                 if (s.equals(ContentResolver.SCHEME_FILE)) {
                     File file = Storage.getFile(op.files.get(0).uri);
-                    if (storage.getRoot())
+                    if (storage.getRoot()) {
                         df = new SuperUser.DF(storage.getSu(), file);
-                    else
+                        last = SuperUser.lastModified(storage.getSu(), file);
+                    } else {
                         df = new SuperUser.DF(file);
+                        last = file.lastModified();
+                    }
                 }
                 if (df != null) {
                     if (df.nodes != 0) {
@@ -995,6 +1145,14 @@ public class FilesFragment extends Fragment {
                     sb.append("\ninode: " + df.inode);
                     sb.append("\nowner: " + df.user + "/" + df.group);
                 }
+                if (last != 0)
+                    sb.append("\nmodified: " + SIMPLE.format(new Date(last)));
+                sums.setVisibility(View.GONE);
+                sumscalc.setVisibility(View.VISIBLE);
+                calcSums();
+            } else {
+                sums.setVisibility(View.GONE);
+                sumscalc.setVisibility(View.GONE);
             }
             String str = sb.toString();
             if (str.isEmpty())
