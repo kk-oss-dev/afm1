@@ -1,7 +1,10 @@
 package com.github.axet.filemanager.fragments;
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -11,11 +14,15 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.media.MediaDataSource;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.ParcelFileDescriptor;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -47,7 +54,9 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.github.axet.androidlibrary.crypto.MD5;
 import com.github.axet.androidlibrary.preferences.OptimizationPreferenceCompat;
+import com.github.axet.androidlibrary.sound.MediaPlayerCompat;
 import com.github.axet.androidlibrary.widgets.CacheImagesAdapter;
 import com.github.axet.androidlibrary.widgets.CacheImagesRecyclerAdapter;
 import com.github.axet.androidlibrary.widgets.ErrorDialog;
@@ -69,14 +78,18 @@ import com.github.axet.filemanager.services.StorageProvider;
 import com.github.axet.filemanager.widgets.PathView;
 import com.github.axet.wget.SpeedInfo;
 
+import org.apache.commons.io.IOUtils;
+
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.security.MessageDigest;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
@@ -84,6 +97,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.TreeMap;
@@ -350,6 +364,87 @@ public class FilesFragment extends Fragment {
                 paste.getContext().getString(R.string.size_bytes) + ", " + SIMPLE.format(f.last));
 
         d.show();
+    }
+
+    public static void copy(Context context, String text) {
+        if (Build.VERSION.SDK_INT >= 11) {
+            ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipData clip = ClipData.newPlainText("sha1", text);
+            clipboard.setPrimaryClip(clip);
+        }
+    }
+
+    @TargetApi(10)
+    public static Bitmap createVideoThumbnail(Context context, Uri uri) throws IOException {
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever(); // API10
+        try {
+            ParcelFileDescriptor pfd = MediaPlayerCompat.getFD(context, uri);
+            FileDescriptor fd = pfd.getFileDescriptor();
+            retriever.setDataSource(fd);
+            Bitmap bm = retriever.getFrameAtTime(-1);
+            if (bm == null)
+                return null;
+            return CacheImagesAdapter.createThumbnail(bm);
+        } catch (Exception ignore) {
+            try {
+                retriever.release();
+            } catch (Exception ignore1) {
+            }
+        }
+        return null;
+    }
+
+    public static Bitmap createVideoThumbnail(Storage storage, Uri uri) throws IOException {
+        if (Build.VERSION.SDK_INT >= 10) {
+            String s = uri.getScheme();
+            if (s.equals(ContentResolver.SCHEME_FILE) && storage.getRoot()) {
+                final File f = Storage.getFile(uri);
+                if (Build.VERSION.SDK_INT >= 23) {
+                    MediaDataSource source = new MediaDataSource() { // API23
+                        SuperUser.RandomAccessFile raf = new SuperUser.RandomAccessFile(f);
+
+                        @Override
+                        public void close() throws IOException {
+                            if (raf != null) {
+                                raf.close();
+                                raf = null;
+                            }
+                        }
+
+                        @Override
+                        public int readAt(long position, byte[] buffer, int offset, int size) throws IOException {
+                            raf.seek(position);
+                            return raf.read(buffer, offset, size);
+                        }
+
+                        @Override
+                        public long getSize() throws IOException {
+                            return raf.getSize();
+                        }
+                    };
+                    MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                    try {
+                        retriever.setDataSource(source);
+                        Bitmap bm = retriever.getFrameAtTime(-1);
+                        return CacheImagesAdapter.createThumbnail(bm);
+                    } catch (Exception e) {
+                        try {
+                            retriever.release();
+                        } catch (Exception e1) {
+                        }
+                    }
+                } else {
+                    return null;
+                }
+            }
+            return createVideoThumbnail(storage.getContext(), uri);
+        }
+        return null;
+    }
+
+    public static boolean isVideo(String name) {
+        String mime = Storage.getTypeByName(name);
+        return mime.startsWith("video/");
     }
 
     public static class Pos {
@@ -873,12 +968,18 @@ public class FilesFragment extends Fragment {
         public Handler handler = new Handler();
         public PendingOperation op;
         public TextView props;
+        public View sums; //md5sums
+        public View sumscalc;
+        public ProgressBar progress;
+        public TextView md5;
+        public TextView sha1;
+        public Thread thread; // sums stream
 
         public PropertiesBuilder(Context context) {
             super(context);
             create(R.layout.properties);
             setCancelable(true);
-            setTitle("Properties");
+            setTitle(getString(R.string.properties));
         }
 
         public PropertiesBuilder(Context context, Uri uri, ArrayList<Storage.Node> selected) {
@@ -933,6 +1034,126 @@ public class FilesFragment extends Fragment {
                     dismiss();
                 }
             };
+            sums = v.findViewById(R.id.sums);
+            sumscalc = v.findViewById(R.id.sumscalc);
+            md5 = (TextView) v.findViewById(R.id.md5);
+            sha1 = (TextView) v.findViewById(R.id.sha1);
+            progress = (ProgressBar) v.findViewById(R.id.progress);
+            View copymd5 = v.findViewById(R.id.copy_md5);
+            copymd5.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    copy(getContext(), md5.getText().toString());
+                    Toast.makeText(getContext(), "Copied", Toast.LENGTH_SHORT).show();
+                }
+            });
+            View copysha1 = v.findViewById(R.id.copy_sha1);
+            copysha1.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    copy(getContext(), sha1.getText().toString());
+                    Toast.makeText(getContext(), "Copied", Toast.LENGTH_SHORT).show();
+                }
+            });
+            final Button calc = (Button) v.findViewById(R.id.calc);
+            calc.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    calc.getBackground().setColorFilter(Color.GRAY, PorterDuff.Mode.MULTIPLY);
+                    calc.setTextColor(Color.LTGRAY);
+                    calc.setOnClickListener(null);
+                    calcSums();
+                }
+            });
+            dismiss = new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    if (thread != null) {
+                        thread.interrupt();
+                        try {
+                            thread.join();
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                        thread = null;
+                    }
+                }
+            };
+        }
+
+        public void calcSums() {
+            final InputStream is;
+            String s = op.calcUri.getScheme();
+            if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+                try {
+                    is = getContext().getContentResolver().openInputStream(op.calcUri);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            } else if (s.equals(ContentResolver.SCHEME_FILE)) {
+                File file = Storage.getFile(op.files.get(0).uri);
+                try {
+                    is = new FileInputStream(file);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            } else {
+                throw new Storage.UnknownUri();
+            }
+            thread = new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        final MessageDigest md5 = MessageDigest.getInstance("MD5");
+                        final MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
+                        IOUtils.copy(is, new OutputStream() {
+                            long pos = 0;
+
+                            @Override
+                            public void write(int b) throws IOException {
+                                md5.update((byte) b);
+                                sha1.update((byte) b);
+                                pos++;
+                                update();
+                            }
+
+                            @Override
+                            public void write(@NonNull byte[] b, int off, int len) throws IOException {
+                                md5.update(b, off, len);
+                                sha1.update(b, off, len);
+                                pos += len;
+                                update();
+                            }
+
+                            void update() throws IOException {
+                                if (Thread.currentThread().isInterrupted())
+                                    throw new IOException(new InterruptedException());
+                                handler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        progress.setProgress((int) (pos * 100 / op.total));
+                                    }
+                                });
+                            }
+                        });
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                thread = null;
+                                PropertiesBuilder.this.md5.setText(MD5.hex(md5.digest()));
+                                PropertiesBuilder.this.sha1.setText(MD5.hex(sha1.digest()));
+                                sums.setVisibility(View.VISIBLE);
+                                sumscalc.setVisibility(View.GONE);
+                            }
+                        });
+                    } catch (Exception e) {
+                        Log.d(TAG, "crc error", e);
+                    } finally {
+                        Log.d(TAG, "crc done");
+                    }
+                }
+            };
+            thread.start();
         }
 
         public void propsCalc() {
@@ -945,51 +1166,73 @@ public class FilesFragment extends Fragment {
             op.post();
         }
 
-        public void update(PendingOperation op) {
+        public void update(final PendingOperation op) {
             filesCount.setText("" + op.files.size());
             filesTotal.setText(FilesApplication.formatSize(getContext(), op.total) + " (" + BYTES.format(op.total) + " " + getContext().getString(R.string.size_bytes) + ")");
             StringBuffer sb = new StringBuffer();
             String s = op.calcUri.getScheme();
-            if (s.equals(ContentResolver.SCHEME_CONTENT) && op.calcUri.getAuthority().startsWith(Storage.SAF)) {
-                sb.append("type: SAF"); // Underlying filesystem: unknown, owners/group: unknown, attributes: unknown, thanks google!
-            }
+            if (s.equals(ContentResolver.SCHEME_CONTENT) && op.calcUri.getAuthority().startsWith(Storage.SAF))
+                sb.append("mount: SAF"); // Underlying filesystem: unknown, owners/group: unknown, attributes: unknown, thanks google!
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 MountInfo mount = new MountInfo();
                 MountInfo.Info info = mount.findMount(Storage.getFile(op.calcUri));
                 if (info != null)
-                    sb.append("type: " + info.fs);
+                    sb.append("mount: " + info.fs);
             }
             if (op.files.size() == 1) { // show attributes
-                if (s.equals(ContentResolver.SCHEME_CONTENT) && op.calcUri.getAuthority().startsWith(Storage.SAF) && storage.getRoot()) {
-                    Uri uri = op.files.get(0).uri;
-                    Uri otg = StorageProvider.filterFolderIntent(getContext(), uri);
-                    if (uri == otg)
-                        otg = StorageProvider.filterOTGFolderIntent(storage, uri);
-                    if (uri != otg) {
-                        File file = Storage.getFile(otg);
-                        MountInfo mount = new MountInfo();
-                        MountInfo.Info info = mount.findMount(file);
-                        if (info != null)
-                            sb.append("\nunderlying: " + info.fs);
-                        else
-                            sb.append("\nunderlying: unknown"); // Underlying filesystem: unknown, owners/group: unknown, attributes: unknown, thanks google!
-                        SuperUser.DF df = new SuperUser.DF(storage.getSu(), file);
-                        sb.append("\nmode: " + df.getMode());
-                        sb.append("\ninode: " + df.inode);
-                        sb.append("\nowner: " + df.name + "/" + df.group);
-                    } // else we can open document inputstream and using fd get real path
+                long last = 0;
+                SuperUser.DF df = null;
+                if (s.equals(ContentResolver.SCHEME_CONTENT) && op.calcUri.getAuthority().startsWith(Storage.SAF)) {
+                    if (storage.getRoot()) {
+                        Uri uri = op.files.get(0).uri;
+                        Uri otg = StorageProvider.filterFolderIntent(getContext(), uri);
+                        if (uri == otg)
+                            otg = StorageProvider.filterOTGFolderIntent(storage, uri);
+                        if (uri != otg) {
+                            File file = Storage.getFile(otg);
+                            MountInfo mount = new MountInfo();
+                            MountInfo.Info info = mount.findMount(file);
+                            if (info != null)
+                                sb.append("\nunderlying: " + info.fs);
+                            else
+                                sb.append("\nunderlying: unknown"); // Underlying filesystem: unknown, owners/group: unknown, attributes: unknown, thanks google!
+                            df = new SuperUser.DF(storage.getSu(), file);
+                            last = SuperUser.lastModified(storage.getSu(), file);
+                        } // else we can open document inputstream and get real path using fd
+                    } else {
+                        last = Storage.getLastModified(getContext(), op.calcUri);
+                    }
                 }
                 if (s.equals(ContentResolver.SCHEME_FILE)) {
-                    SuperUser.DF df;
                     File file = Storage.getFile(op.files.get(0).uri);
-                    if (storage.getRoot())
+                    if (storage.getRoot()) {
                         df = new SuperUser.DF(storage.getSu(), file);
-                    else
+                        last = SuperUser.lastModified(storage.getSu(), file);
+                    } else {
                         df = new SuperUser.DF(file);
+                        last = file.lastModified();
+                    }
+                }
+                if (df != null) {
+                    if (df.nodes != 0) {
+                        sb.append("\nnodes: " + df.nodes);
+                        sb.append("\nnfree: " + df.nfree);
+                        sb.append("\nblock size: " + df.bsize);
+                        sb.append("\ntotal blocks: " + df.blocks);
+                        sb.append("\n");
+                    }
                     sb.append("\nmode: " + df.getMode());
                     sb.append("\ninode: " + df.inode);
-                    sb.append("\nowner: " + df.name + "/" + df.group);
+                    sb.append("\nowner: " + df.user + "/" + df.group);
                 }
+                if (last != 0)
+                    sb.append("\nmodified: " + SIMPLE.format(new Date(last)));
+                sums.setVisibility(View.GONE);
+                sumscalc.setVisibility(View.VISIBLE);
+                calcSums();
+            } else {
+                sums.setVisibility(View.GONE);
+                sumscalc.setVisibility(View.GONE);
             }
             String str = sb.toString();
             if (str.isEmpty())
@@ -1472,7 +1715,7 @@ public class FilesFragment extends Fragment {
                 h.icon.setColorFilter(h.accent);
                 h.size.setVisibility(View.GONE);
             } else {
-                if (CacheImagesAdapter.isImage(f.name)) {
+                if (isVideo(f.name) || CacheImagesAdapter.isImage(f.name)) {
                     downloadTask(f, h.itemView);
                 } else {
                     downloadTaskClean(h.itemView);
@@ -1627,9 +1870,14 @@ public class FilesFragment extends Fragment {
                 Storage storage = new Storage(getContext());
                 try {
                     if (!cover.exists() || cover.length() == 0) {
-                        InputStream is = storage.open(n.uri);
-                        Bitmap bm = CacheImagesAdapter.createThumbnail(is);
-                        is.close();
+                        Bitmap bm;
+                        if (isVideo(n.name)) {
+                            bm = createVideoThumbnail(storage, n.uri);
+                        } else {
+                            InputStream is = storage.open(n.uri);
+                            bm = CacheImagesAdapter.createThumbnail(is);
+                            is.close();
+                        }
                         if (bm == null)
                             return null;
                         OutputStream os = new FileOutputStream(cover);

@@ -33,8 +33,8 @@ public class StorageProvider extends com.github.axet.androidlibrary.services.Sto
 
     public static final String OTG = "/mnt/media_rw/";
 
-    Storage storage;
     int counter;
+    Storage storage;
 
     public static StorageProvider getProvider() {
         return (StorageProvider) infos.get(StorageProvider.class);
@@ -72,7 +72,7 @@ public class StorageProvider extends com.github.axet.androidlibrary.services.Sto
         return uri;
     }
 
-    public ParcelFileDescriptor openRootFile(final File f, String mode) throws FileNotFoundException {
+    synchronized public ParcelFileDescriptor openRootFile(final File f, String mode) throws FileNotFoundException {
         counter++;
         return openInputStream(new InputStreamWriter(new SuperUser.FileInputStream(f)) {
             @Override
@@ -83,13 +83,12 @@ public class StorageProvider extends com.github.axet.androidlibrary.services.Sto
             @Override
             public void close() throws IOException {
                 super.close();
-                counter--;
-                freeFiles();
+                closeFiles();
             }
         }, mode);
     }
 
-    public ParcelFileDescriptor openArchiveFile(final Storage.ArchiveReader r, String mode) throws FileNotFoundException {
+    synchronized public ParcelFileDescriptor openArchiveFile(final Storage.ArchiveReader r, String mode) throws FileNotFoundException {
         counter++;
         return openInputStream(new InputStreamWriter(r.open()) {
             @Override
@@ -100,13 +99,17 @@ public class StorageProvider extends com.github.axet.androidlibrary.services.Sto
             @Override
             public void close() throws IOException {
                 super.close();
-                counter--;
-                freeFiles();
+                closeFiles();
             }
         }, mode);
     }
 
-    public void freeFiles() {
+    synchronized public void closeFiles() {
+        counter--;
+        freeFiles();
+    }
+
+    synchronized public void freeFiles() {
         if (counter <= 0)
             storage.closeSu();
     }
@@ -133,11 +136,10 @@ public class StorageProvider extends com.github.axet.androidlibrary.services.Sto
         Object[] values = new Object[projection.length];
         int i = 0;
         for (String col : projection) {
-            if (OpenableColumns.DISPLAY_NAME.equals(col)) {
+            if (OpenableColumns.DISPLAY_NAME.equals(col))
                 values[i++] = new File(r.path).getName();
-            } else if (OpenableColumns.SIZE.equals(col)) {
+            else if (OpenableColumns.SIZE.equals(col))
                 values[i++] = r.length();
-            }
         }
         values = FileProvider.copyOf(values, i);
         final MatrixCursor cursor = new MatrixCursor(projection, 1);

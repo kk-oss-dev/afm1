@@ -41,7 +41,7 @@
     <item
         android:id="@+id/action_properties"
         android:icon="@drawable/ic_format_list_bulleted_black_24dp"
-        android:orderInCategory="600"
+        android:orderInCategory="700"
         android:title="@string/properties"
         app:showAsAction="ifRoom" />
 </menu>
