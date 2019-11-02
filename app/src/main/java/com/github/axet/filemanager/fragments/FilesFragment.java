@@ -386,9 +386,10 @@ public class FilesFragment extends Fragment {
                 return null;
             return CacheImagesAdapter.createThumbnail(bm);
         } catch (Exception ignore) {
+        } finally {
             try {
                 retriever.release();
-            } catch (Exception ignore1) {
+            } catch (Exception ignore) {
             }
         }
         return null;
@@ -427,10 +428,11 @@ public class FilesFragment extends Fragment {
                         retriever.setDataSource(source);
                         Bitmap bm = retriever.getFrameAtTime(-1);
                         return CacheImagesAdapter.createThumbnail(bm);
-                    } catch (Exception e) {
+                    } catch (Exception ignore) {
+                    } finally {
                         try {
                             retriever.release();
-                        } catch (Exception e1) {
+                        } catch (Exception ignore) {
                         }
                     }
                 } else {
