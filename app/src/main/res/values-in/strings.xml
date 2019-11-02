@@ -1,0 +1,90 @@
+<resources>
+    <string name="app_name">File Manager</string>
+    <string name="action_settings">Pengaturan</string>
+    <string name="navigation_drawer_open">Buka laci navigasi</string>
+    <string name="navigation_drawer_close">Tutup laci navigasi</string>
+    <string name="title_activity_settings">Pengaturan</string>
+
+    <string-array name="themes_text">
+        <item>Tema Terang</item>
+        <item>Tema Gelap</item>
+    </string-array>
+
+    <string name="copy_from">Dari:</string>
+    <string name="copy_to">Ke:</string>
+    <string name="copy_pause">Jeda</string>
+    <string name="copy_resume">Lanjut</string>
+    <string name="copy_retry">Ulangi</string>
+    <string name="copy_overwrite">Timpa:</string>
+    <string name="copy_overwrite_with">Dengan:</string>
+
+    <string name="size_bytes">byte</string>
+    <string name="add_bookmark">Tambahkan Markah</string>
+    <string name="bookmarks">Markah</string>
+    <string name="empty_list">Kosong</string>
+    <string name="delete_bookmark">Hapus Markah</string>
+    <string name="create_folder">Buat Folder</string>
+    <string name="create_file">Buat Berkas</string>
+    <string name="toast_files_copied">Menyalin %1$d berkas</string>
+    <string name="toast_files_cut">Memotong %1$d berkas</string>
+    <string name="files_delete">Hapus</string>
+    <string name="toast_files_deleted">Menghapus %1$d berkas</string>
+    <string name="toast_files_archived">Mengarsipkan \'%1$s\' dengan %2$d berkas</string>
+    <string name="files_rename">Ubah Nama</string>
+    <string name="files_deleting">Menghapus</string>
+    <string name="files_calculating">Mengalkulasi</string>
+    <string name="files_copying">Menyalin</string>
+    <string name="files_archiving">Mengarsipkan</string>
+    <string name="files_moving">Memindahkan</string>
+    <string name="files_conflict">Konflik</string>
+    <string name="unsupported">Format tidak didukung</string>
+    <string name="add_bookmark_from_saf">... dari SAF</string>
+    <string name="add_bookmark_from_from_storage">... dari penyimpanan</string>
+    <string name="file_open">Buka</string>
+    <string name="file_open_as">Buka sebagai ...</string>
+    <string name="open_as_text">Teks</string>
+    <string name="open_as_image">Gambar</string>
+    <string name="open_as_audio">Audio</string>
+    <string name="file_view">Lihat</string>
+    <string name="files_paste">Tempel</string>
+    <string name="files_cancel_paste">Batal Tempel</string>
+    <string name="refresh">Segarkan</string>
+    <string name="search">Cari</string>
+    <string name="button_overwrite">Timpa</string>
+    <string name="button_skip">Lewati</string>
+    <string name="button_overwrite_all">Timpa semua</string>
+    <string name="button_skip_all">Lewati semua</string>
+    <string name="button_permissions">Beri Izin</string>
+    <string name="button_new_file">Berkas Baru</string>
+    <string name="per_second">/d</string>
+    <string name="pref_theme_title">Tema</string>
+    <string name="pref_root_title">Peramban Root</string>
+    <string name="pref_root_summary">Jelajahi berkas menggunakan root</string>
+    <string name="menu_rename">Ubah Nama</string>
+    <string name="menu_copy">Salin</string>
+    <string name="menu_cut">Potong</string>
+    <string name="menu_delete">Hapus</string>
+    <string name="menu_archive">Arsip</string>
+    <string name="save_to">Simpan arsip ke</string>
+    <string name="back_exit">Tekan sekali lagi untuk keluar</string>
+    <string name="action_folder">Buka Folder</string>
+    <string name="pref_recycle_title">Keranjang Sampah</string>
+    <string name="pref_recycle_summary">Aktifkan keranjang sampah untuk berkas yang dihapus</string>
+    <string name="recyclebin_folder">Keranjang Sampah</string>
+    <string name="empty_recyclebin">Kosongkan Keranjang Sampah</string>
+    <string name="duplicate_folder">Duplikat</string>
+    <string name="delete_permanently">Secara Permanen</string>
+    <string name="preview">Pratinjau</string>
+    <string name="file_viewas">Lihat sebagai ...</string>
+    <string name="action_fullscreen">Layar Penuh</string>
+    <string name="viewas_hex">Heks</string>
+    <string name="free_space">%1$s kosong</string>
+    <string name="sort_by">Urutkan ...</string>
+    <string name="sort_by_name_a_z">Nama A-Z</string>
+    <string name="sort_by_name_z_a">Nama Z-A</string>
+    <string name="sort_by_last_modified_asc">Diubah Terbaru</string>
+    <string name="sort_by_last_modified_desc">Diubah Terlama</string>
+    <string name="sort_by_size_desc">Ukuran Terbesar</string>
+    <string name="sort_by_size_asc">Ukuran Terkecil</string>
+    <string name="properties">Properti</string>
+</resources>
