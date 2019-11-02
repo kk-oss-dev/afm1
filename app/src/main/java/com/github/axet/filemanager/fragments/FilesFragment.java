@@ -1,6 +1,7 @@
 package com.github.axet.filemanager.fragments;
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -14,11 +15,14 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.media.MediaDataSource;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.ParcelFileDescriptor;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -50,7 +54,9 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.github.axet.androidlibrary.crypto.MD5;
 import com.github.axet.androidlibrary.preferences.OptimizationPreferenceCompat;
+import com.github.axet.androidlibrary.sound.MediaPlayerCompat;
 import com.github.axet.androidlibrary.widgets.CacheImagesAdapter;
 import com.github.axet.androidlibrary.widgets.CacheImagesRecyclerAdapter;
 import com.github.axet.androidlibrary.widgets.ErrorDialog;
@@ -76,6 +82,7 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -365,6 +372,79 @@ public class FilesFragment extends Fragment {
             ClipData clip = ClipData.newPlainText("sha1", text);
             clipboard.setPrimaryClip(clip);
         }
+    }
+
+    @TargetApi(10)
+    public static Bitmap createVideoThumbnail(Context context, Uri uri) throws IOException {
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever(); // API10
+        try {
+            ParcelFileDescriptor pfd = MediaPlayerCompat.getFD(context, uri);
+            FileDescriptor fd = pfd.getFileDescriptor();
+            retriever.setDataSource(fd);
+            Bitmap bm = retriever.getFrameAtTime(-1);
+            if (bm == null)
+                return null;
+            return CacheImagesAdapter.createThumbnail(bm);
+        } catch (Exception ignore) {
+            try {
+                retriever.release();
+            } catch (Exception ignore1) {
+            }
+        }
+        return null;
+    }
+
+    public static Bitmap createVideoThumbnail(Storage storage, Uri uri) throws IOException {
+        if (Build.VERSION.SDK_INT >= 10) {
+            String s = uri.getScheme();
+            if (s.equals(ContentResolver.SCHEME_FILE) && storage.getRoot()) {
+                final File f = Storage.getFile(uri);
+                if (Build.VERSION.SDK_INT >= 23) {
+                    MediaDataSource source = new MediaDataSource() { // API23
+                        SuperUser.RandomAccessFile raf = new SuperUser.RandomAccessFile(f);
+
+                        @Override
+                        public void close() throws IOException {
+                            if (raf != null) {
+                                raf.close();
+                                raf = null;
+                            }
+                        }
+
+                        @Override
+                        public int readAt(long position, byte[] buffer, int offset, int size) throws IOException {
+                            raf.seek(position);
+                            return raf.read(buffer, offset, size);
+                        }
+
+                        @Override
+                        public long getSize() throws IOException {
+                            return raf.getSize();
+                        }
+                    };
+                    MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                    try {
+                        retriever.setDataSource(source);
+                        Bitmap bm = retriever.getFrameAtTime(-1);
+                        return CacheImagesAdapter.createThumbnail(bm);
+                    } catch (Exception e) {
+                        try {
+                            retriever.release();
+                        } catch (Exception e1) {
+                        }
+                    }
+                } else {
+                    return null;
+                }
+            }
+            return createVideoThumbnail(storage.getContext(), uri);
+        }
+        return null;
+    }
+
+    public static boolean isVideo(String name) {
+        String mime = Storage.getTypeByName(name);
+        return mime.startsWith("video/");
     }
 
     public static class Pos {
@@ -1060,8 +1140,8 @@ public class FilesFragment extends Fragment {
                             @Override
                             public void run() {
                                 thread = null;
-                                PropertiesBuilder.this.md5.setText(Storage.toHex(md5.digest()));
-                                PropertiesBuilder.this.sha1.setText(Storage.toHex(sha1.digest()));
+                                PropertiesBuilder.this.md5.setText(MD5.hex(md5.digest()));
+                                PropertiesBuilder.this.sha1.setText(MD5.hex(sha1.digest()));
                                 sums.setVisibility(View.VISIBLE);
                                 sumscalc.setVisibility(View.GONE);
                             }
@@ -1635,7 +1715,7 @@ public class FilesFragment extends Fragment {
                 h.icon.setColorFilter(h.accent);
                 h.size.setVisibility(View.GONE);
             } else {
-                if (CacheImagesAdapter.isImage(f.name)) {
+                if (isVideo(f.name) || CacheImagesAdapter.isImage(f.name)) {
                     downloadTask(f, h.itemView);
                 } else {
                     downloadTaskClean(h.itemView);
@@ -1790,9 +1870,14 @@ public class FilesFragment extends Fragment {
                 Storage storage = new Storage(getContext());
                 try {
                     if (!cover.exists() || cover.length() == 0) {
-                        InputStream is = storage.open(n.uri);
-                        Bitmap bm = CacheImagesAdapter.createThumbnail(is);
-                        is.close();
+                        Bitmap bm;
+                        if (isVideo(n.name)) {
+                            bm = createVideoThumbnail(storage, n.uri);
+                        } else {
+                            InputStream is = storage.open(n.uri);
+                            bm = CacheImagesAdapter.createThumbnail(is);
+                            is.close();
+                        }
                         if (bm == null)
                             return null;
                         OutputStream os = new FileOutputStream(cover);
