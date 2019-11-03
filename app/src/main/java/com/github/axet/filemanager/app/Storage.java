@@ -1,8 +1,12 @@
 package com.github.axet.filemanager.app;
 
+import android.annotation.TargetApi;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.media.MediaDataSource;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -16,6 +20,7 @@ import com.github.axet.androidlibrary.app.FileTypeDetector;
 import com.github.axet.androidlibrary.app.RarSAF;
 import com.github.axet.androidlibrary.app.ZipSAF;
 import com.github.axet.androidlibrary.services.StorageProvider;
+import com.github.axet.androidlibrary.widgets.CacheImagesAdapter;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.filemanager.fragments.FilesFragment;
 
@@ -599,7 +604,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         }
     }
 
-    public ArchiveReader fromArchive(Uri uri, boolean root) { // root - open archive root 'file.zip/'
+    public ArchiveReader fromArchive(Uri uri, boolean root) { // root - open archive root 'file.zip/' or null
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             final File k = getFile(uri);
@@ -880,5 +885,74 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
             return false;
         }
         return super.ejected(context, uri);
+    }
+
+    public Bitmap createVideoThumbnail(Uri uri) throws IOException {
+        if (Build.VERSION.SDK_INT >= 10) {
+            final ArchiveReader r = fromArchive(uri, false);
+            if (r != null) { // creating video thumbnails from archives only API23+
+                if (Build.VERSION.SDK_INT >= 23) {
+                    final InputStream is = r.open();
+                    MediaDataSource source = new MediaDataSource() { // API23
+                        CacheImagesAdapter.SeekInputStream sis = new CacheImagesAdapter.SeekInputStream(is);
+
+                        @Override
+                        public void close() throws IOException {
+                            if (sis != null) {
+                                sis.close();
+                                sis = null;
+                            }
+                        }
+
+                        @Override
+                        public int readAt(long position, byte[] buffer, int offset, int size) throws IOException {
+                            sis.seek(position);
+                            return sis.read(buffer, offset, size);
+                        }
+
+                        @Override
+                        public long getSize() throws IOException {
+                            return r.length();
+                        }
+                    };
+                    return CacheImagesAdapter.createVideoThumbnail(source);
+                } else {
+                    return null; // below API23 unable to create thumbmails for archived videos
+                }
+            }
+            String s = uri.getScheme();
+            if (s.equals(ContentResolver.SCHEME_FILE) && getRoot()) {
+                final File f = Storage.getFile(uri);
+                if (Build.VERSION.SDK_INT >= 23) {
+                    MediaDataSource source = new MediaDataSource() { // API23
+                        SuperUser.RandomAccessFile raf = new SuperUser.RandomAccessFile(f);
+
+                        @Override
+                        public void close() throws IOException {
+                            if (raf != null) {
+                                raf.close();
+                                raf = null;
+                            }
+                        }
+
+                        @Override
+                        public int readAt(long position, byte[] buffer, int offset, int size) throws IOException {
+                            raf.seek(position);
+                            return raf.read(buffer, offset, size);
+                        }
+
+                        @Override
+                        public long getSize() throws IOException {
+                            return raf.getSize();
+                        }
+                    };
+                    return CacheImagesAdapter.createVideoThumbnail(source);
+                } else {
+                    return null; // below API23 with Root browser we unable to create thumbnails for videos
+                }
+            }
+            return CacheImagesAdapter.createVideoThumbnail(getContext(), uri);
+        }
+        return null;
     }
 }
