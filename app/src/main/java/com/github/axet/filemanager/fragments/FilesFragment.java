@@ -374,81 +374,6 @@ public class FilesFragment extends Fragment {
         }
     }
 
-    @TargetApi(10)
-    public static Bitmap createVideoThumbnail(Context context, Uri uri) throws IOException {
-        MediaMetadataRetriever retriever = new MediaMetadataRetriever(); // API10
-        try {
-            ParcelFileDescriptor pfd = MediaPlayerCompat.getFD(context, uri);
-            FileDescriptor fd = pfd.getFileDescriptor();
-            retriever.setDataSource(fd);
-            Bitmap bm = retriever.getFrameAtTime(-1);
-            if (bm == null)
-                return null;
-            return CacheImagesAdapter.createThumbnail(bm);
-        } catch (Exception ignore) {
-        } finally {
-            try {
-                retriever.release();
-            } catch (Exception ignore) {
-            }
-        }
-        return null;
-    }
-
-    public static Bitmap createVideoThumbnail(Storage storage, Uri uri) throws IOException {
-        if (Build.VERSION.SDK_INT >= 10) {
-            String s = uri.getScheme();
-            if (s.equals(ContentResolver.SCHEME_FILE) && storage.getRoot()) {
-                final File f = Storage.getFile(uri);
-                if (Build.VERSION.SDK_INT >= 23) {
-                    MediaDataSource source = new MediaDataSource() { // API23
-                        SuperUser.RandomAccessFile raf = new SuperUser.RandomAccessFile(f);
-
-                        @Override
-                        public void close() throws IOException {
-                            if (raf != null) {
-                                raf.close();
-                                raf = null;
-                            }
-                        }
-
-                        @Override
-                        public int readAt(long position, byte[] buffer, int offset, int size) throws IOException {
-                            raf.seek(position);
-                            return raf.read(buffer, offset, size);
-                        }
-
-                        @Override
-                        public long getSize() throws IOException {
-                            return raf.getSize();
-                        }
-                    };
-                    MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-                    try {
-                        retriever.setDataSource(source);
-                        Bitmap bm = retriever.getFrameAtTime(-1);
-                        return CacheImagesAdapter.createThumbnail(bm);
-                    } catch (Exception ignore) {
-                    } finally {
-                        try {
-                            retriever.release();
-                        } catch (Exception ignore) {
-                        }
-                    }
-                } else {
-                    return null;
-                }
-            }
-            return createVideoThumbnail(storage.getContext(), uri);
-        }
-        return null;
-    }
-
-    public static boolean isVideo(String name) {
-        String mime = Storage.getTypeByName(name);
-        return mime.startsWith("video/");
-    }
-
     public static class Pos {
         public int pos;
         public int off;
@@ -1717,7 +1642,7 @@ public class FilesFragment extends Fragment {
                 h.icon.setColorFilter(h.accent);
                 h.size.setVisibility(View.GONE);
             } else {
-                if (isVideo(f.name) || CacheImagesAdapter.isImage(f.name)) {
+                if (CacheImagesAdapter.isVideo(f.name) || CacheImagesAdapter.isImage(f.name)) {
                     downloadTask(f, h.itemView);
                 } else {
                     downloadTaskClean(h.itemView);
@@ -1873,8 +1798,8 @@ public class FilesFragment extends Fragment {
                 try {
                     if (!cover.exists() || cover.length() == 0) {
                         Bitmap bm;
-                        if (isVideo(n.name)) {
-                            bm = createVideoThumbnail(storage, n.uri);
+                        if (CacheImagesAdapter.isVideo(n.name)) {
+                            bm = storage.createVideoThumbnail(n.uri);
                         } else {
                             InputStream is = storage.open(n.uri);
                             bm = CacheImagesAdapter.createThumbnail(is);
