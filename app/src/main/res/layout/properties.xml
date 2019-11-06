@@ -79,7 +79,8 @@
                     android:layout_height="wrap_content"
                     android:paddingLeft="10dp"
                     android:paddingRight="10dp"
-                    android:src="@drawable/ic_content_copy_black_24dp" />
+                    android:src="@drawable/ic_content_copy_black_24dp"
+                    android:tint="?android:attr/colorForeground" />
             </TableRow>
 
             <TableRow
@@ -105,7 +106,8 @@
                     android:layout_height="wrap_content"
                     android:paddingLeft="10dp"
                     android:paddingRight="10dp"
-                    android:src="@drawable/ic_content_copy_black_24dp" />
+                    android:src="@drawable/ic_content_copy_black_24dp"
+                    android:tint="?android:attr/colorForeground" />
             </TableRow>
         </TableLayout>
 
