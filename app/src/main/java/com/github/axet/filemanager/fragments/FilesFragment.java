@@ -1,7 +1,6 @@
 package com.github.axet.filemanager.fragments;
 
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -15,14 +14,11 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.media.MediaDataSource;
-import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.ParcelFileDescriptor;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -56,7 +52,6 @@ import android.widget.TextView;
 
 import com.github.axet.androidlibrary.crypto.MD5;
 import com.github.axet.androidlibrary.preferences.OptimizationPreferenceCompat;
-import com.github.axet.androidlibrary.sound.MediaPlayerCompat;
 import com.github.axet.androidlibrary.widgets.CacheImagesAdapter;
 import com.github.axet.androidlibrary.widgets.CacheImagesRecyclerAdapter;
 import com.github.axet.androidlibrary.widgets.ErrorDialog;
@@ -82,7 +77,6 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -1154,9 +1148,15 @@ public class FilesFragment extends Fragment {
                 }
                 if (last != 0)
                     sb.append("\nmodified: " + SIMPLE.format(new Date(last)));
-                sums.setVisibility(View.GONE);
-                sumscalc.setVisibility(View.VISIBLE);
-                calcSums();
+                File file = Storage.getFile(op.files.get(0).uri);
+                if (file.isFile()) {
+                    sums.setVisibility(View.GONE);
+                    sumscalc.setVisibility(View.VISIBLE);
+                    calcSums();
+                } else {
+                    sums.setVisibility(View.GONE);
+                    sumscalc.setVisibility(View.GONE);
+                }
             } else {
                 sums.setVisibility(View.GONE);
                 sumscalc.setVisibility(View.GONE);
