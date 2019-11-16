@@ -1,7 +1,6 @@
 package com.github.axet.filemanager.fragments;
 
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -15,14 +14,11 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.media.MediaDataSource;
-import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.ParcelFileDescriptor;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -56,7 +52,6 @@ import android.widget.TextView;
 
 import com.github.axet.androidlibrary.crypto.MD5;
 import com.github.axet.androidlibrary.preferences.OptimizationPreferenceCompat;
-import com.github.axet.androidlibrary.sound.MediaPlayerCompat;
 import com.github.axet.androidlibrary.widgets.CacheImagesAdapter;
 import com.github.axet.androidlibrary.widgets.CacheImagesRecyclerAdapter;
 import com.github.axet.androidlibrary.widgets.ErrorDialog;
@@ -82,7 +77,6 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -1106,32 +1100,33 @@ public class FilesFragment extends Fragment {
                 if (info != null)
                     sb.append("mount: " + info.fs);
             }
+            Uri uri = op.files.get(0).uri;
+            File file = null;
             if (op.files.size() == 1) { // show attributes
                 long last = 0;
                 SuperUser.DF df = null;
                 if (s.equals(ContentResolver.SCHEME_CONTENT) && op.calcUri.getAuthority().startsWith(Storage.SAF)) {
                     if (storage.getRoot()) {
-                        Uri uri = op.files.get(0).uri;
                         Uri otg = StorageProvider.filterFolderIntent(getContext(), uri);
                         if (uri == otg)
                             otg = StorageProvider.filterOTGFolderIntent(storage, uri);
                         if (uri != otg) {
-                            File file = Storage.getFile(otg);
+                            File file2 = Storage.getFile(otg);
                             MountInfo mount = new MountInfo();
-                            MountInfo.Info info = mount.findMount(file);
+                            MountInfo.Info info = mount.findMount(file2);
                             if (info != null)
                                 sb.append("\nunderlying: " + info.fs);
                             else
                                 sb.append("\nunderlying: unknown"); // Underlying filesystem: unknown, owners/group: unknown, attributes: unknown, thanks google!
-                            df = new SuperUser.DF(storage.getSu(), file);
-                            last = SuperUser.lastModified(storage.getSu(), file);
+                            df = new SuperUser.DF(storage.getSu(), file2);
+                            last = SuperUser.lastModified(storage.getSu(), file2);
                         } // else we can open document inputstream and get real path using fd
                     } else {
                         last = Storage.getLastModified(getContext(), op.calcUri);
                     }
                 }
+                file = Storage.getFile(uri);
                 if (s.equals(ContentResolver.SCHEME_FILE)) {
-                    File file = Storage.getFile(op.files.get(0).uri);
                     if (storage.getRoot()) {
                         df = new SuperUser.DF(storage.getSu(), file);
                         last = SuperUser.lastModified(storage.getSu(), file);
@@ -1154,6 +1149,8 @@ public class FilesFragment extends Fragment {
                 }
                 if (last != 0)
                     sb.append("\nmodified: " + SIMPLE.format(new Date(last)));
+            }
+            if (file != null && file.isFile()) {
                 sums.setVisibility(View.GONE);
                 sumscalc.setVisibility(View.VISIBLE);
                 calcSums();
@@ -1184,7 +1181,7 @@ public class FilesFragment extends Fragment {
             title.setVisibility(View.INVISIBLE);
             final Button b = d.getButton(DialogInterface.BUTTON_NEUTRAL);
             b.setVisibility(View.INVISIBLE);
-            storage.closeSu();
+            op.storage.closeSu();
         }
 
         @Override
