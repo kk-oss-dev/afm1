@@ -66,7 +66,7 @@ import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.FullscreenActivity;
 import com.github.axet.filemanager.activities.MainActivity;
 import com.github.axet.filemanager.app.FilesApplication;
-import com.github.axet.filemanager.app.MountInfo;
+import com.github.axet.androidlibrary.app.MountInfo;
 import com.github.axet.filemanager.app.Storage;
 import com.github.axet.filemanager.app.SuperUser;
 import com.github.axet.filemanager.services.StorageProvider;
