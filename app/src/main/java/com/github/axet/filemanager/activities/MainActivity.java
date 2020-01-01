@@ -414,7 +414,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                 SharedPreferences.Editor edit = shared.edit();
                 edit.remove(FilesApplication.PREF_ROOT);
                 edit.commit();
-                Toast.Error(this, SettingsActivity.SUIO_ERROR);
+                Toast.Text(this, SettingsActivity.SUIO_ERROR);
             }
         } else {
             SuperUser.sudoTest(this); // we need suio binary for 'stat' operations
