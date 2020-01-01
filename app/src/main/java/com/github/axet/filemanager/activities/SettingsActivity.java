@@ -76,7 +76,7 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity {
                         } else {
                             SuperUser.exitTest(); // second su invoke
                             if (SuperUser.binSuio(getContext()) == null) {
-                                Toast.Error(getContext(), SUIO_ERROR);
+                                Toast.Text(getContext(), SUIO_ERROR);
                                 return false;
                             }
                             return true;

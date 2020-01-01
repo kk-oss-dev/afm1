@@ -176,7 +176,7 @@ public class SearchFragment extends FilesFragment {
             calc.run();
         } catch (RuntimeException e) {
             Log.e(TAG, "io", e);
-            Toast.Error(getContext(), ErrorDialog.toMessage(e));
+            Toast.Text(getContext(), ErrorDialog.toMessage(e));
         }
 
         return list;
