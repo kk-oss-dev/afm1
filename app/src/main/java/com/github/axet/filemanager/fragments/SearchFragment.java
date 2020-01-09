@@ -45,7 +45,7 @@ public class SearchFragment extends FilesFragment {
                     handler.post(this);
                     if (old == null)
                         old = Snackbar.make(getActivity().findViewById(android.R.id.content), "", Snackbar.LENGTH_LONG);
-                    old.setText(Storage.getDisplayName(getContext(), search.files.get(search.files.size() - 1).uri));
+                    old.setText(Storage.getDisplayName(getContext(), search.calcs.get(0).uri));
                     old.show();
                     return;
                 }
@@ -75,10 +75,11 @@ public class SearchFragment extends FilesFragment {
                     menu.inflate(R.menu.menu_file);
                     if (f.dir) {
                         ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_open);
-                        ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_share);
                         ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_view);
                         ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openas);
                     }
+                    ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openasarchive);
+                    ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openaspicture);
                     menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                         @Override
                         public boolean onMenuItemClick(MenuItem item) {
