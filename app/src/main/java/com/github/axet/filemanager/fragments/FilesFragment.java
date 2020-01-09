@@ -1695,6 +1695,7 @@ public class FilesFragment extends Fragment {
                             }
                         });
                         menu.show();
+                        storage.closeSu();
                     }
                 }
             });
