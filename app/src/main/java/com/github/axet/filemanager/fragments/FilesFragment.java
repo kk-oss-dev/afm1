@@ -50,6 +50,7 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.github.axet.androidlibrary.app.MountInfo;
 import com.github.axet.androidlibrary.crypto.MD5;
 import com.github.axet.androidlibrary.preferences.OptimizationPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.CacheImagesAdapter;
@@ -66,7 +67,6 @@ import com.github.axet.filemanager.R;
 import com.github.axet.filemanager.activities.FullscreenActivity;
 import com.github.axet.filemanager.activities.MainActivity;
 import com.github.axet.filemanager.app.FilesApplication;
-import com.github.axet.androidlibrary.app.MountInfo;
 import com.github.axet.filemanager.app.Storage;
 import com.github.axet.filemanager.app.SuperUser;
 import com.github.axet.filemanager.services.StorageProvider;
@@ -1639,7 +1639,7 @@ public class FilesFragment extends Fragment {
                 h.icon.setColorFilter(h.accent);
                 h.size.setVisibility(View.GONE);
             } else {
-                if (CacheImagesAdapter.isVideo(f.name) || CacheImagesAdapter.isImage(f.name)) {
+                if (CacheImagesAdapter.isVideo(f.name) || CacheImagesAdapter.isImage(f.name) || CacheImagesAdapter.isAudio(f.name)) {
                     downloadTask(f, h.itemView);
                 } else {
                     downloadTaskClean(h.itemView);
@@ -1673,9 +1673,14 @@ public class FilesFragment extends Fragment {
                         Storage.ArchiveReader r = storage.fromArchive(f.uri, true);
                         if (r != null && r.isDirectory()) {
                             ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_view);
+                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openaspicture);
                             r.close();
+                        } else if (CacheImagesAdapter.isImage(Storage.getName(getContext(), f.uri))) {
+                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_view);
+                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openasarchive);
                         } else {
                             ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openasarchive);
+                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openaspicture);
                         }
                         ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openasfolder);
                         menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
@@ -1805,6 +1810,8 @@ public class FilesFragment extends Fragment {
                         Bitmap bm;
                         if (CacheImagesAdapter.isVideo(n.name)) {
                             bm = storage.createVideoThumbnail(n.uri);
+                        } else if (CacheImagesAdapter.isAudio(n.name)) {
+                            bm = storage.createAudioThumbnail(n.uri);
                         } else {
                             InputStream is = storage.open(n.uri);
                             bm = CacheImagesAdapter.createThumbnail(is);
@@ -2194,7 +2201,7 @@ public class FilesFragment extends Fragment {
                     Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
                 return true;
             }
-            case R.id.action_openasarchive:{
+            case R.id.action_openasarchive: {
                 try {
                     Uri uri = item.getIntent().getData();
                     load(uri, false);
@@ -2203,14 +2210,18 @@ public class FilesFragment extends Fragment {
                 }
                 return true;
             }
+            case R.id.action_openaspicture: {
+                try {
+                    Uri uri = item.getIntent().getData();
+                    FullscreenActivity.start(getContext(), uri);
+                } finally {
+                    storage.closeSu();
+                }
+                return true;
+            }
             case R.id.action_view: {
                 try {
                     Uri uri = item.getIntent().getData();
-                    String name = Storage.getName(getContext(), uri);
-                    if (CacheImagesAdapter.isImage(name)) {
-                        FullscreenActivity.start(getContext(), uri);
-                        return true;
-                    }
                     MainActivity main = (MainActivity) getActivity();
                     main.openHex(uri, true);
                 } finally {
