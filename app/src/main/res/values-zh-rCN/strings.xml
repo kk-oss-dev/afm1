@@ -88,4 +88,5 @@
     <string name="sort_by_size_asc">大小升序</string>
     <string name="properties">Properties</string>
     <string name="open_as_archive">Open Archive</string>
+    <string name="open_as_picture">Open Picture</string>
 </resources>

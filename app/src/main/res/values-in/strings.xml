@@ -88,4 +88,5 @@
     <string name="sort_by_size_asc">Ukuran Terkecil</string>
     <string name="properties">Properti</string>
     <string name="open_as_archive">Open Archive</string>
+    <string name="open_as_picture">Open Picture</string>
 </resources>
