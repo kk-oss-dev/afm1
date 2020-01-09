@@ -67,7 +67,7 @@
     <string name="menu_archive">Archivar</string>
     <string name="save_to">Guardar archivo como</string>
     <string name="back_exit">Presione la tecla atras para salir</string>
-    <string name="action_folder">Abrir Archivo</string>
+    <string name="open_as_folder">Abrir Archivo</string>
     <string name="pref_recycle_title">Papelera</string>
     <string name="pref_recycle_summary">Activa la papelera para archivos eliminados</string>
     <string name="recyclebin_folder">Ir a la papelera</string>
@@ -87,4 +87,5 @@
     <string name="sort_by_size_desc">Size Desc</string>
     <string name="sort_by_size_asc">Size Asc</string>
     <string name="properties">Properties</string>
+    <string name="open_as_archive">Open Archive</string>
 </resources>

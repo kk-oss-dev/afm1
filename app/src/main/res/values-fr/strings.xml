@@ -67,7 +67,7 @@
     <string name="menu_archive">Archiver</string>
     <string name="save_to">Sauver dans l\'archive</string>
     <string name="back_exit">Cliquez encore pour quitter</string>
-    <string name="action_folder">Ouvrir le dossier</string>
+    <string name="open_as_folder">Ouvrir le dossier</string>
     <string name="pref_recycle_title">Corbeille</string>
     <string name="pref_recycle_summary">Déplacer dans la corbeille au lieu de supprimer</string>
     <string name="recyclebin_folder">Corbeille</string>
@@ -87,4 +87,5 @@
     <string name="sort_by_size_desc">Size Desc</string>
     <string name="sort_by_size_asc">Size Asc</string>
     <string name="properties">Properties</string>
+    <string name="open_as_archive">Open Archive</string>
 </resources>

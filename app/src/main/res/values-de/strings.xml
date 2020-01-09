@@ -67,7 +67,7 @@
     <string name="menu_archive">Archivieren</string>
     <string name="save_to">Speichere das Archiv unter</string>
     <string name="back_exit">Drücke erneut zurück zum Verlassen</string>
-    <string name="action_folder">Öffne Ordner</string>
+    <string name="open_as_folder">Öffne Ordner</string>
     <string name="pref_recycle_title">Papierkorb</string>
     <string name="pref_recycle_summary">Aktiviere den Papierkorb für gelöschte Dateien</string>
     <string name="recyclebin_folder">Müll</string>
@@ -87,4 +87,5 @@
     <string name="sort_by_size_desc">Size Desc</string>
     <string name="sort_by_size_asc">Size Asc</string>
     <string name="properties">Properties</string>
+    <string name="open_as_archive">Open Archive</string>
 </resources>

@@ -67,7 +67,7 @@
     <string name="menu_archive">归档</string>
     <string name="save_to">将归档保存到</string>
     <string name="back_exit">再按一次返回退出</string>
-    <string name="action_folder">打开文件夹</string>
+    <string name="open_as_folder">打开文件夹</string>
     <string name="pref_recycle_title">回收站</string>
     <string name="pref_recycle_summary">为已删除文件启用回收站</string>
     <string name="recyclebin_folder">垃圾箱</string>
@@ -87,4 +87,5 @@
     <string name="sort_by_size_desc">大小降序</string>
     <string name="sort_by_size_asc">大小升序</string>
     <string name="properties">Properties</string>
+    <string name="open_as_archive">Open Archive</string>
 </resources>

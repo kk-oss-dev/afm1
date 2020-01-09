@@ -67,7 +67,7 @@
     <string name="menu_archive">Архивировать</string>
     <string name="save_to">Сохранить архив в</string>
     <string name="back_exit">Нажмите назад чтобы выйти</string>
-    <string name="action_folder">Открыть папку</string>
+    <string name="open_as_folder">Открыть папку</string>
     <string name="pref_recycle_title">Корзина</string>
     <string name="pref_recycle_summary">Включить корзину для удаленных файлов</string>
     <string name="recyclebin_folder">Корзина</string>
@@ -87,4 +87,5 @@
     <string name="sort_by_size_desc">Размер по убыванию</string>
     <string name="sort_by_size_asc">Размер по возрастанию</string>
     <string name="properties">Свойства</string>
+    <string name="open_as_archive">Open Archive</string>
 </resources>

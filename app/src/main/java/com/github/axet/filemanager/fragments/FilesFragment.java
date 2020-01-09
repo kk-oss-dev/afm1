@@ -1670,7 +1670,14 @@ public class FilesFragment extends Fragment {
                     } else {
                         PopupMenu menu = new PopupMenu(getContext(), v);
                         menu.inflate(R.menu.menu_file);
-                        ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_folder);
+                        Storage.ArchiveReader r = storage.fromArchive(f.uri, true);
+                        if (r != null && r.isDirectory()) {
+                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_view);
+                            r.close();
+                        } else {
+                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openasarchive);
+                        }
+                        ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openasfolder);
                         menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                             @Override
                             public boolean onMenuItemClick(MenuItem item) {
@@ -1701,6 +1708,7 @@ public class FilesFragment extends Fragment {
                             ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_rename);
                             ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_cut);
                             ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_delete);
+                            r.close();
                         }
                         if (dir)
                             ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_share);
@@ -1928,7 +1936,7 @@ public class FilesFragment extends Fragment {
         return rootView;
     }
 
-    void updatePaste() {
+    void updatePaste() { // closeSu()
         if (app.copy != null || app.cut != null) {
             pasteMenu.setVisible(true);
             pasteCancel.setVisible(true);
@@ -2111,6 +2119,7 @@ public class FilesFragment extends Fragment {
                         select.hide(R.id.action_archive);
                         select.hide(R.id.action_cut);
                         select.hide(R.id.action_delete);
+                        r.close();
                     }
                 }
 
@@ -2185,6 +2194,15 @@ public class FilesFragment extends Fragment {
                     Toast.makeText(getContext(), R.string.unsupported, Toast.LENGTH_SHORT).show();
                 return true;
             }
+            case R.id.action_openasarchive:{
+                try {
+                    Uri uri = item.getIntent().getData();
+                    load(uri, false);
+                } finally {
+                    storage.closeSu();
+                }
+                return true;
+            }
             case R.id.action_view: {
                 try {
                     Uri uri = item.getIntent().getData();
@@ -2193,13 +2211,8 @@ public class FilesFragment extends Fragment {
                         FullscreenActivity.start(getContext(), uri);
                         return true;
                     }
-                    Storage.ArchiveReader r = storage.fromArchive(uri, true);
-                    if (r != null && r.isDirectory()) {
-                        load(uri, false);
-                    } else {
-                        MainActivity main = (MainActivity) getActivity();
-                        main.openHex(uri, true);
-                    }
+                    MainActivity main = (MainActivity) getActivity();
+                    main.openHex(uri, true);
                 } finally {
                     storage.closeSu();
                 }
@@ -2266,6 +2279,7 @@ public class FilesFragment extends Fragment {
                 app.copy = null;
                 app.cut = null;
                 updatePaste();
+                storage.closeSu();
                 return true;
             }
             case R.id.action_paste: {
@@ -2709,7 +2723,7 @@ public class FilesFragment extends Fragment {
         op.run();
     }
 
-    public void openSelection() {
+    public void openSelection() { // closeSu()
         app.copy = null;
         app.cut = null;
         updatePaste();
