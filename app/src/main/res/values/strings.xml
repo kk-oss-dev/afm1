@@ -67,7 +67,7 @@
     <string name="menu_archive">Archive</string>
     <string name="save_to">Save archive to</string>
     <string name="back_exit">Press back again to exit</string>
-    <string name="action_folder">Open Folder</string>
+    <string name="open_as_folder">Open Folder</string>
     <string name="pref_recycle_title">Recycle Bin</string>
     <string name="pref_recycle_summary">Enable recycle bin for deleted files</string>
     <string name="recyclebin_folder">Trash</string>
@@ -87,4 +87,5 @@
     <string name="sort_by_size_desc">Size Desc</string>
     <string name="sort_by_size_asc">Size Asc</string>
     <string name="properties">Properties</string>
+    <string name="open_as_archive">Open Archive</string>
 </resources>

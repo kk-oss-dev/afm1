@@ -85,7 +85,7 @@ public class SearchFragment extends FilesFragment {
                             Intent intent = new Intent(Intent.ACTION_VIEW);
                             String type;
                             Uri uri;
-                            if (!f.dir && item.getItemId() == R.id.action_folder) {
+                            if (!f.dir && item.getItemId() == R.id.action_openasfolder) {
                                 type = StorageProvider.CONTENTTYPE_FOLDER;
                                 uri = Storage.getParent(getContext(), f.uri);
                             } else {
@@ -214,7 +214,7 @@ public class SearchFragment extends FilesFragment {
             main.openHex(uri, false);
             return true;
         }
-        if (id == R.id.action_folder) {
+        if (id == R.id.action_openasfolder) {
             Uri uri = item.getIntent().getData();
             MainActivity main = (MainActivity) getActivity();
             main.open(uri);

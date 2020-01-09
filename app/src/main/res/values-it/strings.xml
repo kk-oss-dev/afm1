@@ -67,7 +67,7 @@
     <string name="menu_archive">Archivia</string>
     <string name="save_to">Salva l\'archivio come</string>
     <string name="back_exit">Premere indietro di nuovo per lasciare</string>
-    <string name="action_folder">Apri cartella</string>
+    <string name="open_as_folder">Apri cartella</string>
     <string name="pref_recycle_title">Cestino</string>
     <string name="pref_recycle_summary">Attiva il cestino per documenti cancellati</string>
     <string name="recyclebin_folder">Spazzatura</string>
@@ -87,4 +87,5 @@
     <string name="sort_by_size_desc">Size Desc</string>
     <string name="sort_by_size_asc">Size Asc</string>
     <string name="properties">Properties</string>
+    <string name="open_as_archive">Open Archive</string>
 </resources>

@@ -67,7 +67,7 @@
     <string name="menu_archive">Arsip</string>
     <string name="save_to">Simpan arsip ke</string>
     <string name="back_exit">Tekan sekali lagi untuk keluar</string>
-    <string name="action_folder">Buka Folder</string>
+    <string name="open_as_folder">Buka Folder</string>
     <string name="pref_recycle_title">Keranjang Sampah</string>
     <string name="pref_recycle_summary">Aktifkan keranjang sampah untuk berkas yang dihapus</string>
     <string name="recyclebin_folder">Keranjang Sampah</string>
@@ -87,4 +87,5 @@
     <string name="sort_by_size_desc">Ukuran Terbesar</string>
     <string name="sort_by_size_asc">Ukuran Terkecil</string>
     <string name="properties">Properti</string>
+    <string name="open_as_archive">Open Archive</string>
 </resources>
