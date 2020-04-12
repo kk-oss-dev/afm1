@@ -87,6 +87,6 @@
     <string name="sort_by_size_desc">Size Desc</string>
     <string name="sort_by_size_asc">Size Asc</string>
     <string name="properties">Properties</string>
-    <string name="open_as_archive">Open Archive</string>
-    <string name="open_as_picture">Open Picture</string>
+    <string name="open_as_archive">View Archive</string>
+    <string name="open_as_picture">View Picture</string>
 </resources>

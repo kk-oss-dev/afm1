@@ -45,6 +45,8 @@
     <string name="open_as_text">Текст</string>
     <string name="open_as_image">Изображение</string>
     <string name="open_as_audio">Аудио</string>
+    <string name="open_as_archive">Архив</string>
+    <string name="open_as_picture">Изображение</string>
     <string name="file_view">Просмотр</string>
     <string name="files_paste">Вставить</string>
     <string name="files_cancel_paste">Отменить вставку</string>
@@ -87,6 +89,4 @@
     <string name="sort_by_size_desc">Размер по убыванию</string>
     <string name="sort_by_size_asc">Размер по возрастанию</string>
     <string name="properties">Свойства</string>
-    <string name="open_as_archive">Open Archive</string>
-    <string name="open_as_picture">Open Picture</string>
 </resources>

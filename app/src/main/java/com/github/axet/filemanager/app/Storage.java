@@ -423,13 +423,12 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                     final FileHeader h = (FileHeader) o;
                     ZipNode n = new ZipNode();
                     n.h = h;
-                    if (s.equals(ContentResolver.SCHEME_FILE)) {
+                    if (s.equals(ContentResolver.SCHEME_FILE))
                         n.uri = uri.buildUpon().appendPath(n.getPath()).build();
-                    } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+                    else if (s.equals(ContentResolver.SCHEME_CONTENT))
                         n.uri = uri.buildUpon().appendQueryParameter("p", n.getPath()).build();
-                    } else {
+                    else
                         throw new UnknownUri();
-                    }
                     n.name = getLast(n.getPath());
                     n.size = h.getUncompressedSize();
                     n.last = h.getLastModFileTime();

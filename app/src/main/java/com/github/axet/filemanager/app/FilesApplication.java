@@ -65,8 +65,7 @@ public class FilesApplication extends MainApplication {
             s = System.getenv("ANDROID_DATA");
             if (s == null || s.isEmpty())
                 s = "/data";
-            File f = new File(s, "local/tmp");
-            return f;
+            return new File(s, "local/tmp");
         }
         return new File(s);
     }
