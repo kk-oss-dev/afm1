@@ -45,6 +45,8 @@
     <string name="open_as_text">Text</string>
     <string name="open_as_image">Image</string>
     <string name="open_as_audio">Audio</string>
+    <string name="open_as_archive">View Archive</string>
+    <string name="open_as_picture">View Picture</string>
     <string name="file_view">View</string>
     <string name="files_paste">Paste</string>
     <string name="files_cancel_paste">Cancel Paste</string>
@@ -87,6 +89,4 @@
     <string name="sort_by_size_desc">Size Desc</string>
     <string name="sort_by_size_asc">Size Asc</string>
     <string name="properties">Properties</string>
-    <string name="open_as_archive">Open Archive</string>
-    <string name="open_as_picture">Open Picture</string>
 </resources>

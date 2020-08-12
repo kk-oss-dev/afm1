@@ -19,6 +19,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Process;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -1021,7 +1022,7 @@ public class FilesFragment extends Fragment {
             } else {
                 throw new Storage.UnknownUri();
             }
-            thread = new Thread() {
+            thread = new Thread("md5") {
                 @Override
                 public void run() {
                     try {
@@ -1802,6 +1803,7 @@ public class FilesFragment extends Fragment {
 
         @Override
         public Bitmap downloadImageTask(CacheImagesAdapter.DownloadImageTask task) {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_LOWEST);
             try {
                 Storage.Node n = (Storage.Node) task.item;
                 File cover = CacheImagesAdapter.cacheUri(getContext(), n.uri);
