@@ -1004,14 +1004,23 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                                     raf.close();
                                     raf = null;
                                 }
-                            } catch (IOException ignore) { // native code cashed on excepion
+                            } catch (IOException e) { // native code cashed on excepion
+                                Log.d(TAG, "close exception", e);
+                            } catch (RuntimeException e) {
+                                Log.d(TAG, "close exception", e);
                             }
                         }
 
                         @Override
                         public int readAt(long position, byte[] buffer, int offset, int size) throws IOException {
-                            raf.seek(position);
-                            return raf.read(buffer, offset, size);
+                            try {
+                                raf.seek(position);
+                                return raf.read(buffer, offset, size);
+                            } catch (IOException e) {
+                                throw e;
+                            } catch (RuntimeException e) { // native code cashed on excepion
+                                throw new IOException(e);
+                            }
                         }
 
                         @Override
