@@ -360,7 +360,7 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
         public static final String R = "rb";
         public static final String W = "wb"; // open and truncate
 
-        SuIO su;
+        public SuIO su;
 
         public RandomAccessFile(File f, String mode) throws FileNotFoundException {
             try {
@@ -459,10 +459,15 @@ public class SuperUser extends com.github.axet.androidlibrary.app.SuperUser {
                 su.write("rafclose");
                 su.ok().must();
                 su.exit();
-                su.close();
             } catch (IOException e) {
-                su.valid = false;
-                throw new IOException(new Result(su.cmd, su.su, e).errno());
+                if (su.valid) { // only raise exception if here is no errors during IO
+                    su.valid = false;
+                    throw new IOException(new Result(su.cmd, su.su, e).errno());
+                } else {
+                    Log.e(TAG, "double error on close", e);
+                }
+            } finally {
+                su.close();
             }
         }
     }
