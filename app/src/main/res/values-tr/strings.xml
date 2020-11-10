@@ -38,7 +38,7 @@
     <string name="files_moving">Taşınıyor...</string>
     <string name="files_conflict">Çakışma</string>
     <string name="unsupported">Desteklenmeyen format!</string>
-    <string name="add_bookmark_from_saf">... SAF'dan</string>
+    <string name="add_bookmark_from_saf">... SAF\'dan</string>
     <string name="add_bookmark_from_from_storage">... depolama alanından</string>
     <string name="file_open">Aç</string>
     <string name="file_open_as">... olarak Aç</string>
@@ -71,7 +71,7 @@
     <string name="back_exit">Çıkmak için geri tuşuna tekrar basın</string>
     <string name="open_as_folder">Klasör Aç</string>
     <string name="pref_recycle_title">Çöp Kutusu</string>
-    <string name="pref_recycle_summary">Silinen dosyalar için Çöp Kusutusu'nu etkinleştir</string>
+    <string name="pref_recycle_summary">Silinen dosyalar için Çöp Kusutusu\'nu etkinleştir</string>
     <string name="recyclebin_folder">Çöp Kutusu</string>
     <string name="empty_recyclebin">Çöp Kutusunu Boşalt</string>
     <string name="duplicate_folder">Dosyayı Çoğalt</string>
