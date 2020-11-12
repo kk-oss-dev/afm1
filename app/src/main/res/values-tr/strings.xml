@@ -1,0 +1,92 @@
+<resources>
+    <string name="app_name">Dosya Yöneticisi</string>
+    <string name="action_settings">Ayarlar</string>
+    <string name="navigation_drawer_open">Gezinme ekranını aç</string>
+    <string name="navigation_drawer_close">Gezinme ekranını kapat</string>
+    <string name="title_activity_settings">Ayarlar</string>
+
+    <string-array name="themes_text">
+        <item>Aydınlık Tema</item>
+        <item>Karanlık Tema</item>
+    </string-array>
+
+    <string name="copy_from">Burdan:</string>
+    <string name="copy_to">Buraya:</string>
+    <string name="copy_pause">Durdur</string>
+    <string name="copy_resume">Devam Et</string>
+    <string name="copy_retry">Tekrar Dene</string>
+    <string name="copy_overwrite">Üzerine Yaz:</string>
+    <string name="copy_overwrite_with">İle:</string>
+
+    <string name="size_bytes">byte</string>
+    <string name="add_bookmark">Yer İmi Koy</string>
+    <string name="bookmarks">Yer İmleri</string>
+    <string name="empty_list">Boş</string>
+    <string name="delete_bookmark">Yer İmini Sil</string>
+    <string name="create_folder">Klasör Oluştur</string>
+    <string name="create_file">Dosya Oluştur</string>
+    <string name="toast_files_copied">%1$d dosya kopyalandı</string>
+    <string name="toast_files_cut">%1$d dosya kesildi</string>
+    <string name="files_delete">Sil</string>
+    <string name="toast_files_deleted">%1$d dosya silindi</string>
+    <string name="toast_files_archived">%2$d dosya \'%1$s\' olarak arşivlendi</string>
+    <string name="files_rename">Yeniden Adlandır</string>
+    <string name="files_deleting">Siliniyor...</string>
+    <string name="files_calculating">Hesaplanıyor...</string>
+    <string name="files_copying">Kopyalanıyor...</string>
+    <string name="files_archiving">Arşivleniyor...</string>
+    <string name="files_moving">Taşınıyor...</string>
+    <string name="files_conflict">Çakışma</string>
+    <string name="unsupported">Desteklenmeyen format!</string>
+    <string name="add_bookmark_from_saf">... SAF\'dan</string>
+    <string name="add_bookmark_from_from_storage">... depolama alanından</string>
+    <string name="file_open">Aç</string>
+    <string name="file_open_as">... olarak Aç</string>
+    <string name="open_as_text">Yazı Belgesi</string>
+    <string name="open_as_image">Görüntü Dosyası</string>
+    <string name="open_as_audio">Ses Dosyası</string>
+    <string name="open_as_archive">Arşivi Görüntüle</string>
+    <string name="open_as_picture">Resmi Görüntüle</string>
+    <string name="file_view">Görüntüle</string>
+    <string name="files_paste">Yapıştır</string>
+    <string name="files_cancel_paste">Yapıştırmayı İptal Et</string>
+    <string name="refresh">Yenile</string>
+    <string name="search">Ara</string>
+    <string name="button_overwrite">Üzerine Yaz</string>
+    <string name="button_skip">Geç</string>
+    <string name="button_overwrite_all">Hepsinin Üzerine Yaz</string>
+    <string name="button_skip_all">Hepsini Geç</string>
+    <string name="button_permissions">İzin Al</string>
+    <string name="button_new_file">Yeni Dosya</string>
+    <string name="per_second">/s</string>
+    <string name="pref_theme_title">Tema</string>
+    <string name="pref_root_title">Kök Kullanıcı Araması</string>
+    <string name="pref_root_summary">Kök kullanıcı olarak dosyayı ara</string>
+    <string name="menu_rename">Yeniden Adlandır</string>
+    <string name="menu_copy">Kopyala</string>
+    <string name="menu_cut">Kes</string>
+    <string name="menu_delete">Sil</string>
+    <string name="menu_archive">Arşivle</string>
+    <string name="save_to">Arşivi şuraya kaydet</string>
+    <string name="back_exit">Çıkmak için geri tuşuna tekrar basın</string>
+    <string name="open_as_folder">Klasör Aç</string>
+    <string name="pref_recycle_title">Çöp Kutusu</string>
+    <string name="pref_recycle_summary">Silinen dosyalar için Çöp Kusutusu\'nu etkinleştir</string>
+    <string name="recyclebin_folder">Çöp Kutusu</string>
+    <string name="empty_recyclebin">Çöp Kutusunu Boşalt</string>
+    <string name="duplicate_folder">Dosyayı Çoğalt</string>
+    <string name="delete_permanently">Kalıcı Olarak Sil</string>
+    <string name="preview">Önizleme</string>
+    <string name="file_viewas">... olarak görüntüle</string>
+    <string name="action_fullscreen">Tam Ekran</string>
+    <string name="viewas_hex">Hex</string>
+    <string name="free_space">%1$s boş</string>
+    <string name="sort_by">Sırala ...</string>
+    <string name="sort_by_name_a_z">İsim A-Z</string>
+    <string name="sort_by_name_z_a">İsim Z-A</string>
+    <string name="sort_by_last_modified_asc">Son Değiştirilme Artan</string>
+    <string name="sort_by_last_modified_desc">Son Değiştirilme Azalan</string>
+    <string name="sort_by_size_desc">Boyut Azalan</string>
+    <string name="sort_by_size_asc">Boyut Artan</string>
+    <string name="properties">Özellikler</string>
+</resources>
