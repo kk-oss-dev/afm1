@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.BaseTransientBottomBar;
 import android.support.design.widget.Snackbar;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
@@ -43,11 +44,16 @@ public class SearchFragment extends FilesFragment {
 
                 if (search.calcIndex < search.calcs.size() && search.calc()) {
                     handler.post(this);
-                    if (old == null)
+                    if (old == null) {
                         old = Snackbar.make(getActivity().findViewById(android.R.id.content), "", Snackbar.LENGTH_LONG);
+                        old.setDuration(BaseTransientBottomBar.LENGTH_INDEFINITE);
+                    }
                     old.setText(Storage.getDisplayName(getContext(), search.calcs.get(0).uri));
                     old.show();
                     return;
+                } else {
+                    old.setDuration(BaseTransientBottomBar.LENGTH_SHORT);
+                    old.show();
                 }
                 storage.closeSu();
             } catch (RuntimeException e) {
