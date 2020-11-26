@@ -1,6 +1,7 @@
 package com.github.axet.filemanager.activities;
 
 import android.annotation.SuppressLint;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -37,7 +38,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
-    Storage.Nodes nodes;
+    Storage.Nodes nodes = new Storage.Nodes();
     ViewPager pager;
     PagerAdapter adapter;
     TextView title;
@@ -244,10 +245,22 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
 
         Storage storage = new Storage(this);
         Uri p = Storage.getParent(this, uri);
-        ArrayList<Storage.Node> nn = p == null ? asNodeList(uri) : storage.list(p);
-        nodes = new Storage.Nodes(nn, false);
-        Collections.sort(nodes, FilesFragment.sort(this));
-        storage.closeSu();
+        try {
+            ArrayList<Storage.Node> nn = p == null ? asNodeList(uri) : storage.list(p);
+            nodes = new Storage.Nodes(nn, false);
+            Collections.sort(nodes, FilesFragment.sort(this));
+        } catch (RuntimeException e) {
+            Log.e(TAG, "unable to read", e);
+            String s = uri.getScheme();
+            if (s.equals(ContentResolver.SCHEME_CONTENT))
+                nodes.add(new Storage.Node(Storage.getDocumentFile(this, uri)));
+            if (s.equals(ContentResolver.SCHEME_FILE))
+                nodes.add(new Storage.Node(Storage.getFile(uri)));
+            else
+                throw new Storage.UnknownUri();
+        } finally {
+            storage.closeSu();
+        }
 
         pager = (ViewPager) findViewById(R.id.pager);
         adapter = new PagerAdapter(getSupportFragmentManager(), uri);
@@ -348,6 +361,9 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
         panel.setVisibility(View.VISIBLE);
         handler.removeCallbacks(update);
         handler.postDelayed(update, 2000);
+        left.setVisibility(nodes.size() > 1 ? View.VISIBLE : View.GONE);
+        right.setVisibility(nodes.size() > 1 ? View.VISIBLE : View.GONE);
+        count.setVisibility(nodes.size() > 1 ? View.VISIBLE : View.GONE);
         sendBroadcast(new Intent(HexDialogFragment.CHANGED).putExtra("uri", uri));
     }
 
