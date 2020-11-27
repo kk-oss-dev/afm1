@@ -79,8 +79,16 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
         context.startActivity(intent);
     }
 
-    public static ArrayList<Storage.Node> asNodeList(Uri uri) {
-        return new ArrayList(Arrays.asList(new Storage.Node(uri, "", false, 0, 0)));
+    public static ArrayList<Storage.Node> asNodeList(Context context, Uri uri) {
+        Storage.Node node;
+        String s = uri.getScheme();
+        if (s.equals(ContentResolver.SCHEME_CONTENT))
+            node = new Storage.Node(Storage.getDocumentFile(context, uri));
+        else if (s.equals(ContentResolver.SCHEME_FILE))
+            node = new Storage.Node(Storage.getFile(uri));
+        else
+            throw new Storage.UnknownUri();
+        return new ArrayList(Arrays.asList(node));
     }
 
     public class PagerAdapter extends FragmentPagerAdapter {
@@ -244,20 +252,13 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
         Uri uri = getIntent().getParcelableExtra("uri");
 
         Storage storage = new Storage(this);
-        Uri p = Storage.getParent(this, uri);
         try {
-            ArrayList<Storage.Node> nn = p == null ? asNodeList(uri) : storage.list(p);
-            nodes = new Storage.Nodes(nn, false);
+            Uri p = Storage.getParent(this, uri);
+            nodes = new Storage.Nodes(p == null ? asNodeList(this, uri) : storage.list(p), false);
             Collections.sort(nodes, FilesFragment.sort(this));
         } catch (RuntimeException e) {
             Log.e(TAG, "unable to read", e);
-            String s = uri.getScheme();
-            if (s.equals(ContentResolver.SCHEME_CONTENT))
-                nodes.add(new Storage.Node(Storage.getDocumentFile(this, uri)));
-            if (s.equals(ContentResolver.SCHEME_FILE))
-                nodes.add(new Storage.Node(Storage.getFile(uri)));
-            else
-                throw new Storage.UnknownUri();
+            nodes = new Storage.Nodes(asNodeList(this, uri), false);
         } finally {
             storage.closeSu();
         }
