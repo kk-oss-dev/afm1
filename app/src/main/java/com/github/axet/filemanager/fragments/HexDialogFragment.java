@@ -16,6 +16,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 public class HexDialogFragment extends DialogFragmentCompat {
+    public static final String TAG = HexDialogFragment.class.getSimpleName();
     public static final String CHANGED = HexDialogFragment.class.getCanonicalName() + ".CHANGED";
 
     Uri uri;
@@ -132,9 +134,14 @@ public class HexDialogFragment extends DialogFragmentCompat {
         uri = getArguments().getParcelable("uri");
         storage = new Storage(getContext());
         Uri p = Storage.getParent(getContext(), uri);
-        ArrayList<Storage.Node> nn = p == null ? FullscreenActivity.asNodeList(uri) : storage.list(p);
-        nodes = new Storage.Nodes(nn, false);
-        Collections.sort(nodes, FilesFragment.sort(getContext()));
+        try {
+            ArrayList<Storage.Node> nn = p == null ? FullscreenActivity.asNodeList(getContext(), uri) : storage.list(p);
+            nodes = new Storage.Nodes(nn, false);
+            Collections.sort(nodes, FilesFragment.sort(getContext()));
+        } catch (Exception e) {
+            Log.w(TAG, e);
+            nodes = new Storage.Nodes(FullscreenActivity.asNodeList(getContext(), uri), false);
+        }
         storage.closeSu();
     }
 
