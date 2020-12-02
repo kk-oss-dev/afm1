@@ -716,6 +716,21 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         }
     }
 
+    public UriOutputStream write(Uri uri) throws IOException {
+        String s = uri.getScheme();
+        if (s.equals(ContentResolver.SCHEME_FILE)) {
+            File k = getFile(uri);
+            if (getRoot())
+                return new UriOutputStream(k, new SuperUser.FileOutputStream(k));
+            else
+                return new UriOutputStream(k, new FileOutputStream(k));
+        } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+            return new UriOutputStream(uri, resolver.openOutputStream(uri, "rwt"));
+        } else {
+            throw new UnknownUri();
+        }
+    }
+
     public boolean touch(Uri uri, long last) {
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {

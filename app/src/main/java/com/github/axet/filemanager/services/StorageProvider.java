@@ -83,7 +83,7 @@ public class StorageProvider extends com.github.axet.androidlibrary.services.Sto
             @Override
             public void close() throws IOException {
                 super.close();
-                closeFiles();
+                closeStream();
             }
         }, mode);
     }
@@ -99,12 +99,12 @@ public class StorageProvider extends com.github.axet.androidlibrary.services.Sto
             @Override
             public void close() throws IOException {
                 super.close();
-                closeFiles();
+                closeStream();
             }
         }, mode);
     }
 
-    synchronized public void closeFiles() {
+    synchronized public void closeStream() {
         counter--;
         freeFiles();
     }
