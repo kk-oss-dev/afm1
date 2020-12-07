@@ -30,6 +30,7 @@ import net.lingala.zip4j.model.FileHeader;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -879,7 +880,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 try {
                     if (Build.VERSION.SDK_INT >= 24 && DocumentsContract.moveDocument(resolver, f, Storage.getDocumentParent(context, f), tp) != null) // moveDocument api24+
                         return true;
-                } catch (RuntimeException e) { // IllegalStateException: "Failed to move"
+                } catch (RuntimeException | FileNotFoundException e) { // IllegalStateException: "Failed to move"
                 }
             }
         } else {
