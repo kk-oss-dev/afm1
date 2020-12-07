@@ -666,7 +666,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 return null;
             String t = f.getType();
             String rel = uri.getQueryParameter("p");
-            if (t.equals(CONTENTTYPE_RAR))
+            if (t.equals(CONTENTTYPE_XRAR) || t.equals(CONTENTTYPE_RAR))
                 return cache(new RarReader(u, rel));
             if (t.equals(CONTENTTYPE_ZIP))
                 return cache(new ZipReader(u, rel));
@@ -711,6 +711,21 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
             Uri doc = createDocumentFile(context, uri, name);
             return new UriOutputStream(doc, resolver.openOutputStream(doc, "rwt"));
+        } else {
+            throw new UnknownUri();
+        }
+    }
+
+    public UriOutputStream write(Uri uri) throws IOException {
+        String s = uri.getScheme();
+        if (s.equals(ContentResolver.SCHEME_FILE)) {
+            File k = getFile(uri);
+            if (getRoot())
+                return new UriOutputStream(k, new SuperUser.FileOutputStream(k));
+            else
+                return new UriOutputStream(k, new FileOutputStream(k));
+        } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+            return new UriOutputStream(uri, resolver.openOutputStream(uri, "rwt"));
         } else {
             throw new UnknownUri();
         }

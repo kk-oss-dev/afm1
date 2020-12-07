@@ -209,6 +209,7 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
                 try {
                     bm = tmp = BitmapFactory.decodeStream(is = current.storage.open(current.uri));
                 } catch (Exception e) { // catch outofmemory exception
+                    Log.w(TAG, e);
                 } finally {
                     try {
                         if (is != null)
