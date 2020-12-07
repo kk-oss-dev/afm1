@@ -666,7 +666,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                 return null;
             String t = f.getType();
             String rel = uri.getQueryParameter("p");
-            if (t.equals(CONTENTTYPE_RAR))
+            if (t.equals(CONTENTTYPE_XRAR) || t.equals(CONTENTTYPE_RAR))
                 return cache(new RarReader(u, rel));
             if (t.equals(CONTENTTYPE_ZIP))
                 return cache(new ZipReader(u, rel));
