@@ -1,6 +1,5 @@
 package com.github.axet.filemanager.fragments;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
@@ -139,6 +138,7 @@ public class FilesFragment extends Fragment {
     PathView path;
     View button;
     TextView error;
+    TextView bottom_message;
     MenuItem toolbar; // toolbar select
     MenuItem pasteMenu;
     MenuItem pasteCancel;
@@ -1936,6 +1936,9 @@ public class FilesFragment extends Fragment {
         error = (TextView) rootView.findViewById(R.id.error);
         error.setVisibility(View.GONE);
 
+        bottom_message = (TextView) rootView.findViewById(R.id.bottom_message);
+        bottom_message.setVisibility(View.GONE);
+
         button = rootView.findViewById(R.id.permissions);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1969,6 +1972,7 @@ public class FilesFragment extends Fragment {
     }
 
     void updateButton() {
+        bottom_message.setVisibility(View.GONE);
         button.setVisibility(View.VISIBLE);
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
@@ -1979,6 +1983,10 @@ public class FilesFragment extends Fragment {
                 manager = Storage.isExternalStorageManager(getContext());
             if (f.canRead() || shared.getBoolean(FilesApplication.PREF_ROOT, false) || Storage.permitted(getContext(), Storage.PERMISSIONS_RW) || manager)
                 button.setVisibility(View.GONE);
+            if (Build.VERSION.SDK_INT >= 29 && getContext().getApplicationInfo().targetSdkVersion >= 29 && Storage.hasRequestedLegacyExternalStorage(getContext()) && !Storage.isExternalStorageLegacy(getContext())) {
+                bottom_message.setText("Content is limited, please provide Legacy External Storage support");
+                bottom_message.setVisibility(View.VISIBLE);
+            }
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
             button.setVisibility(View.GONE);
         } else {
