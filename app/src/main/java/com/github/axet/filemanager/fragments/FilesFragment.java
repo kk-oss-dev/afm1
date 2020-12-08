@@ -1,5 +1,6 @@
 package com.github.axet.filemanager.fragments;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
@@ -1939,7 +1940,10 @@ public class FilesFragment extends Fragment {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Storage.permitted(FilesFragment.this, Storage.PERMISSIONS_RW, RESULT_PERMS);
+                if (Build.VERSION.SDK_INT >= 30 && getContext().getApplicationInfo().targetSdkVersion >= 30 && OptimizationPreferenceCompat.findPermission(getContext(), Storage.MANAGE_EXTERNAL_STORAGE))
+                    Storage.showExternalStorageManager(getContext());
+                else
+                    Storage.permitted(FilesFragment.this, Storage.PERMISSIONS_RW, RESULT_PERMS);
             }
         });
         updateButton();
@@ -1970,7 +1974,10 @@ public class FilesFragment extends Fragment {
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             File f = Storage.getFile(uri);
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
-            if (f.canRead() || shared.getBoolean(FilesApplication.PREF_ROOT, false) || Storage.permitted(getContext(), Storage.PERMISSIONS_RW))
+            boolean manager = false;
+            if (Build.VERSION.SDK_INT >= 30 && getContext().getApplicationInfo().targetSdkVersion >= 30 && OptimizationPreferenceCompat.findPermission(getContext(), Storage.MANAGE_EXTERNAL_STORAGE))
+                manager = Storage.isExternalStorageManager(getContext());
+            if (f.canRead() || shared.getBoolean(FilesApplication.PREF_ROOT, false) || Storage.permitted(getContext(), Storage.PERMISSIONS_RW) || manager)
                 button.setVisibility(View.GONE);
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
             button.setVisibility(View.GONE);
