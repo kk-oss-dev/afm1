@@ -1983,7 +1983,7 @@ public class FilesFragment extends Fragment {
                 manager = Storage.isExternalStorageManager(getContext());
             if (f.canRead() || shared.getBoolean(FilesApplication.PREF_ROOT, false) || Storage.permitted(getContext(), Storage.PERMISSIONS_RW) || manager)
                 button.setVisibility(View.GONE);
-            if (Build.VERSION.SDK_INT >= 29 && getContext().getApplicationInfo().targetSdkVersion >= 29 && Storage.hasRequestedLegacyExternalStorage(getContext()) && !Storage.isExternalStorageLegacy(getContext())) {
+            if (Build.VERSION.SDK_INT >= 29 && getContext().getApplicationInfo().targetSdkVersion >= 29 && Storage.hasRequestedLegacyExternalStorage(getContext()) && !Storage.isExternalStorageLegacy(getContext()) && !manager) {
                 bottom_message.setText("Content is limited, please provide Legacy External Storage support");
                 bottom_message.setVisibility(View.VISIBLE);
             }
