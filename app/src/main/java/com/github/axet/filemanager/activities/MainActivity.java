@@ -110,8 +110,6 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
 
     public static void start(Context context) {
         Intent intent = new Intent(context, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         context.startActivity(intent);
     }
 
