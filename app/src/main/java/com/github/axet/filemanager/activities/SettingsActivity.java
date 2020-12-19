@@ -22,8 +22,6 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity {
 
     public static void start(Context context) {
         Intent intent = new Intent(context, SettingsActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         context.startActivity(intent);
     }
 

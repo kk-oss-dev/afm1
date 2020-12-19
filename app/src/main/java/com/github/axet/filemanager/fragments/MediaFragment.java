@@ -27,6 +27,7 @@ import com.github.axet.androidlibrary.app.FileTypeDetector;
 import com.github.axet.androidlibrary.preferences.RotatePreferenceCompat;
 import com.github.axet.androidlibrary.widgets.CacheImagesAdapter;
 import com.github.axet.androidlibrary.widgets.ErrorDialog;
+import com.github.axet.androidlibrary.widgets.PopupWindowCompat;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.androidlibrary.widgets.Toast;
 import com.github.axet.androidlibrary.widgets.WebViewCustom;
@@ -286,7 +287,7 @@ public class MediaFragment extends Fragment {
                 left.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        rotate.setRotation(rotation.addAndGet(-90));
+                        PopupWindowCompat.setRotationCompat(rotate, rotation.addAndGet(-90));
                         if (rotation.get() < 0)
                             rotation.addAndGet(360);
                         save.setVisibility(View.VISIBLE);
@@ -296,7 +297,7 @@ public class MediaFragment extends Fragment {
                 right.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        rotate.setRotation(rotation.addAndGet(90));
+                        PopupWindowCompat.setRotationCompat(rotate, rotation.addAndGet(90));
                         if (rotation.get() > 360)
                             rotation.addAndGet(-360);
                         save.setVisibility(View.VISIBLE);

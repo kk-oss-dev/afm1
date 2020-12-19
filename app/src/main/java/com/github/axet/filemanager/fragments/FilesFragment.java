@@ -138,6 +138,7 @@ public class FilesFragment extends Fragment {
     PathView path;
     View button;
     TextView error;
+    TextView bottom_message;
     MenuItem toolbar; // toolbar select
     MenuItem pasteMenu;
     MenuItem pasteCancel;
@@ -1935,11 +1936,17 @@ public class FilesFragment extends Fragment {
         error = (TextView) rootView.findViewById(R.id.error);
         error.setVisibility(View.GONE);
 
+        bottom_message = (TextView) rootView.findViewById(R.id.bottom_message);
+        bottom_message.setVisibility(View.GONE);
+
         button = rootView.findViewById(R.id.permissions);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Storage.permitted(FilesFragment.this, Storage.PERMISSIONS_RW, RESULT_PERMS);
+                if (Build.VERSION.SDK_INT >= 30 && getContext().getApplicationInfo().targetSdkVersion >= 30 && OptimizationPreferenceCompat.findPermission(getContext(), Storage.MANAGE_EXTERNAL_STORAGE))
+                    Storage.showExternalStorageManager(getContext());
+                else
+                    Storage.permitted(FilesFragment.this, Storage.PERMISSIONS_RW, RESULT_PERMS);
             }
         });
         updateButton();
@@ -1965,13 +1972,21 @@ public class FilesFragment extends Fragment {
     }
 
     void updateButton() {
+        bottom_message.setVisibility(View.GONE);
         button.setVisibility(View.VISIBLE);
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             File f = Storage.getFile(uri);
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
-            if (f.canRead() || shared.getBoolean(FilesApplication.PREF_ROOT, false) || Storage.permitted(getContext(), Storage.PERMISSIONS_RW))
+            boolean manager = false;
+            if (Build.VERSION.SDK_INT >= 30 && getContext().getApplicationInfo().targetSdkVersion >= 30 && OptimizationPreferenceCompat.findPermission(getContext(), Storage.MANAGE_EXTERNAL_STORAGE))
+                manager = Storage.isExternalStorageManager(getContext());
+            if (f.canRead() || shared.getBoolean(FilesApplication.PREF_ROOT, false) || Storage.permitted(getContext(), Storage.PERMISSIONS_RW) || manager)
                 button.setVisibility(View.GONE);
+            if (Build.VERSION.SDK_INT >= 29 && getContext().getApplicationInfo().targetSdkVersion >= 29 && Storage.hasRequestedLegacyExternalStorage(getContext()) && !Storage.isExternalStorageLegacy(getContext()) && !manager) {
+                bottom_message.setText("Content is limited, please provide Legacy External Storage support");
+                bottom_message.setVisibility(View.VISIBLE);
+            }
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
             button.setVisibility(View.GONE);
         } else {

@@ -47,8 +47,8 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.github.axet.androidlibrary.preferences.AboutPreferenceCompat;
 import com.github.axet.androidlibrary.activities.AppCompatThemeActivity;
+import com.github.axet.androidlibrary.preferences.AboutPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.OpenChoicer;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.PathMax;
@@ -110,8 +110,6 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
 
     public static void start(Context context) {
         Intent intent = new Intent(context, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         context.startActivity(intent);
     }
 

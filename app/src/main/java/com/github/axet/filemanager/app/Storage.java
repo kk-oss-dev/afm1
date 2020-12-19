@@ -140,9 +140,8 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
         public boolean remove(Uri o) {
             for (Node n : this) {
-                if (n.uri.equals(o)) {
+                if (n.uri.equals(o))
                     return remove(n);
-                }
             }
             return false;
         }
