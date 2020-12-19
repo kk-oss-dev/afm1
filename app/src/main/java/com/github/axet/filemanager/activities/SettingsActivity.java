@@ -33,7 +33,7 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getSupportFragmentManager().beginTransaction().replace(android.R.id.content, new GeneralPreferenceFragment()).commit();
+        showSettingsFragment(new GeneralPreferenceFragment());
         setupActionBar();
     }
 
@@ -47,12 +47,6 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity {
         super.onBackPressed();
         finish();
         MainActivity.start(this);
-    }
-
-    private void setupActionBar() {
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null)
-            actionBar.setDisplayHomeAsUpEnabled(true);
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
