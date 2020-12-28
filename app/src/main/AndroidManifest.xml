@@ -16,7 +16,7 @@
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Translucent">
+        android:theme="@style/Translucent">
 
         <uses-library
             android:name="org.apache.http.legacy"
@@ -27,7 +27,7 @@
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:label="@string/app_name"
             android:launchMode="singleTop"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            android:theme="@style/Translucent">
             <meta-data
                 android:name="android.app.searchable"
                 android:resource="@xml/searchable" />
@@ -65,12 +65,12 @@
         <activity
             android:name=".activities.SettingsActivity"
             android:label="@string/title_activity_settings"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+            android:theme="@style/Translucent" />
 
         <activity
             android:name=".activities.FullscreenActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+            android:theme="@style/Translucent" />
     </application>
 
 </manifest>
