@@ -795,7 +795,7 @@ public class FilesFragment extends Fragment {
                             return;
                         }
                         success();
-                    } catch (RuntimeException e) {
+                    } catch (Throwable e) { // delete can cause InvocationTargetException
                         deleteError(e);
                     }
                 }
@@ -1673,16 +1673,20 @@ public class FilesFragment extends Fragment {
                         PopupMenu menu = new PopupMenu(getContext(), v);
                         menu.inflate(R.menu.menu_file);
                         Storage.ArchiveReader r = storage.fromArchive(f.uri, true);
-                        if (r != null && r.isDirectory()) {
-                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_view);
-                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openaspicture);
-                            r.close();
-                        } else if (CacheImagesAdapter.isImage(Storage.getName(getContext(), f.uri))) {
-                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_view);
-                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openasarchive);
-                        } else {
-                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openasarchive);
-                            ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openaspicture);
+                        try {
+                            if (r != null && r.isDirectory()) {
+                                ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_view);
+                                ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openaspicture);
+                                r.close();
+                            } else if (CacheImagesAdapter.isImage(Storage.getName(getContext(), f.uri))) {
+                                ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_view);
+                                ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openasarchive);
+                            } else {
+                                ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openasarchive);
+                                ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openaspicture);
+                            }
+                        } catch (Throwable e) {
+                            Toast.Error(getContext(), e);
                         }
                         ToolbarActionView.hideMenu(menu.getMenu(), R.id.action_openasfolder);
                         menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
@@ -2576,6 +2580,7 @@ public class FilesFragment extends Fragment {
 
     void archive(final Storage.UriOutputStream uos) {
         archive = new OperationBuilder(getContext());
+        final OperationBuilder archive = this.archive; // archive can be dismissed
         archive.create(R.layout.paste);
         archive.setTitle(R.string.menu_archive);
         final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
@@ -2743,7 +2748,7 @@ public class FilesFragment extends Fragment {
             public void onDismiss(DialogInterface dialog) {
                 op.close();
                 archive.dismiss();
-                archive = null;
+                FilesFragment.this.archive = null;
                 handler.removeCallbacks(op);
                 reload();
             }
