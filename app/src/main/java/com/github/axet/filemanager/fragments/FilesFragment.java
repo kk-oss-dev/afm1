@@ -2603,6 +2603,19 @@ public class FilesFragment extends Fragment {
             }
 
             @Override
+            public boolean calc() { // walk trough symlinks
+                Storage.Node c = calcs.get(calcIndex);
+                if (c.dir || c instanceof Storage.SymlinkNode && ((Storage.SymlinkNode) c).isSymDir()) {
+                    walk(c.uri);
+                } else {
+                    files.add(c);
+                    total += c.size;
+                }
+                calcIndex++;
+                return calcIndex < calcs.size();
+            }
+
+            @Override
             public void run() {
                 try {
                     if (calcIndex < calcs.size()) {
@@ -2684,7 +2697,7 @@ public class FilesFragment extends Fragment {
                         int old = filesIndex;
                         final Storage.Node f = files.get(filesIndex);
 
-                        if (f.dir) {
+                        if (f.dir || f instanceof Storage.SymlinkNode && ((Storage.SymlinkNode) f).isSymDir()) {
                             ZipEntry entry = new ZipEntry(f.name + "/");
                             zip.putNextEntry(entry);
                         } else {
