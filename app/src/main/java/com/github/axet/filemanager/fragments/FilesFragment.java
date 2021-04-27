@@ -193,7 +193,7 @@ public class FilesFragment extends Fragment {
         }
     }
 
-    public static void pasteError(final OperationBuilder paste, final PendingOperation op, final Throwable e, final boolean move) {
+    public static AlertDialog pasteError(final OperationBuilder paste, final PendingOperation op, final Throwable e, final boolean move) {
         Log.e(TAG, "paste", e);
         AlertDialog.Builder builder = new AlertDialog.Builder(paste.getContext());
         builder.setCancelable(false);
@@ -273,7 +273,7 @@ public class FilesFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 if (!op.storage.delete(op.f.uri)) {
-                    pasteError(paste, op, new RuntimeException("unable to delete: " + op.f.name), move);
+                    op.retry = pasteError(paste, op, new RuntimeException("unable to delete: " + op.f.name), move);
                     d.dismiss();
                     return;
                 }
@@ -284,6 +284,7 @@ public class FilesFragment extends Fragment {
             }
         });
         d.show();
+        return d;
     }
 
     public static void pasteConflict(final OperationBuilder paste, final PendingOperation op, final Storage.Node f, final Storage.Node t) {
@@ -444,6 +445,8 @@ public class FilesFragment extends Fragment {
         public EnumSet<OPERATION> newer = EnumSet.of(OPERATION.ASK); // overwrite same size file but newer date
         public EnumSet<OPERATION> same = EnumSet.of(OPERATION.ASK); // same file size and date
 
+        AlertDialog retry; // retry operation dialog
+
         public SparseArray<EnumSet<OPERATION>> errno = new SparseArray<EnumSet<OPERATION>>() {
             @Override
             public EnumSet<OPERATION> get(int key) {
@@ -570,6 +573,10 @@ public class FilesFragment extends Fragment {
                 t = null;
             }
             f = null;
+            if (retry != null) {
+                retry.dismiss();
+                retry = null;
+            }
         }
 
         public void close() {
@@ -871,7 +878,9 @@ public class FilesFragment extends Fragment {
                     op.post();
                     return;
             }
-            pasteError(DeleteBuilder.this, op, e, true);
+            if (op.retry != null)
+                op.retry.dismiss();
+            op.retry = pasteError(DeleteBuilder.this, op, e, true);
         }
 
         public void success() { // success!
@@ -1176,7 +1185,9 @@ public class FilesFragment extends Fragment {
                     op.post();
                     return;
             }
-            pasteError(PropertiesBuilder.this, op, e, true);
+            if (op.retry != null)
+                op.retry.dismiss();
+            op.retry = pasteError(PropertiesBuilder.this, op, e, true);
         }
 
         public void success() { // success!
@@ -1377,7 +1388,9 @@ public class FilesFragment extends Fragment {
                                 post();
                                 return;
                         }
-                        pasteError(PasteBuilder.this, this, e, move);
+                        if (retry != null)
+                            retry.dismiss();
+                        retry = pasteError(PasteBuilder.this, this, e, move);
                     }
                 }
 
@@ -2532,7 +2545,7 @@ public class FilesFragment extends Fragment {
                 Storage.UriOutputStream os;
                 try {
                     os = storage.open(uri, to);
-                } catch (IOException e) {
+                } catch (Exception e) {
                     Runnable run = new Runnable() {
                         @Override
                         public void run() {
@@ -2580,7 +2593,6 @@ public class FilesFragment extends Fragment {
 
     void archive(final Storage.UriOutputStream uos) {
         archive = new OperationBuilder(getContext());
-        final OperationBuilder archive = this.archive; // archive can be dismissed
         archive.create(R.layout.paste);
         archive.setTitle(R.string.menu_archive);
         final PendingOperation op = new PendingOperation(getContext(), uri, selected) {
@@ -2712,7 +2724,9 @@ public class FilesFragment extends Fragment {
                             post();
                             return;
                     }
-                    pasteError(archive, this, e, false);
+                    if (retry != null)
+                        retry.dismiss();
+                    retry = pasteError(archive, this, e, false);
                 }
             }
 
@@ -2721,8 +2735,15 @@ public class FilesFragment extends Fragment {
                 handler.postDelayed(this, d);
             }
 
+            @Override
             public void post() {
                 post(0);
+            }
+
+            @Override
+            public void cancel() {
+                super.cancel();
+                handler.removeCallbacks(this);
             }
         };
         archive.neutral = new View.OnClickListener() {
@@ -2746,10 +2767,10 @@ public class FilesFragment extends Fragment {
         archive.dismiss = new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface dialog) {
+                Log.d(TAG, "onDismiss");
                 op.close();
                 archive.dismiss();
-                FilesFragment.this.archive = null;
-                handler.removeCallbacks(op);
+                archive = null;
                 reload();
             }
         };
