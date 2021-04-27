@@ -22,8 +22,8 @@ import com.github.axet.androidlibrary.widgets.CacheImagesAdapter;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.filemanager.fragments.FilesFragment;
 
-import net.lingala.zip4j.core.NativeStorage;
-import net.lingala.zip4j.core.ZipFile;
+import net.lingala.zip4j.NativeStorage;
+import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
 import net.lingala.zip4j.model.FileHeader;
 
@@ -238,7 +238,9 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         public InputStream open() {
             try {
                 return new ZipSAF.ZipInputStreamSafe(zip.getInputStream(h));
-            } catch (ZipException e) {
+            } catch (RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
@@ -431,7 +433,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
                         throw new UnknownUri();
                     n.name = getLast(n.getPath());
                     n.size = h.getUncompressedSize();
-                    n.last = h.getLastModFileTime();
+                    n.last = h.getLastModifiedTime();
                     n.dir = h.isDirectory();
                     n.zip = zip;
                     aa.add(n);

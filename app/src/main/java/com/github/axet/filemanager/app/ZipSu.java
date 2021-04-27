@@ -1,7 +1,7 @@
 package com.github.axet.filemanager.app;
 
-import net.lingala.zip4j.core.NativeFile;
-import net.lingala.zip4j.core.NativeStorage;
+import net.lingala.zip4j.NativeFile;
+import net.lingala.zip4j.NativeStorage;
 
 import java.io.File;
 import java.io.FileNotFoundException;
