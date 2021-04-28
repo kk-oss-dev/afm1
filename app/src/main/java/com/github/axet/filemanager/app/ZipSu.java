@@ -15,6 +15,22 @@ public class ZipSu extends NativeStorage {
     public static class SuFile extends NativeFile {
         SuperUser.RandomAccessFile r;
 
+        @Override
+        public int skipBytes(int i) throws IOException {
+            r.seek(r.getPosition() + i);
+            return i;
+        }
+
+        @Override
+        public int read() throws IOException {
+            return r.read();
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            r.write(b);
+        }
+
         public SuFile(File f) throws FileNotFoundException {
             r = new SuperUser.RandomAccessFile(f);
         }
@@ -31,7 +47,7 @@ public class ZipSu extends NativeStorage {
 
         @Override
         public void readFully(byte[] buf) throws IOException {
-            readFully(buf,0, buf.length);
+            readFully(buf, 0, buf.length);
         }
 
         @Override
