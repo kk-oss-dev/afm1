@@ -244,6 +244,7 @@ public class FilesFragment extends Fragment {
         retry.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                op.retry();
                 op.run();
                 d.dismiss();
             }
@@ -473,11 +474,19 @@ public class FilesFragment extends Fragment {
             calcUri = root;
         }
 
+        public boolean exists(Uri uri) { // prevent adding recurcive symlinks
+            for (Storage.Node n : calcs) {
+                if (n.uri.equals(uri))
+                    return true;
+            }
+            return false;
+        }
+
         public void walk(Uri uri) {
             ArrayList<Storage.Node> nn = storage.walk(calcUri, uri);
             for (Storage.Node n : nn) {
                 if (n.dir) {
-                    if (n.uri.equals(uri)) // walk return current dirs, do not follow it
+                    if (n.uri.equals(uri) || n instanceof Storage.SymlinkNode && exists(Uri.fromFile(((Storage.SymlinkNode) n).getTarget()))) // walk return current dirs, do not follow it
                         files.add(n);
                     else
                         calcs.add(n);
@@ -490,7 +499,7 @@ public class FilesFragment extends Fragment {
 
         public boolean calc() {
             Storage.Node c = calcs.get(calcIndex);
-            if (c.dir) {
+            if (c.dir || c instanceof Storage.SymlinkNode && ((Storage.SymlinkNode) c).isSymDir()) {
                 walk(c.uri);
             } else {
                 files.add(c);
@@ -655,6 +664,9 @@ public class FilesFragment extends Fragment {
         }
 
         public void post() {
+        }
+
+        public void retry() { // tell 'op' we are retrying
         }
     }
 
@@ -1438,6 +1450,15 @@ public class FilesFragment extends Fragment {
                 public void post(long l) {
                     handler.removeCallbacks(this);
                     handler.postDelayed(this, l);
+                }
+
+                @Override
+                public void retry() {
+                    cancel();
+                    if (calcIndex < calcs.size()) { // calc error
+                        calcIndex = 0;
+                        filesIndex = 0;
+                    }
                 }
             };
 
@@ -2603,19 +2624,6 @@ public class FilesFragment extends Fragment {
             }
 
             @Override
-            public boolean calc() { // walk trough symlinks
-                Storage.Node c = calcs.get(calcIndex);
-                if (c.dir || c instanceof Storage.SymlinkNode && ((Storage.SymlinkNode) c).isSymDir()) {
-                    walk(c.uri);
-                } else {
-                    files.add(c);
-                    total += c.size;
-                }
-                calcIndex++;
-                return calcIndex < calcs.size();
-            }
-
-            @Override
             public void run() {
                 try {
                     if (calcIndex < calcs.size()) {
@@ -2757,6 +2765,24 @@ public class FilesFragment extends Fragment {
             public void cancel() {
                 super.cancel();
                 handler.removeCallbacks(this);
+            }
+
+            @Override
+            public void retry() {
+                cancel();
+                if (calcIndex < calcs.size()) {
+                    calcIndex = 0;
+                    filesIndex = 0;
+                } else {
+                    filesIndex = 0;
+                }
+                try {
+                    Storage.UriOutputStream k = storage.write(uos.uri);
+                    os = zip = new ZipOutputStream(new BufferedOutputStream(k.os));
+                    t = k.uri;
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
         };
         archive.neutral = new View.OnClickListener() {
