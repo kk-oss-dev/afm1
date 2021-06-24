@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
@@ -219,7 +220,14 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
                     }
                 }
                 if (bm == null)
-                    bm = current.bm;
+                    bm = current.bm; // out of memory case
+                if (current.rotation.get() != 0) {
+                    Matrix matrix = new Matrix();
+                    matrix.postRotate(current.rotation.get());
+                    Bitmap rotatedBitmap = Bitmap.createBitmap(bm, 0, 0, bm.getWidth(), bm.getHeight(), matrix, true);
+                    bm.recycle();
+                    bm = tmp = rotatedBitmap;
+                }
                 pinchOpen(rect, bm);
                 v.addView(pinch, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             }
