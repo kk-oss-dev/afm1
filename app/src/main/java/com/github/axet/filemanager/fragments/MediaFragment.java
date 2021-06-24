@@ -58,6 +58,7 @@ public class MediaFragment extends Fragment {
 
     public ImageView image;
     public Bitmap bm;
+    public AtomicInteger rotation = new AtomicInteger();
 
     public MediaFragment() {
     }
@@ -218,7 +219,6 @@ public class MediaFragment extends Fragment {
             bm = CacheImagesAdapter.createScaled(is = storage.open(uri), getResources().getDisplayMetrics().widthPixels);
             if (bm != null) {
                 supported = true;
-                final AtomicInteger rotation = new AtomicInteger();
                 View view = inflater.inflate(R.layout.fragment_media_image, container, false);
                 final FrameLayout rotate = (FrameLayout) view.findViewById(R.id.rotate);
                 final ImageView lock = (ImageView) view.findViewById(R.id.image_rotate_lock);
