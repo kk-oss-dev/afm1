@@ -264,6 +264,7 @@ public class MediaFragment extends Fragment {
                                     os.os.close();
                                     File cover = CacheImagesAdapter.cacheUri(getContext(), uri);
                                     cover.delete();
+                                    setImage(createScaled(rotatedBitmap, getResources().getDisplayMetrics().widthPixels));
                                 } catch (IOException e) {
                                     Log.d(TAG, "Unable to read", e);
                                 } finally {
@@ -319,6 +320,29 @@ public class MediaFragment extends Fragment {
             storage.closeSu();
         }
         return error(getContext().getString(R.string.unsupported));
+    }
+
+    public static Bitmap createScaled(Bitmap bm, int max) { // scaled by min
+        float ratio;
+        if (bm.getWidth() < bm.getHeight())
+            ratio = max / (float) bm.getWidth();
+        else
+            ratio = max / (float) bm.getHeight();
+        int w = (int) (bm.getWidth() * ratio);
+        int h = (int) (bm.getHeight() * ratio);
+        Bitmap sbm = Bitmap.createScaledBitmap(bm, w, h, true);
+        if (sbm != bm)
+            bm.recycle();
+        bm = sbm;
+        return bm;
+    }
+
+    void setImage(Bitmap sbm) {
+        if (bm != null)
+            bm.recycle();
+        bm = sbm;
+        rotation.set(0);
+        image.setImageBitmap(bm);
     }
 
     @Override
