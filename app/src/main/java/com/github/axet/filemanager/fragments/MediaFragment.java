@@ -12,6 +12,7 @@ import android.graphics.Matrix;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.DisplayMetrics;
@@ -59,6 +60,8 @@ public class MediaFragment extends Fragment {
     public ImageView image;
     public Bitmap bm;
     public AtomicInteger rotation = new AtomicInteger();
+
+    Handler handler = new Handler();
 
     public MediaFragment() {
     }
@@ -247,23 +250,34 @@ public class MediaFragment extends Fragment {
                                 Matrix matrix = new Matrix();
                                 matrix.postRotate(rotation.get());
                                 try {
-                                    Bitmap bm = BitmapFactory.decodeStream(storage.open(uri));
+                                    InputStream is = storage.open(uri);
+                                    Bitmap bm = BitmapFactory.decodeStream(is);
+                                    is.close();
                                     Bitmap rotatedBitmap = Bitmap.createBitmap(bm, 0, 0, bm.getWidth(), bm.getHeight(), matrix, true);
-                                    bm.recycle();
-                                    Storage.UriOutputStream os = storage.write(uri);
-                                    String ext = Storage.getExt(getContext(), uri).toLowerCase();
-                                    switch (ext) {
-                                        case "png":
-                                            rotatedBitmap.compress(Bitmap.CompressFormat.PNG, 100, os.os);
-                                            break;
-                                        case "jpg":
-                                        case "jpeg":
-                                            rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, os.os);
-                                            break;
+                                    if (bm != rotatedBitmap) {
+                                        bm.recycle();
+                                        Storage.UriOutputStream os = storage.write(uri);
+                                        String ext = Storage.getExt(getContext(), uri).toLowerCase();
+                                        switch (ext) {
+                                            case "png":
+                                                rotatedBitmap.compress(Bitmap.CompressFormat.PNG, 100, os.os);
+                                                break;
+                                            case "jpg":
+                                            case "jpeg":
+                                                rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, os.os);
+                                                break;
+                                        }
+                                        os.os.close();
                                     }
-                                    os.os.close();
                                     File cover = CacheImagesAdapter.cacheUri(getContext(), uri);
                                     cover.delete();
+                                    final Bitmap sbm = createScaled(rotatedBitmap, getResources().getDisplayMetrics().widthPixels);
+                                    handler.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            setImage(sbm);
+                                        }
+                                    });
                                 } catch (IOException e) {
                                     Log.d(TAG, "Unable to read", e);
                                 } finally {
@@ -319,6 +333,29 @@ public class MediaFragment extends Fragment {
             storage.closeSu();
         }
         return error(getContext().getString(R.string.unsupported));
+    }
+
+    public static Bitmap createScaled(Bitmap bm, int max) { // scaled by min
+        float ratio;
+        if (bm.getWidth() < bm.getHeight())
+            ratio = max / (float) bm.getWidth();
+        else
+            ratio = max / (float) bm.getHeight();
+        int w = (int) (bm.getWidth() * ratio);
+        int h = (int) (bm.getHeight() * ratio);
+        Bitmap sbm = Bitmap.createScaledBitmap(bm, w, h, true);
+        if (sbm != bm)
+            bm.recycle();
+        bm = sbm;
+        return bm;
+    }
+
+    void setImage(Bitmap sbm) {
+        if (bm != null)
+            bm.recycle();
+        bm = sbm;
+        rotation.set(0);
+        image.setImageBitmap(bm);
     }
 
     @Override
