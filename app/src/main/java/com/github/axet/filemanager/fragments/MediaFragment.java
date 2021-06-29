@@ -60,6 +60,7 @@ public class MediaFragment extends Fragment {
     public ImageView image;
     public Bitmap bm;
     public AtomicInteger rotation = new AtomicInteger();
+    FrameLayout rotate;
 
     Handler handler = new Handler();
 
@@ -219,11 +220,11 @@ public class MediaFragment extends Fragment {
                 supported = true;
                 return new GifView(getContext(), is = storage.open(uri));
             }
-            bm = CacheImagesAdapter.createScaled(is = storage.open(uri), getResources().getDisplayMetrics().widthPixels);
+            Bitmap bm = CacheImagesAdapter.createScaled(is = storage.open(uri), getResources().getDisplayMetrics().widthPixels);
             if (bm != null) {
                 supported = true;
                 View view = inflater.inflate(R.layout.fragment_media_image, container, false);
-                final FrameLayout rotate = (FrameLayout) view.findViewById(R.id.rotate);
+                rotate = (FrameLayout) view.findViewById(R.id.rotate);
                 final ImageView lock = (ImageView) view.findViewById(R.id.image_rotate_lock);
                 lock.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -318,7 +319,7 @@ public class MediaFragment extends Fragment {
                     }
                 });
                 image = (ImageView) view.findViewById(R.id.image);
-                image.setImageBitmap(bm);
+                setImage(bm);
                 return view;
             }
         } catch (Exception e) {
@@ -356,6 +357,7 @@ public class MediaFragment extends Fragment {
         bm = sbm;
         rotation.set(0);
         image.setImageBitmap(bm);
+        PopupWindowCompat.setRotationCompat(rotate, rotation.get());
     }
 
     @Override
