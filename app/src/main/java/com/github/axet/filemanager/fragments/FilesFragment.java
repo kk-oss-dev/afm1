@@ -2115,7 +2115,7 @@ public class FilesFragment extends Fragment {
         try {
             ArrayList<Storage.Node> nn = storage.list(uri);
             adapter.files.addAll(nn);
-        } catch (RuntimeException e) {
+        } catch (Throwable e) {
             Log.e(TAG, "reload()", e);
             error.setText(e.getMessage());
             error.setVisibility(View.VISIBLE);
