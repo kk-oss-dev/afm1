@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.provider.DocumentsContract;
 import android.support.annotation.NonNull;
 import android.support.design.internal.NavigationMenuItemView;
 import android.support.design.widget.NavigationView;
@@ -511,6 +512,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        Log.d(TAG, "onNewIntent " + intent);
         setIntent(intent);
         openIntent(intent);
     }
@@ -522,12 +524,22 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
         if (a == null)
             return;
         if (a.equals(Intent.ACTION_VIEW)) {
-            Uri u = intent.getData();
-            String s = u.getScheme();
-            if (s.equals(StorageProvider.SCHEME_FOLDER))
-                u = u.buildUpon().scheme(ContentResolver.SCHEME_FILE).build();
-            if (u != null)
-                open(u);
+            try {
+                Uri u = intent.getData();
+                String s = u.getScheme();
+                if (s.equals(StorageProvider.SCHEME_FOLDER))
+                    u = u.buildUpon().scheme(ContentResolver.SCHEME_FILE).build();
+                if (Build.VERSION.SDK_INT >= 21 && intent.getType().equals(DocumentsContract.Root.MIME_TYPE_ITEM)) {
+                    u = Storage.buildTreeDocumentUriRoot(u);
+                    ContentResolver resolver = getContentResolver();
+                    resolver.takePersistableUriPermission(u, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION); // refresh perms
+                }
+                if (u != null)
+                    open(u);
+            } catch (Exception e) {
+                Toast.Error(this, e);
+                return;
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 package com.github.axet.filemanager.app;
 
+import android.annotation.TargetApi;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -46,6 +47,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
     public static final String TAG = Storage.class.getSimpleName();
 
     public static final String CONTENTTYPE_ZIP = "application/zip";
+    public static final String SAFD = Storage.SAF + ".documents";
 
     public static final HashMap<Uri, ArchiveCache> ARCHIVE_CACHE = new HashMap<>();
     public static final SAFCaches<FilesFragment> SAF_CACHE = new SAFCaches<>();
@@ -104,6 +106,12 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
         if (p != null)
             d += "/" + p;
         return d;
+    }
+
+    @TargetApi(21)
+    public static Uri buildTreeDocumentUriRoot(Uri u) { // build tree uri from root uri (content://com.android.externalstorage.documents/root/XXXX-XXXX and vnd.android.document/root to content://com.android.externalstorage.documents/tree/XXXX-XXXX%3A)
+        String id = DocumentsContract.getRootId(u);
+        return DocumentsContract.buildTreeDocumentUri(Storage.SAFD, id + Storage.COLON);
     }
 
     public static class Nodes extends ArrayList<Node> {
