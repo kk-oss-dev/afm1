@@ -114,7 +114,7 @@ public class FilesApplication extends MainApplication {
                     String s = uri.getScheme();
                     if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
                         ContentResolver resolver = getContentResolver();
-                        resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION); // refresh perms
+                        resolver.takePersistableUriPermission(uri, Storage.SAF_RW); // refresh perms
                     }
                     add(uri);
                 } catch (SecurityException e) {

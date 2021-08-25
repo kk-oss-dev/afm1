@@ -532,7 +532,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                 if (Build.VERSION.SDK_INT >= 21 && intent.getType().equals(DocumentsContract.Root.MIME_TYPE_ITEM)) {
                     u = Storage.buildTreeDocumentUriRoot(u);
                     ContentResolver resolver = getContentResolver();
-                    resolver.takePersistableUriPermission(u, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION); // refresh perms
+                    resolver.takePersistableUriPermission(u, Storage.SAF_RW); // refresh perms
                 }
                 if (u != null)
                     open(u);
