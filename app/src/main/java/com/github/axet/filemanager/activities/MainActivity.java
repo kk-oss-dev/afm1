@@ -50,6 +50,7 @@ import android.widget.TextView;
 
 import com.github.axet.androidlibrary.activities.AppCompatThemeActivity;
 import com.github.axet.androidlibrary.preferences.AboutPreferenceCompat;
+import com.github.axet.androidlibrary.widgets.ErrorDialog;
 import com.github.axet.androidlibrary.widgets.OpenChoicer;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.PathMax;
@@ -530,9 +531,39 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                 if (s.equals(StorageProvider.SCHEME_FOLDER))
                     u = u.buildUpon().scheme(ContentResolver.SCHEME_FILE).build();
                 if (Build.VERSION.SDK_INT >= 21 && intent.getType().equals(DocumentsContract.Root.MIME_TYPE_ITEM)) {
+                    final Uri old = u;
                     u = Storage.buildTreeDocumentUriRoot(u);
-                    ContentResolver resolver = getContentResolver();
-                    resolver.takePersistableUriPermission(u, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION); // refresh perms
+                    try {
+                        ContentResolver resolver = getContentResolver();
+                        resolver.takePersistableUriPermission(u, Storage.SAF_RW); // refresh perms
+                    } catch (SecurityException e) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                        builder.setMessage(ErrorDialog.toMessage(e));
+                        builder.setTitle(ErrorDialog.ERROR);
+                        builder.setNeutralButton(R.string.add_bookmark, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                choicer = new OpenChoicer(OpenFileDialog.DIALOG_TYPE.FOLDER_DIALOG, false) {
+                                    @Override
+                                    public void onResult(Uri uri) {
+                                        super.onResult(uri);
+                                        app.bookmarks.add(uri);
+                                        app.bookmarks.save();
+                                        reloadMenu();
+                                    }
+                                };
+                                choicer.setStorageAccessFramework(MainActivity.this, RESULT_ADDBOOKMARK);
+                                choicer.show(old);
+                            }
+                        });
+                        builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                            }
+                        });
+                        builder.show();
+                        return;
+                    }
                 }
                 if (u != null)
                     open(u);

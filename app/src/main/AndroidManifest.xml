@@ -48,13 +48,13 @@
                 <data android:scheme="folder" />
                 <data android:mimeType="resource/folder" />
             </intent-filter>
-            <!-- to open usb drives content://com.android.externalstorage.documents/root/XXXX-XXXX and vnd.android.document/root -->
             <intent-filter tools:ignore="AppLinkUrlError">
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.OPENABLE"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="*/*" android:host="*"/>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:mimeType="vnd.android.document/root" />
             </intent-filter>
         </activity>
 
