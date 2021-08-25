@@ -556,6 +556,19 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                                 choicer.show(old);
                             }
                         });
+                        File file = new File(Storage.ROOT_MEDIA, DocumentsContract.getRootId(old));
+                        if (storage.getRoot()) {
+                            SuperUser.SuIO su = storage.getSu();
+                            if (SuperUser.exists(su, file)) {
+                                builder.setPositiveButton(R.string.pref_root_title, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        open(Uri.fromFile(file));
+                                    }
+                                });
+                            }
+                            su.close();
+                        }
                         builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
