@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     package="com.github.axet.filemanager"
     android:installLocation="auto">
 
@@ -48,13 +47,13 @@
                 <data android:scheme="folder" />
                 <data android:mimeType="resource/folder" />
             </intent-filter>
-            <!-- to open usb drives content://com.android.externalstorage.documents/root/XXXX-XXXX and vnd.android.document/root -->
-            <intent-filter tools:ignore="AppLinkUrlError">
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.OPENABLE"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
+
                 <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="*/*" android:host="*"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+
+                <data android:mimeType="vnd.android.document/root"/>
             </intent-filter>
         </activity>
 
