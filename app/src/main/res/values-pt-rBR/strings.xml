@@ -1,13 +1,13 @@
 <resources>
-    <string name="app_name">File Manager</string>
+    <string name="app_name">Gerenciador de arquivos</string>
     <string name="action_settings">Configurações</string>
     <string name="navigation_drawer_open">Abrir o menu de navegação</string>
     <string name="navigation_drawer_close">Fechar o menu de navegação</string>
     <string name="title_activity_settings">Configurações</string>
 
     <string-array name="themes_text">
-        <item>Tema Branco</item>
-        <item>Tema Oscuro</item>
+        <item>Tema claro</item>
+        <item>Tema escuro</item>
     </string-array>
 
     <string name="copy_from">De:</string>
@@ -19,74 +19,74 @@
     <string name="copy_overwrite_with">Com:</string>
 
     <string name="size_bytes">bytes</string>
-    <string name="add_bookmark">Adicionar ao Favoritos</string>
+    <string name="add_bookmark">Adicionar ao favoritos</string>
     <string name="bookmarks">Favoritos</string>
-    <string name="empty_list">Sem Conteúdo</string>
-    <string name="delete_bookmark">Excluir Favorito</string>
-    <string name="create_folder">Criar Pasta</string>
-    <string name="create_file">Criar Arquivo</string>
+    <string name="empty_list">Nenhum conteúdo</string>
+    <string name="delete_bookmark">Excluir favorito</string>
+    <string name="create_folder">Criar pasta</string>
+    <string name="create_file">Criar arquivo</string>
     <string name="toast_files_copied">Copiado(s) %1$d arquivo(s)</string>
-    <string name="toast_files_cut">Recortado(s) %1$d arquivo(s)</string>
+    <string name="toast_files_cut">Cortado(s) %1$d arquivo(s)</string>
     <string name="files_delete">Excluir</string>
     <string name="toast_files_deleted">Excluído(s) %1$d arquivo(s)</string>
     <string name="toast_files_archived">Compactado \'%1$s\' com %2$d arquivos(s)</string>
-    <string name="files_rename">Alterar o Nome</string>
+    <string name="files_rename">Renomear</string>
     <string name="files_deleting">Excluindo</string>
     <string name="files_calculating">Calculando</string>
     <string name="files_copying">Copiando</string>
     <string name="files_archiving">Compactando</string>
-    <string name="files_moving">Trasladando</string>
+    <string name="files_moving">Movendo</string>
     <string name="files_conflict">Divergência</string>
     <string name="unsupported">Formato não suportado</string>
-    <string name="add_bookmark_from_saf">... de SAF</string>
-    <string name="add_bookmark_from_from_storage">... de armazenamento</string>
+    <string name="add_bookmark_from_saf">... do SAF</string>
+    <string name="add_bookmark_from_from_storage">... do armazenamento</string>
     <string name="file_open">Abrir</string>
     <string name="file_open_as">Abrir como ...</string>
     <string name="open_as_text">Texto</string>
     <string name="open_as_image">Imagem</string>
     <string name="open_as_audio">Áudio</string>
-    <string name="open_as_archive">Ver Arquivo</string>
-    <string name="open_as_picture">Ver Imagem</string>
+    <string name="open_as_archive">Ver arquivo</string>
+    <string name="open_as_picture">Ver imagem</string>
     <string name="file_view">Ver</string>
     <string name="files_paste">Colocar aqui</string>
-    <string name="files_cancel_paste">Cancelar Tarefa</string>
+    <string name="files_cancel_paste">Cancelar ação</string>
     <string name="refresh">Atualizar</string>
     <string name="search">Procurar</string>
     <string name="button_overwrite">Substituir</string>
     <string name="button_skip">Ignorar</string>
     <string name="button_overwrite_all">Substituir tudo</string>
     <string name="button_skip_all">Ignorar tudo</string>
-    <string name="button_permissions">Obter Permissões</string>
-    <string name="button_new_file">Novo Arquivo</string>
+    <string name="button_permissions">Conceder permissões</string>
+    <string name="button_new_file">Novo arquivo</string>
     <string name="per_second">/s</string>
     <string name="pref_theme_title">Tema</string>
-    <string name="pref_root_title">Pesquisar via Root</string>
-    <string name="pref_root_summary">Pesquisar os arquivos via Root</string>
-    <string name="menu_rename">Alterar o Nome</string>
+    <string name="pref_root_title">Acesso Root</string>
+    <string name="pref_root_summary">Gerenciar arquivos via Root</string>
+    <string name="menu_rename">Renomear</string>
     <string name="menu_copy">Copiar</string>
-    <string name="menu_cut">Recortar</string>
+    <string name="menu_cut">Cortar</string>
     <string name="menu_delete">Excluir</string>
     <string name="menu_archive">Compactar</string>
     <string name="save_to">Salvar o arquivo em</string>
-    <string name="back_exit">Pressione outra vez para sair</string>
-    <string name="open_as_folder">Abrir a Pasta</string>
-    <string name="pref_recycle_title">Pasta de Lixeira</string>
-    <string name="pref_recycle_summary">Ativar a Pasta de Lixeira para os arquivos excluídos</string>
+    <string name="back_exit">Clique outra vez para sair</string>
+    <string name="open_as_folder">Abrir a pasta</string>
+    <string name="pref_recycle_title">Pasta da lixeira</string>
+    <string name="pref_recycle_summary">Ativar a pasta de lixeira para os arquivos excluídos</string>
     <string name="recyclebin_folder">Lixeira</string>
-    <string name="empty_recyclebin">Excluir o Lixo</string>
+    <string name="empty_recyclebin">Limpar a lixeira</string>
     <string name="duplicate_folder">Duplicado</string>
-    <string name="delete_permanently">Para Sempre</string>
-    <string name="preview">Pré-visualização</string>
-    <string name="file_viewas">Ver como ...</string>
+    <string name="delete_permanently">Para sempre</string>
+    <string name="preview">Visualização</string>
+    <string name="file_viewas">Em modo de  ...</string>
     <string name="action_fullscreen">Tela completa</string>
     <string name="viewas_hex">Hex</string>
     <string name="free_space">%1$s livre</string>
-    <string name="sort_by">Ordenar Por ...</string>
+    <string name="sort_by">Ordenar por ...</string>
     <string name="sort_by_name_a_z">Nome A-Z</string>
     <string name="sort_by_name_z_a">Nome Z-A</string>
-    <string name="sort_by_last_modified_asc">Modificado Recent. Último</string>
-    <string name="sort_by_last_modified_desc">Modificado Recent. Primeiro</string>
-    <string name="sort_by_size_desc">O Maior primeiro</string>
-    <string name="sort_by_size_asc">O Menor primeiro</string>
+    <string name="sort_by_last_modified_asc">Último recent. modific.</string>
+    <string name="sort_by_last_modified_desc">Primeiro recent. modific.</string>
+    <string name="sort_by_size_desc">O maior primeiro</string>
+    <string name="sort_by_size_asc">O menor primeiro</string>
     <string name="properties">Características</string>
 </resources>
