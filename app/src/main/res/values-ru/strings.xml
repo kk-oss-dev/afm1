@@ -89,4 +89,7 @@
     <string name="sort_by_size_desc">Размер по убыванию</string>
     <string name="sort_by_size_asc">Размер по возрастанию</string>
     <string name="properties">Свойства</string>
+    <string name="select_cancel">Выбор Отменить</string>
+    <string name="select_all">Выбрать Все</string>
+    <string name="select_invert">Выбрать Инверсивно</string>
 </resources>

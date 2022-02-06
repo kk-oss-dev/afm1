@@ -556,7 +556,7 @@ public class MainActivity extends AppCompatThemeActivity implements NavigationVi
                                 choicer.show(old);
                             }
                         });
-                        File file = new File(Storage.ROOT_MEDIA, DocumentsContract.getRootId(old));
+                        final File file = new File(Storage.ROOT_MEDIA, DocumentsContract.getRootId(old));
                         if (storage.getRoot()) {
                             SuperUser.SuIO su = storage.getSu();
                             if (SuperUser.exists(su, file)) {

@@ -17,6 +17,27 @@
         android:visible="false"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_select_cancel"
+        android:icon="@drawable/ic_content_paste_24dp"
+        android:orderInCategory="200"
+        android:title="@string/select_cancel"
+        android:visible="false"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_select_all"
+        android:icon="@drawable/ic_content_paste_24dp"
+        android:orderInCategory="200"
+        android:title="@string/select_all"
+        android:visible="false"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_select_invert"
+        android:icon="@drawable/ic_content_paste_24dp"
+        android:orderInCategory="200"
+        android:title="@string/select_invert"
+        android:visible="false"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_refresh"
         android:orderInCategory="300"
         android:title="@string/refresh" />

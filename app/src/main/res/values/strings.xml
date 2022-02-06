@@ -89,4 +89,7 @@
     <string name="sort_by_size_desc">Size Desc</string>
     <string name="sort_by_size_asc">Size Asc</string>
     <string name="properties">Properties</string>
+    <string name="select_cancel">Select Cancel</string>
+    <string name="select_all">Select All</string>
+    <string name="select_invert">Select Invert</string>
 </resources>

@@ -89,4 +89,7 @@
     <string name="sort_by_size_desc">O maior primeiro</string>
     <string name="sort_by_size_asc">O menor primeiro</string>
     <string name="properties">Características</string>
+    <string name="select_cancel">Select Cancel</string>
+    <string name="select_all">Select All</string>
+    <string name="select_invert">Select Invert</string>
 </resources>

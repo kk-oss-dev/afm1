@@ -89,4 +89,7 @@
     <string name="properties">Properti</string>
     <string name="open_as_archive">Buka sebagai Arsip</string>
     <string name="open_as_picture">Buka sebagai Gambar</string>
+    <string name="select_cancel">Select Cancel</string>
+    <string name="select_all">Select All</string>
+    <string name="select_invert">Select Invert</string>
 </resources>
