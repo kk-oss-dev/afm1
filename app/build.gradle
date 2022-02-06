@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 30
     ndkVersion "16.1.4479499"
     defaultConfig {
         applicationId "com.github.axet.filemanager"
         minSdkVersion 9
-        targetSdkVersion 29
+        targetSdkVersion 30
         versionCode 179
         versionName "0.5.0"
         ndk {
