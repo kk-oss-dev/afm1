@@ -14,6 +14,7 @@ import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.util.Log;
 
 import com.github.axet.androidlibrary.services.FileProvider;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
@@ -29,7 +30,7 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 
 public class StorageProvider extends com.github.axet.androidlibrary.services.StorageProvider {
-    public static String TAG = StorageProvider.class.getCanonicalName();
+    public static String TAG = StorageProvider.class.getSimpleName();
 
     public static final String OTG = "/mnt/media_rw/";
 
@@ -151,6 +152,7 @@ public class StorageProvider extends com.github.axet.androidlibrary.services.Sto
     @Nullable
     @Override
     public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
+        Log.d(TAG, "openFile: " + uri + " # " + mode);
         final Uri f = find(uri);
         if (f == null)
             return null;
@@ -166,6 +168,7 @@ public class StorageProvider extends com.github.axet.androidlibrary.services.Sto
     @Nullable
     @Override
     public AssetFileDescriptor openAssetFile(@NonNull Uri uri, @NonNull String mode) throws FileNotFoundException {
+        Log.d(TAG, "openAssetFile: " + uri + " # " + mode);
         final Uri f = find(uri);
         if (f == null)
             return null;

@@ -89,4 +89,7 @@
     <string name="sort_by_size_desc">Boyut Azalan</string>
     <string name="sort_by_size_asc">Boyut Artan</string>
     <string name="properties">Özellikler</string>
+    <string name="select_cancel">Select Cancel</string>
+    <string name="select_all">Select All</string>
+    <string name="select_invert">Select Invert</string>
 </resources>

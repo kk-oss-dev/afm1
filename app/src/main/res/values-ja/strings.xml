@@ -89,4 +89,7 @@
     <string name="sort_by_size_desc">サイズ(降順)</string>
     <string name="sort_by_size_asc">サイズ(昇順)</string>
     <string name="properties">情報</string>
+    <string name="select_cancel">Select Cancel</string>
+    <string name="select_all">Select All</string>
+    <string name="select_invert">Select Invert</string>
 </resources>

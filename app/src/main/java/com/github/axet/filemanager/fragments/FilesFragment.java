@@ -119,6 +119,9 @@ public class FilesFragment extends Fragment {
         setGroupingSeparator(' ');
     }});
 
+    public static int[] MENU_MAP = new int[]{R.id.action_paste_cancel, R.id.action_paste,
+            R.id.action_refresh, R.id.action_sort, R.id.action_search, R.id.action_settings, R.id.action_about};
+
     Handler handler = new Handler();
     FilesApplication app;
     Uri uri;
@@ -142,6 +145,10 @@ public class FilesFragment extends Fragment {
     MenuItem toolbar; // toolbar select
     MenuItem pasteMenu;
     MenuItem pasteCancel;
+    MenuItem selectCancel;
+    MenuItem selectAll;
+    MenuItem selectInvert;
+    HashMap<Integer, MenuItem> menuMap = new HashMap<>();
     ToolbarActionView select;
     Storage.Nodes selected = new Storage.Nodes();
     HashMap<Uri, Pos> offsets = new HashMap<>();
@@ -1634,6 +1641,7 @@ public class FilesFragment extends Fragment {
         public View unselected;
         public View selected;
         public TextView size;
+        public TextView date;
 
         public Holder(View itemView) {
             super(itemView);
@@ -1645,6 +1653,7 @@ public class FilesFragment extends Fragment {
             iconSmall = (ImageView) itemView.findViewById(R.id.icon_small);
             name = (TextView) itemView.findViewById(R.id.name);
             size = (TextView) itemView.findViewById(R.id.size);
+            date = (TextView) itemView.findViewById(R.id.date);
             circleFrame = itemView.findViewById(R.id.circle_frame);
             circle = itemView.findViewById(R.id.circle);
             unselected = itemView.findViewById(R.id.unselected);
@@ -1688,6 +1697,7 @@ public class FilesFragment extends Fragment {
                     h.size.setText(FilesApplication.formatSize(getContext(), f.size));
                     h.size.setVisibility(View.VISIBLE);
                 }
+                h.date.setText(SIMPLE.format(f.last));
             }
             h.name.setText(f.name);
             h.itemView.setOnClickListener(new View.OnClickListener() {
@@ -1992,6 +2002,13 @@ public class FilesFragment extends Fragment {
     }
 
     void updatePaste() { // closeSu()
+        if (selected.size() == 0) {
+            for (int s : MENU_MAP)
+                menuMap.get(s).setVisible(true);
+            selectAll.setVisible(false);
+            selectCancel.setVisible(false);
+            selectInvert.setVisible(false);
+        }
         if (app.copy != null || app.cut != null) {
             pasteMenu.setVisible(true);
             pasteCancel.setVisible(true);
@@ -2003,6 +2020,13 @@ public class FilesFragment extends Fragment {
         } else {
             pasteMenu.setVisible(false);
             pasteCancel.setVisible(false);
+        }
+        if (selected.size() > 0) {
+            selectAll.setVisible(true);
+            selectCancel.setVisible(true);
+            selectInvert.setVisible(true);
+            for (int s : MENU_MAP)
+                menuMap.get(s).setVisible(false);
         }
         adapter.notifyDataSetChanged();
         Intent intent = new Intent(PASTE_UPDATE);
@@ -2172,6 +2196,11 @@ public class FilesFragment extends Fragment {
             main.collapseListener.addItem(toolbar);
             pasteMenu = menu.findItem(R.id.action_paste);
             pasteCancel = menu.findItem(R.id.action_paste_cancel);
+            selectCancel = menu.findItem(R.id.action_select_cancel);
+            selectAll = menu.findItem(R.id.action_select_all);
+            selectInvert = menu.findItem(R.id.action_select_invert);
+            for (int s : MENU_MAP)
+                menuMap.put(s, menu.findItem(s));
             updatePaste();
             select = (ToolbarActionView) MenuItemCompat.getActionView(toolbar);
             select.listener = new CollapsibleActionView() {
@@ -2190,6 +2219,7 @@ public class FilesFragment extends Fragment {
                 public void onActionViewCollapsed() {
                     adapter.notifyDataSetChanged();
                     selected.clear();
+                    updatePaste();
                 }
             };
             select.create(menu, R.menu.menu_select);
@@ -2342,6 +2372,24 @@ public class FilesFragment extends Fragment {
                 reload();
                 return true;
             }
+            case R.id.action_select_cancel:
+                selected.clear();
+                closeSelection();
+                return true;
+            case R.id.action_select_all:
+                for (Storage.Node n : adapter.files)
+                    selected.add(n);
+                updateSelection();
+                return true;
+            case R.id.action_select_invert:
+                ArrayList<Storage.Node> old = new ArrayList<>(selected);
+                selected.clear();
+                for (Storage.Node n : adapter.files)
+                    selected.add(n);
+                for (Storage.Node n : old)
+                    selected.remove(n);
+                updateSelection();
+                return true;
             case R.id.action_paste_cancel: {
                 app.copy = null;
                 app.cut = null;

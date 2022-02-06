@@ -49,6 +49,7 @@ public class Storage extends com.github.axet.androidlibrary.app.Storage {
 
     public static final String CONTENTTYPE_ZIP = "application/zip";
     public static final int SAF_RW = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+    public static final String ROOT_MEDIA = "/mnt/media_rw"; // /storage - user access, /mnt/media_rw - root access
 
     public static final HashMap<Uri, ArchiveCache> ARCHIVE_CACHE = new HashMap<>();
     public static final SAFCaches<FilesFragment> SAF_CACHE = new SAFCaches<>();

@@ -51,14 +51,31 @@
             android:singleLine="true"
             android:text="boot" />
 
-        <TextView
-            android:id="@+id/size"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:paddingLeft="2dp"
-            android:text="16kb"
-            android:textSize="10sp" />
+            android:orientation="vertical"
+            android:paddingLeft="2dp">
+
+            <TextView
+                android:id="@+id/size"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:paddingBottom="2dp"
+                android:text="16kb"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:paddingLeft="2dp"
+                android:text="2022-03-01 11:18:36"
+                android:textSize="10sp" />
+        </LinearLayout>
 
         <FrameLayout
             android:id="@+id/circle_frame"
