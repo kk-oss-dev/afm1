@@ -2046,8 +2046,12 @@ public class FilesFragment extends Fragment {
             if (f.canRead() || shared.getBoolean(FilesApplication.PREF_ROOT, false) || Storage.permitted(getContext(), Storage.PERMISSIONS_RW) || manager)
                 button.setVisibility(View.GONE);
             if (Build.VERSION.SDK_INT >= 29 && getContext().getApplicationInfo().targetSdkVersion >= 29 && Storage.hasRequestedLegacyExternalStorage(getContext()) && !Storage.isExternalStorageLegacy(getContext()) && !manager) {
-                bottom_message.setText("Content is limited, please provide Legacy External Storage support");
-                bottom_message.setVisibility(View.VISIBLE);
+                if (Build.VERSION.SDK_INT >= 30 && getContext().getApplicationInfo().targetSdkVersion >= 30 && OptimizationPreferenceCompat.findPermission(getContext(), Storage.MANAGE_EXTERNAL_STORAGE)) {
+                    button.setVisibility(View.VISIBLE);
+                } else {
+                    bottom_message.setText("Content is limited, please provide Legacy External Storage support");
+                    bottom_message.setVisibility(View.VISIBLE);
+                }
             }
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
             button.setVisibility(View.GONE);

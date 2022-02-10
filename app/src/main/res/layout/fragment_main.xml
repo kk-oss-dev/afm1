@@ -6,19 +6,19 @@
 
     <com.github.axet.filemanager.widgets.PathView
         android:id="@+id/path"
-        android:paddingLeft="10dp"
-        android:paddingRight="10dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp" />
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/list"
-        android:paddingLeft="10dp"
-        android:paddingRight="10dp"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/path"
         android:clipToPadding="false"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
         android:paddingBottom="76dp" />
 
     <Button
@@ -35,14 +35,20 @@
         android:layout_centerInParent="true"
         android:text="Error" />
 
-    <TextView
-        android:id="@+id/bottom_message"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerInParent="true"
-        android:background="#88ee0000"
-        android:padding="5dp"
-        android:text="Error"
-        android:textColor="@android:color/white" />
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/bottom_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#88ee0000"
+            android:padding="5dp"
+            android:text="Error"
+            android:textColor="@android:color/white" />
+    </LinearLayout>
 </RelativeLayout>
