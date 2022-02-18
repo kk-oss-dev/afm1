@@ -140,6 +140,7 @@ public class FilesFragment extends Fragment {
     Specials specials;
     PathView path;
     View button;
+    View buttonLow;
     TextView error;
     TextView bottom_message;
     MenuItem toolbar; // toolbar select
@@ -1997,6 +1998,13 @@ public class FilesFragment extends Fragment {
                     Storage.permitted(FilesFragment.this, Storage.PERMISSIONS_RW, RESULT_PERMS);
             }
         });
+        buttonLow = rootView.findViewById(R.id.permissions_low);
+        buttonLow.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                button.performClick();
+            }
+        });
         updateButton();
         return rootView;
     }
@@ -2035,22 +2043,30 @@ public class FilesFragment extends Fragment {
 
     void updateButton() {
         bottom_message.setVisibility(View.GONE);
+        buttonLow.setVisibility(View.GONE);
         button.setVisibility(View.VISIBLE);
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             File f = Storage.getFile(uri);
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
             boolean manager = false;
-            if (Build.VERSION.SDK_INT >= 30 && getContext().getApplicationInfo().targetSdkVersion >= 30 && OptimizationPreferenceCompat.findPermission(getContext(), Storage.MANAGE_EXTERNAL_STORAGE))
+            boolean rw = Storage.permitted(getContext(), Storage.PERMISSIONS_RW);
+            boolean ext = OptimizationPreferenceCompat.findPermission(getContext(), Storage.MANAGE_EXTERNAL_STORAGE);
+            if (Build.VERSION.SDK_INT >= 30 && getContext().getApplicationInfo().targetSdkVersion >= 30 && ext)
                 manager = Storage.isExternalStorageManager(getContext());
-            if (f.canRead() || shared.getBoolean(FilesApplication.PREF_ROOT, false) || Storage.permitted(getContext(), Storage.PERMISSIONS_RW) || manager)
+            if (shared.getBoolean(FilesApplication.PREF_ROOT, false) || rw || manager) {
                 button.setVisibility(View.GONE);
-            if (Build.VERSION.SDK_INT >= 29 && getContext().getApplicationInfo().targetSdkVersion >= 29 && Storage.hasRequestedLegacyExternalStorage(getContext()) && !Storage.isExternalStorageLegacy(getContext()) && !manager) {
-                if (Build.VERSION.SDK_INT >= 30 && getContext().getApplicationInfo().targetSdkVersion >= 30 && OptimizationPreferenceCompat.findPermission(getContext(), Storage.MANAGE_EXTERNAL_STORAGE)) {
-                    button.setVisibility(View.VISIBLE);
-                } else {
-                    bottom_message.setText("Content is limited, please provide Legacy External Storage support");
-                    bottom_message.setVisibility(View.VISIBLE);
+            } else {
+                if (f.canRead()) {
+                    if (f.canWrite()) {
+                        button.setVisibility(View.GONE);
+                    } else if (Build.VERSION.SDK_INT >= 29 && getContext().getApplicationInfo().targetSdkVersion >= 29 && Storage.hasRequestedLegacyExternalStorage(getContext()) && !Storage.isExternalStorageLegacy(getContext()) && !manager) {
+                        bottom_message.setText("Content is limited, please provide Legacy External Storage support");
+                        bottom_message.setVisibility(View.VISIBLE);
+                        button.setVisibility(View.GONE);
+                        if (Build.VERSION.SDK_INT >= 30 && getContext().getApplicationInfo().targetSdkVersion >= 30)
+                            buttonLow.setVisibility(View.VISIBLE);
+                    }
                 }
             }
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
