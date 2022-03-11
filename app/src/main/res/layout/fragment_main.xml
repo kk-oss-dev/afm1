@@ -17,6 +17,7 @@
         android:layout_height="match_parent"
         android:layout_below="@id/path"
         android:clipToPadding="false"
+        android:scrollbars="vertical"
         android:paddingLeft="10dp"
         android:paddingRight="10dp"
         android:paddingBottom="76dp" />
