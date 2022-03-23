@@ -6,6 +6,7 @@
     <string name="title_activity_settings">Pengaturan</string>
 
     <string-array name="themes_text">
+        <item>@string/system_default</item>
         <item>Tema Terang</item>
         <item>Tema Gelap</item>
     </string-array>

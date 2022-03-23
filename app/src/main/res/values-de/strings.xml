@@ -6,6 +6,7 @@
     <string name="title_activity_settings">Einstellungen</string>
 
     <string-array name="themes_text">
+        <item>@string/system_default</item>
         <item>Weißes Motiv</item>
         <item>Schwarzes Motiv</item>
     </string-array>

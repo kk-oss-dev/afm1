@@ -6,6 +6,7 @@
     <string name="title_activity_settings">設定</string>
 
     <string-array name="themes_text">
+        <item>@string/system_default</item>
         <item>ライトテーマ</item>
         <item>ダークテーマ</item>
     </string-array>

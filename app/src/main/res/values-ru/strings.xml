@@ -6,6 +6,7 @@
     <string name="title_activity_settings">Настройки</string>
 
     <string-array name="themes_text">
+        <item>@string/system_default</item>
         <item>Тема светлая</item>
         <item>Тема темная</item>
     </string-array>

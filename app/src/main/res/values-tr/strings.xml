@@ -6,6 +6,7 @@
     <string name="title_activity_settings">Ayarlar</string>
 
     <string-array name="themes_text">
+        <item>@string/system_default</item>
         <item>Aydınlık Tema</item>
         <item>Karanlık Tema</item>
     </string-array>
