@@ -5,12 +5,6 @@
     <string name="navigation_drawer_close">Закрыть навигацию</string>
     <string name="title_activity_settings">Настройки</string>
 
-    <string-array name="themes_text">
-        <item>@string/system_default</item>
-        <item>Тема светлая</item>
-        <item>Тема темная</item>
-    </string-array>
-
     <string name="copy_from">Из:</string>
     <string name="copy_to">В:</string>
     <string name="copy_pause">Пауза</string>

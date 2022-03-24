@@ -5,12 +5,6 @@
     <string name="navigation_drawer_close">Chiudi la panoramica della navigazione</string>
     <string name="title_activity_settings">Impostazioni</string>
 
-    <string-array name="themes_text">
-        <item>@string/system_default</item>
-        <item>Motivo bianco</item>
-        <item>Motivo nero</item>
-    </string-array>
-
     <string name="copy_from">Da:</string>
     <string name="copy_to">Verso:</string>
     <string name="copy_pause">Pausa</string>

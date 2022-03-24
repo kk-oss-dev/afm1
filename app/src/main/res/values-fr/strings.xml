@@ -5,12 +5,6 @@
     <string name="navigation_drawer_close">Fermer la barre de navigation</string>
     <string name="title_activity_settings">Paramètres</string>
 
-    <string-array name="themes_text">
-        <item>@string/system_default</item>
-        <item>Theme Clair</item>
-        <item>Theme Sombre</item>
-    </string-array>
-
     <string name="copy_from">De:</string>
     <string name="copy_to">À:</string>
     <string name="copy_pause">Pause</string>

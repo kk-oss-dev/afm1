@@ -75,7 +75,7 @@ public class FilesApplication extends MainApplication {
     }
 
     public static int getTheme(Context context, int light, int dark) {
-        return MainApplication.getTheme(context, PREF_THEME, light, dark, context.getString(R.string.Theme_Dark));
+        return MainApplication.getTheme(context, PREF_THEME, light, dark);
     }
 
     public class Bookmarks extends ArrayList<Uri> {

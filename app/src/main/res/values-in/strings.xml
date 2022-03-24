@@ -5,12 +5,6 @@
     <string name="navigation_drawer_close">Tutup laci navigasi</string>
     <string name="title_activity_settings">Pengaturan</string>
 
-    <string-array name="themes_text">
-        <item>@string/system_default</item>
-        <item>Tema Terang</item>
-        <item>Tema Gelap</item>
-    </string-array>
-
     <string name="copy_from">Dari:</string>
     <string name="copy_to">Ke:</string>
     <string name="copy_pause">Jeda</string>

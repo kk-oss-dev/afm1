@@ -5,12 +5,6 @@
     <string name="navigation_drawer_close">Gezinme ekranını kapat</string>
     <string name="title_activity_settings">Ayarlar</string>
 
-    <string-array name="themes_text">
-        <item>@string/system_default</item>
-        <item>Aydınlık Tema</item>
-        <item>Karanlık Tema</item>
-    </string-array>
-
     <string name="copy_from">Burdan:</string>
     <string name="copy_to">Buraya:</string>
     <string name="copy_pause">Durdur</string>

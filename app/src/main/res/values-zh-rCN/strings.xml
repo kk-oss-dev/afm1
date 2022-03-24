@@ -5,12 +5,6 @@
     <string name="navigation_drawer_close">关闭导航菜单</string>
     <string name="title_activity_settings">设置</string>
 
-    <string-array name="themes_text">
-        <item>@string/system_default</item>
-        <item>明亮主题</item>
-        <item>黑暗主题</item>
-    </string-array>
-
     <string name="copy_from">从：</string>
     <string name="copy_to">到：</string>
     <string name="copy_pause">暂停</string>
