@@ -361,7 +361,7 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
     }
 
     void updateToolbar() {
-        Uri uri = nodes.get(adapter.getIndex(pager.getCurrentItem())).uri;
+        Uri uri = nodes.get(adapter.getIndex(pager.getCurrentItem())).uri; // TODO onCreate array out of index
         title.setText(Storage.getName(this, uri));
         count.setText((nodes.find(uri) + 1) + "/" + nodes.size());
         Animation a = panel.getAnimation();
