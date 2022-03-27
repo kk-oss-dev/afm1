@@ -361,7 +361,7 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
     }
 
     void updateToolbar() {
-        Uri uri = nodes.get(adapter.getIndex(pager.getCurrentItem())).uri;
+        Uri uri = nodes.get(adapter.getIndex(pager.getCurrentItem())).uri; // TODO onCreate array out of index
         title.setText(Storage.getName(this, uri));
         count.setText((nodes.find(uri) + 1) + "/" + nodes.size());
         Animation a = panel.getAnimation();
@@ -379,12 +379,12 @@ public class FullscreenActivity extends AppCompatFullscreenThemeActivity {
 
     @Override
     public int getAppTheme() {
-        return FilesApplication.getTheme(this, FilesApplication.PREF_THEME, R.style.AppThemeLight_NoActionBar, R.style.AppThemeDark_NoActionBar, getString(R.string.Theme_Dark));
+        return FilesApplication.getTheme(this, FilesApplication.PREF_THEME, R.style.AppThemeLight_NoActionBar, R.style.AppThemeDark_NoActionBar);
     }
 
     @Override
     public int getAppThemePopup() {
-        return FilesApplication.getTheme(this, FilesApplication.PREF_THEME, R.style.AppThemeLight_PopupOverlay, R.style.AppThemeDark_PopupOverlay, getString(R.string.Theme_Dark));
+        return FilesApplication.getTheme(this, FilesApplication.PREF_THEME, R.style.AppThemeLight_PopupOverlay, R.style.AppThemeDark_PopupOverlay);
     }
 
     @Override

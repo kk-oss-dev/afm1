@@ -5,11 +5,6 @@
     <string name="navigation_drawer_close">Cerrar caja de navegación</string>
     <string name="title_activity_settings">Ajustes</string>
 
-    <string-array name="themes_text">
-        <item>Tema claro</item>
-        <item>Tema oscuro</item>
-    </string-array>
-
     <string name="copy_from">Desde:</string>
     <string name="copy_to">Hacia:</string>
     <string name="copy_pause">Pausar</string>
