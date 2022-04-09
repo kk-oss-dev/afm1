@@ -2051,7 +2051,7 @@ public class FilesFragment extends Fragment {
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
             boolean manager = false;
             boolean rw = Storage.permitted(getContext(), Storage.PERMISSIONS_RW);
-            boolean ext = OptimizationPreferenceCompat.findPermission(getContext(), Storage.MANAGE_EXTERNAL_STORAGE);
+            boolean ext = Storage.isLegacyManifest30(getContext());
             if (Build.VERSION.SDK_INT >= 30 && getContext().getApplicationInfo().targetSdkVersion >= 30 && ext)
                 manager = Storage.isExternalStorageManager(getContext());
             if (shared.getBoolean(FilesApplication.PREF_ROOT, false) || rw || manager) {
@@ -2061,7 +2061,7 @@ public class FilesFragment extends Fragment {
                     if (f.canWrite()) {
                         button.setVisibility(View.GONE);
                     } else if (Build.VERSION.SDK_INT >= 29 && getContext().getApplicationInfo().targetSdkVersion >= 29 && Storage.hasRequestedLegacyExternalStorage(getContext()) && !Storage.isExternalStorageLegacy(getContext()) && !manager) {
-                        bottom_message.setText("Content is limited, please provide Legacy External Storage support");
+                        bottom_message.setText(Storage.LIMITED);
                         bottom_message.setVisibility(View.VISIBLE);
                         button.setVisibility(View.GONE);
                         if (Build.VERSION.SDK_INT >= 30 && getContext().getApplicationInfo().targetSdkVersion >= 30)

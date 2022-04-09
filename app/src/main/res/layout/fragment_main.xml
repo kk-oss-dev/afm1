@@ -54,10 +54,10 @@
             android:textColor="@android:color/white" />
 
         <Button
+            android:layout_gravity="center"
             android:id="@+id/permissions_low"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
             android:padding="5dp"
             android:text="@string/button_permissions"
             android:visibility="gone" />
